@@ -10,10 +10,8 @@
 </head>
 
 <body>
-
     <div class="auth-wrapper">
         <div class="login-container">
-            
             <div class="banner-side">
                 <i class="fas fa-envelope-open-text mb-3" style="font-size: 50px;"></i>
                 <h4>KIỂM TRA EMAIL</h4>
@@ -27,13 +25,12 @@
             <div class="form-side">
                 <h3 class="text-center mb-4" style="font-weight: 800; letter-spacing: 1px;">XÁC THỰC OTP</h3>
 
-                <div th:if="${error}" class="alert-custom-error" 
-                     style="background: rgba(220, 53, 69, 0.2); border: 1px solid rgba(220, 53, 69, 0.5); color: #ff8fa3; padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                <div th:if="${error}" class="alert-custom-error"
+                    style="background: rgba(220, 53, 69, 0.2); border: 1px solid rgba(220, 53, 69, 0.5); color: #ff8fa3; padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
                     <i class="fas fa-exclamation-circle mr-1"></i> <span th:text="${error}"></span>
                 </div>
 
                 <form th:action="${type == 'REGISTER' ? '/acc/verify-otp' : '/acc/verify-reset'}" method="post">
-                    
                     <th:block th:if="${type == 'REGISTER'}">
                         <input type="hidden" name="email" th:value="${email}">
                         <input type="hidden" name="password" th:value="${password}">
@@ -42,9 +39,8 @@
 
                     <div class="input-group-custom">
                         <i class="fas fa-key input-icon"></i>
-                        <input type="text" name="otp" class="form-control-custom" 
-                               placeholder="Nhập mã 6 số" maxlength="6" required
-                               style="letter-spacing: 5px; font-weight: bold; text-align: center; font-size: 18px;">
+                        <input type="text" name="otp" class="form-control-custom" placeholder="Nhập mã 6 số" maxlength="6" required
+                            style="letter-spacing: 5px; font-weight: bold; text-align: center; font-size: 18px;">
                     </div>
 
                     <button type="submit" class="btn-login">
@@ -54,17 +50,16 @@
 
                 <div style="text-align: center; margin-top: 20px;">
                     <span style="color: rgba(255,255,255,0.6); font-size: 14px;">Không nhận được mã? </span>
-                    
-                    <a th:if="${type == 'REGISTER'}" href="/acc/reg" class="btn-outline-white" 
-                       style="padding: 5px 15px; font-size: 12px; margin-top: 5px;">Đăng ký lại</a>
-                       
-                    <a th:if="${type == 'RESET'}" href="/acc/forgot" class="btn-outline-white" 
-                       style="padding: 5px 15px; font-size: 12px; margin-top: 5px;">Gửi lại mã</a>
+
+                    <a th:if="${type == 'REGISTER'}" href="/acc/reg" class="btn-outline-white"
+                        style="padding: 5px 15px; font-size: 12px; margin-top: 5px;">Đăng ký lại</a>
+
+                    <a th:if="${type == 'RESET'}" href="/acc/forgot" class="btn-outline-white"
+                        style="padding: 5px 15px; font-size: 12px; margin-top: 5px;">Gửi lại mã</a>
                 </div>
             </div>
-            
         </div>
     </div>
-
 </body>
+
 </html>

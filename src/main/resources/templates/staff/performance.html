@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Hiệu suất project</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #f5f6f8;
+            color: #111827;
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 1260px;
+            margin: 22px auto;
+            padding: 0 16px 30px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            margin-top: 6px;
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn {
+            text-decoration: none;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            color: #111827;
+            padding: 9px 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: #fff;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .card-title {
+            margin: 0 0 10px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .meta {
+            font-size: 14px;
+            color: #374151;
+            line-height: 1.5;
+        }
+
+        .muted {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f9fafb;
+            color: #374151;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .status-todo {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .status-progress {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .status-submitted {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-done {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-failed {
+            background: #fecaca;
+            color: #7f1d1d;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .bar-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .bar-row {
+            display: grid;
+            grid-template-columns: 220px 1fr 58px;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .bar-track {
+            height: 12px;
+            background: #e5e7eb;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: #16a34a;
+            border-radius: 999px;
+        }
+
+        @media (max-width: 900px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .bar-row {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="topbar">
+            <div>
+                <h1 class="title">Hiệu suất project</h1>
+                <div class="subtitle">
+                    Xin chào <strong th:text="${staffName}">Nhân viên</strong>
+                </div>
+            </div>
+            <div class="actions">
+                <a class="btn" th:href="@{/staff/projects(semesterId=${selectedSemesterId})}">Quay lại danh sách project</a>
+                <form action="/acc/logout" method="get">
+                    <button type="submit" class="btn btn-danger">Đăng xuất</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title" th:text="${project.projectName ?: 'Project chưa có tên'}">Tên project</h2>
+            <div class="meta">
+                Nhóm: <strong th:text="${project.groupName}">Nhóm</strong>
+                • Lớp: <strong th:text="${project.className}">Lớp</strong>
+                • Trưởng nhóm: <strong th:text="${project.leaderName ?: 'Chưa có'}">Leader</strong>
+            </div>
+            <div class="meta">
+                Thời gian: 
+                <strong th:text="${project.startDate != null ? #temporals.format(project.startDate, 'dd/MM/yyyy HH:mm') : '-'}">-</strong>
+                →
+                <strong th:text="${project.endDate != null ? #temporals.format(project.endDate, 'dd/MM/yyyy HH:mm') : '-'}">-</strong>
+            </div>
+            <div class="muted" th:if="${project.description != null and !#strings.isEmpty(project.description)}"
+                th:text="${project.description}" style="margin-top:8px; white-space: pre-wrap;"></div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Sprint của project</h2>
+            <div class="muted" th:if="${sprints == null or #lists.isEmpty(sprints)}">Chưa có sprint nào.</div>
+            <table th:if="${sprints != null and !#lists.isEmpty(sprints)}">
+                <thead>
+                    <tr>
+                        <th>Sprint</th>
+                        <th>Bắt đầu</th>
+                        <th>Kết thúc</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="sp : ${sprints}">
+                        <td th:text="${sp.sprintName ?: ('Sprint #' + sp.sprintId)}">Sprint</td>
+                        <td th:text="${sp.startDate != null ? #temporals.format(sp.startDate, 'dd/MM/yyyy') : '-'}">-</td>
+                        <td th:text="${sp.endDate != null ? #temporals.format(sp.endDate, 'dd/MM/yyyy') : '-'}">-</td>
+                        <td th:text="${sp.closed ? 'Đã đóng' : 'Đang mở'}">Đang mở</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Hiệu suất tổng theo thành viên</h2>
+            <div class="metrics-grid">
+                <div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Thành viên</th>
+                                <th>Tổng</th>
+                                <th>Hoàn thành</th>
+                                <th>Thất bại</th>
+                                <th>Đang làm</th>
+                                <th>Chờ duyệt</th>
+                                <th>Chờ xử lý</th>
+                                <th>Tỷ lệ hoàn thành</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${overallPerformance == null or #lists.isEmpty(overallPerformance)}">
+                                <td colspan="8">Chưa có dữ liệu task.</td>
+                            </tr>
+                            <tr th:each="m : ${overallPerformance}">
+                                <td th:text="${m.studentName + ' (' + m.studentCode + ')'}">Tên</td>
+                                <td th:text="${m.totalTasks}">0</td>
+                                <td th:text="${m.doneTasks}">0</td>
+                                <td th:text="${m.failedTasks}">0</td>
+                                <td th:text="${m.inProgressTasks}">0</td>
+                                <td th:text="${m.submittedTasks}">0</td>
+                                <td th:text="${m.todoTasks}">0</td>
+                                <td th:text="${#numbers.formatDecimal(m.doneRatePercent, 1, 1) + '%'}">0%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <div class="bar-list" th:if="${overallPerformance != null and !#lists.isEmpty(overallPerformance)}">
+                        <div class="bar-row" th:each="m : ${overallPerformance}">
+                            <div th:text="${m.studentName + ' (' + m.studentCode + ')'}">Tên</div>
+                            <div class="bar-track">
+                                <div class="bar-fill" th:style="${'width:' + m.doneRatePercent + '%'}"></div>
+                            </div>
+                            <div th:text="${#numbers.formatDecimal(m.doneRatePercent, 1, 1) + '%'}">0%</div>
+                        </div>
+                    </div>
+                    <div class="muted" th:if="${overallPerformance == null or #lists.isEmpty(overallPerformance)}">
+                        Chưa có dữ liệu để vẽ biểu đồ.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Hiệu suất theo sprint</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sprint</th>
+                        <th>Thành viên</th>
+                        <th>Tổng</th>
+                        <th>Hoàn thành</th>
+                        <th>Thất bại</th>
+                        <th>Đang làm</th>
+                        <th>Chờ duyệt</th>
+                        <th>Chờ xử lý</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${sprintPerformance == null or #lists.isEmpty(sprintPerformance)}">
+                        <td colspan="8">Chưa có dữ liệu theo sprint.</td>
+                    </tr>
+                    <tr th:each="m : ${sprintPerformance}">
+                        <td th:text="${m.sprintName ?: ('Sprint #' + m.sprintId)}">Sprint</td>
+                        <td th:text="${m.studentName + ' (' + m.studentCode + ')'}">Tên</td>
+                        <td th:text="${m.totalTasks}">0</td>
+                        <td th:text="${m.doneTasks}">0</td>
+                        <td th:text="${m.failedTasks}">0</td>
+                        <td th:text="${m.inProgressTasks}">0</td>
+                        <td th:text="${m.submittedTasks}">0</td>
+                        <td th:text="${m.todoTasks}">0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Lịch sử task</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Sprint</th>
+                        <th>Tên task</th>
+                        <th>Assignee</th>
+                        <th>Reviewer</th>
+                        <th>Point/Giờ</th>
+                        <th>Trạng thái</th>
+                        <th>Bắt đầu</th>
+                        <th>Deadline dự kiến</th>
+                        <th>Kết thúc</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${taskHistory == null or #lists.isEmpty(taskHistory)}">
+                        <td colspan="10">Chưa có task nào trong project.</td>
+                    </tr>
+                    <tr th:each="t : ${taskHistory}">
+                        <td th:text="${t.taskId}">1</td>
+                        <td th:text="${t.sprintName ?: ('Sprint #' + t.sprintId)}">Sprint</td>
+                        <td>
+                            <div th:text="${t.taskName}">Task</div>
+                            <div class="muted" th:if="${t.description != null and !#strings.isEmpty(t.description)}" th:text="${t.description}"></div>
+                        </td>
+                        <td th:text="${t.assigneeName + ' (' + t.assigneeCode + ')'}">A</td>
+                        <td th:text="${t.reviewerName ?: 'Chưa gán'}">R</td>
+                        <td th:text="${t.estimatedPoints + ' point / ' + #numbers.formatDecimal(t.estimatedHours, 1, 1) + 'h'}">0</td>
+                        <td>
+                            <span th:if="${t.status == 0}" class="badge status-todo">Chờ xử lý</span>
+                            <span th:if="${t.status == 1}" class="badge status-progress">Đang xây dựng</span>
+                            <span th:if="${t.status == 2}" class="badge status-submitted">Chờ kiểm tra</span>
+                            <span th:if="${t.status == 3}" class="badge status-done">Hoàn thành</span>
+                            <span th:if="${t.status == 4}" class="badge status-rejected">Trả lại</span>
+                            <span th:if="${t.status == 5}" class="badge status-failed">Thất bại sprint</span>
+                        </td>
+                        <td th:text="${t.actualStartTime != null ? #temporals.format(t.actualStartTime, 'dd/MM/yyyy HH:mm') : '-'}">-</td>
+                        <td th:text="${t.expectedEndTime != null ? #temporals.format(t.expectedEndTime, 'dd/MM/yyyy HH:mm') : '-'}">-</td>
+                        <td th:text="${t.actualEndTime != null ? #temporals.format(t.actualEndTime, 'dd/MM/yyyy HH:mm') : '-'}">-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>

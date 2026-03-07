@@ -3,217 +3,129 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Thong bao nhom</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #f6f8fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; }
-        .sidebar { width: 260px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; }
-        .sidebar-logo { font-size: 22px; font-weight: bold; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid rgba(255,255,255,0.2); }
-        .nav-link { display: block; padding: 12px 15px; color: white; text-decoration: none; border-radius: 6px; background: rgba(255,255,255,0.25); }
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .header { background: white; padding: 15px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
-        .header-left { font-size: 24px; font-weight: 600; color: #333; }
-        .header-actions { display: flex; align-items: center; gap: 10px; }
-        .notify-btn { text-decoration: none; background: #f0f4ff; border: 1px solid #c9d5ff; color: #27408b; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; }
-        .notify-btn.disabled { background: #f5f5f5; border-color: #ddd; color: #999; pointer-events: none; }
-        .user-info { display: flex; align-items: center; gap: 10px; }
-        .user-avatar img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-        .user-text .user-name { font-size: 14px; font-weight: 600; color: #333; }
-        .user-text .user-role { font-size: 12px; color: #999; }
-        .logout-btn { background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
-        .content { flex: 1; overflow-y: auto; padding: 30px; }
-        .section { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; padding: 25px; }
-        .section-title { font-size: 20px; font-weight: 600; color: #333; margin-bottom: 15px; }
-        .request-list { list-style: none; margin: 0; padding: 0; }
-        .request-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid #eee; padding: 12px 0; }
-        .request-item:last-child { border-bottom: none; }
-        .request-text { font-size: 14px; color: #333; }
-        .request-sub { display: block; margin-top: 4px; color: #777; font-size: 12px; }
-        .status-badge { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
-        .status-pending { background: #fff4d6; color: #8a6d00; }
-        .status-accepted { background: #d4efdf; color: #186a3b; }
-        .status-rejected { background: #fadbd8; color: #c0392b; }
-        .request-actions { display: flex; gap: 8px; }
-        .btn { border: none; border-radius: 4px; padding: 7px 12px; font-size: 13px; cursor: pointer; color: #fff; }
-        .btn-approve { background: #27ae60; }
-        .btn-reject { background: #e74c3c; }
-        .btn-disabled { background: #bdc3c7; cursor: not-allowed; }
-        .hint { font-size: 13px; color: #666; }
-        .alert { padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
-        .alert-error { background: #fadbd8; color: #c0392b; border: 1px solid #e74c3c; }
-        .alert-success { background: #d4efdf; color: #186a3b; border: 1px solid #27ae60; }
-    </style>
+    <title>Thông báo nhóm</title>
+    <link rel="stylesheet" href="/student.css" />
 </head>
 
-<body>
-    <div class="sidebar">
-        <div class="sidebar-logo" th:text="${className} ?: 'PMS'">PMS</div>
-        <a href="/student/group/list" class="nav-link">Nhom cua toi</a>
-    </div>
+<body class="student-group-page student-group-notifications-page">
+    <div th:replace="~{student/home/header :: sidebar('group')}"></div>
 
     <div class="main-content">
-        <div class="header">
-            <div class="header-left">Thong bao nhom</div>
-            <div class="header-actions">
-                <a th:if="${invitationFeatureEnabled}" class="notify-btn" href="/student/group/notifications">
-                    Thong bao <span th:if="${notificationCount > 0}" th:text="'(' + ${notificationCount} + ')'">(0)</span>
-                </a>
-                <span th:unless="${invitationFeatureEnabled}" class="notify-btn disabled">Thong bao (chua bat)</span>
-                <div class="user-info">
-                    <div class="user-avatar"><img src="/img/user.png" alt="Avatar" /></div>
-                    <div class="user-text">
-                        <div class="user-name" th:text="${studentName} ?: 'Hoc sinh'">Hoc sinh</div>
-                        <div class="user-role" th:text="${userRole} ?: 'Hoc sinh'">Hoc sinh</div>
-                    </div>
-                </div>
-                <form action="/acc/logout" method="get"><button type="submit" class="logout-btn">Dang xuat</button></form>
-            </div>
-        </div>
+        <div th:replace="~{student/home/header :: topbar('Thông báo nhóm')}"></div>
 
         <div class="content">
             <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
             <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-            <div class="alert alert-success" th:if="${invitationFeatureEnabled}">
-                Day la trang xu ly va luu lich su loi moi/yeu cau. Ban se thay ca cac thong bao da xu ly.
-            </div>
             <div th:unless="${invitationFeatureEnabled}" class="alert alert-error">
-                CSDL chua co bang <strong>Group_Invitations</strong>, hien chua xu ly duoc thong bao moi nhom.
+                CSDL chưa có bảng <strong>Group_Invitations</strong>, hiện chưa xử lý được thông báo mời nhóm.
             </div>
 
             <div class="section" th:if="${invitationFeatureEnabled}">
-                <div class="section-title">Loi moi ban nhan duoc (ke ca lich su)</div>
-                <ul class="request-list" th:if="${incomingInvites != null and incomingInvites.size() > 0}">
-                    <li class="request-item" th:each="inv : ${incomingInvites}">
+                <div class="section-title">Tất cả thông báo</div>
+                <ul class="request-list" th:if="${notifications != null and notifications.size() > 0}">
+                    <li class="request-item" th:each="item : ${notifications}">
                         <div class="request-text">
-                            Ban duoc <strong th:text="${inv.invitedByName}">Nguoi moi</strong>
-                            (<span th:text="${inv.invitedByCode}">HE000000</span>)
-                            moi vao nhom <strong th:text="${inv.groupName}">Ten nhom</strong>.
-                            <span class="status-badge status-pending" th:if="${inv.status == 'PENDING'}">Dang cho</span>
-                            <span class="status-badge status-accepted" th:if="${inv.status == 'ACCEPTED'}">Da chap nhan</span>
-                            <span class="status-badge status-rejected" th:if="${inv.status == 'REJECTED'}">Da tu choi</span>
+                            <span class="notice-type notice-type-received" th:if="${item.notificationType == 'RECEIVED_INVITE'}">Lời mời nhận được</span>
+                            <span class="notice-type notice-type-review" th:if="${item.notificationType == 'LEADER_REVIEW'}">Cần duyệt</span>
+                            <span class="notice-type notice-type-sent" th:if="${item.notificationType == 'SENT_REQUEST'}">Đã gửi</span>
+
+                            <span th:if="${item.notificationType == 'RECEIVED_INVITE'}">
+                                Bạn được <strong th:text="${item.invitation.invitedByName}">Người mời</strong>
+                                (<span th:text="${item.invitation.invitedByCode}">HE000000</span>)
+                                mời vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>.
+                            </span>
+
+                            <span th:if="${item.notificationType == 'LEADER_REVIEW' and item.invitation.studentId == item.invitation.invitedByStudentId}">
+                                Yêu cầu tham gia nhóm từ <strong th:text="${item.invitation.studentName}">Sinh viên</strong>
+                                (<span th:text="${item.invitation.studentCode}">HE000000</span>)
+                                vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>.
+                            </span>
+                            <span th:if="${item.notificationType == 'LEADER_REVIEW' and item.invitation.studentId != item.invitation.invitedByStudentId}">
+                                Đề xuất mời <strong th:text="${item.invitation.studentName}">Sinh viên</strong>
+                                (<span th:text="${item.invitation.studentCode}">HE000000</span>)
+                                vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>;
+                                gửi bởi <strong th:text="${item.invitation.invitedByName}">Người gửi</strong>
+                                (<span th:text="${item.invitation.invitedByCode}">HE000000</span>).
+                            </span>
+
+                            <span th:if="${item.notificationType == 'SENT_REQUEST' and item.invitation.studentId == item.invitation.invitedByStudentId}">
+                                Bạn đã gửi yêu cầu vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>.
+                            </span>
+                            <span th:if="${item.notificationType == 'SENT_REQUEST' and item.invitation.studentId != item.invitation.invitedByStudentId}">
+                                Bạn đã gửi yêu cầu mời <strong th:text="${item.invitation.studentName}">Sinh viên</strong>
+                                (<span th:text="${item.invitation.studentCode}">HE000000</span>)
+                                vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>.
+                            </span>
+
+                            <span class="status-badge status-pending" th:if="${item.invitation.status == 'PENDING'}">Đang chờ</span>
+                            <span class="status-badge status-accepted" th:if="${item.invitation.status == 'ACCEPTED'}">Đã chấp nhận</span>
+                            <span class="status-badge status-rejected" th:if="${item.invitation.status == 'REJECTED'}">Đã từ chối</span>
+
                             <span class="request-sub">
-                                Gui luc: <span th:text="${inv.invitedDate != null ? #temporals.format(inv.invitedDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
-                                <span th:if="${inv.respondedDate != null}">
-                                    | Xu ly luc: <span th:text="${#temporals.format(inv.respondedDate, 'dd/MM/yyyy HH:mm')}">-</span>
+                                Gửi lúc:
+                                <span th:text="${item.invitation.invitedDate != null ? #temporals.format(item.invitation.invitedDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                <span th:if="${item.invitation.respondedDate != null}">
+                                    | Xử lý lúc:
+                                    <span th:text="${#temporals.format(item.invitation.respondedDate, 'dd/MM/yyyy HH:mm')}">-</span>
                                 </span>
                             </span>
                         </div>
-                        <div class="request-actions" th:if="${inv.status == 'PENDING'}">
-                            <form method="post" th:action="@{/student/group/{id}/invite/{invId}/respond(id=${inv.groupId},invId=${inv.invitationId})}">
+
+                        <div class="request-actions"
+                            th:if="${item.notificationType == 'RECEIVED_INVITE' and item.invitation.status == 'PENDING'}">
+                            <form method="post"
+                                th:action="@{/student/group/{id}/invite/{invId}/respond(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
                                 <input type="hidden" name="action" value="accept" />
-                                <button class="btn btn-approve" type="submit">Dong y</button>
+                                <button class="btn btn-approve" type="submit">Đồng ý</button>
                             </form>
-                            <form method="post" th:action="@{/student/group/{id}/invite/{invId}/respond(id=${inv.groupId},invId=${inv.invitationId})}">
+                            <form method="post"
+                                th:action="@{/student/group/{id}/invite/{invId}/respond(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
                                 <input type="hidden" name="action" value="reject" />
-                                <button class="btn btn-reject" type="submit">Tu choi</button>
+                                <button class="btn btn-reject" type="submit">Từ chối</button>
                             </form>
                         </div>
-                        <div class="request-actions" th:if="${inv.status != 'PENDING'}">
-                            <button class="btn btn-disabled" type="button" disabled>Da xu ly</button>
-                        </div>
-                    </li>
-                </ul>
-                <div class="hint" th:if="${incomingInvites == null or incomingInvites.size() == 0}">
-                    Chua co thong bao loi moi nao.
-                </div>
-            </div>
 
-            <div class="section" th:if="${invitationFeatureEnabled}">
-                <div class="section-title">Yeu cau ban can duyet (ke ca lich su)</div>
-                <ul class="request-list" th:if="${leaderRequests != null and leaderRequests.size() > 0}">
-                    <li class="request-item" th:each="req : ${leaderRequests}">
-                        <div class="request-text" th:if="${req.studentId == req.invitedByStudentId}">
-                            Yeu cau tham gia nhom tu <strong th:text="${req.studentName}">Sinh vien</strong>
-                            (<span th:text="${req.studentCode}">HE000000</span>)
-                            vao nhom <strong th:text="${req.groupName}">Ten nhom</strong>.
-                            <span class="status-badge status-pending" th:if="${req.status == 'PENDING'}">Dang cho</span>
-                            <span class="status-badge status-accepted" th:if="${req.status == 'ACCEPTED'}">Da duyet</span>
-                            <span class="status-badge status-rejected" th:if="${req.status == 'REJECTED'}">Da tu choi</span>
-                            <span class="request-sub">
-                                Gui luc: <span th:text="${req.invitedDate != null ? #temporals.format(req.invitedDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
-                                <span th:if="${req.respondedDate != null}">
-                                    | Xu ly luc: <span th:text="${#temporals.format(req.respondedDate, 'dd/MM/yyyy HH:mm')}">-</span>
-                                </span>
-                            </span>
-                        </div>
-                        <div class="request-text" th:if="${req.studentId != req.invitedByStudentId}">
-                            De xuat moi <strong th:text="${req.studentName}">Sinh vien</strong>
-                            (<span th:text="${req.studentCode}">HE000000</span>)
-                            vao nhom <strong th:text="${req.groupName}">Ten nhom</strong>;
-                            gui boi <strong th:text="${req.invitedByName}">Nguoi gui</strong>
-                            (<span th:text="${req.invitedByCode}">HE000000</span>).
-                            <span class="status-badge status-pending" th:if="${req.status == 'PENDING'}">Dang cho</span>
-                            <span class="status-badge status-accepted" th:if="${req.status == 'ACCEPTED'}">Da duyet</span>
-                            <span class="status-badge status-rejected" th:if="${req.status == 'REJECTED'}">Da tu choi</span>
-                            <span class="request-sub">
-                                Gui luc: <span th:text="${req.invitedDate != null ? #temporals.format(req.invitedDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
-                                <span th:if="${req.respondedDate != null}">
-                                    | Xu ly luc: <span th:text="${#temporals.format(req.respondedDate, 'dd/MM/yyyy HH:mm')}">-</span>
-                                </span>
-                            </span>
-                        </div>
-                        <div class="request-actions" th:if="${req.status == 'PENDING'}">
-                            <form method="post" th:action="@{/student/group/{id}/invite/{invId}/review(id=${req.groupId},invId=${req.invitationId})}">
+                        <div class="request-actions"
+                            th:if="${item.notificationType == 'LEADER_REVIEW' and item.invitation.status == 'PENDING'}">
+                            <form method="post"
+                                th:action="@{/student/group/{id}/invite/{invId}/review(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
                                 <input type="hidden" name="action" value="approve" />
-                                <button class="btn btn-approve" type="submit">Dong y</button>
+                                <button class="btn btn-approve" type="submit">Đồng ý</button>
                             </form>
-                            <form method="post" th:action="@{/student/group/{id}/invite/{invId}/review(id=${req.groupId},invId=${req.invitationId})}">
+                            <form method="post"
+                                th:action="@{/student/group/{id}/invite/{invId}/review(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
                                 <input type="hidden" name="action" value="reject" />
-                                <button class="btn btn-reject" type="submit">Tu choi</button>
+                                <button class="btn btn-reject" type="submit">Từ chối</button>
                             </form>
                         </div>
-                        <div class="request-actions" th:if="${req.status != 'PENDING'}">
-                            <button class="btn btn-disabled" type="button" disabled>Da xu ly</button>
-                        </div>
-                    </li>
-                </ul>
-                <div class="hint" th:if="${leaderRequests == null or leaderRequests.size() == 0}">
-                    Chua co thong bao duyet nao.
-                </div>
-            </div>
 
-            <div class="section" th:if="${invitationFeatureEnabled}">
-                <div class="section-title">Yeu cau ban da gui (ke ca lich su)</div>
-                <ul class="request-list" th:if="${sentRequests != null and sentRequests.size() > 0}">
-                    <li class="request-item" th:each="req : ${sentRequests}">
-                        <div class="request-text" th:if="${req.studentId == req.invitedByStudentId}">
-                            Ban da gui yeu cau vao nhom <strong th:text="${req.groupName}">Ten nhom</strong>.
-                            <span class="status-badge status-pending" th:if="${req.status == 'PENDING'}">Dang cho duyet</span>
-                            <span class="status-badge status-accepted" th:if="${req.status == 'ACCEPTED'}">Da duoc chap nhan</span>
-                            <span class="status-badge status-rejected" th:if="${req.status == 'REJECTED'}">Da bi tu choi</span>
-                            <span class="request-sub">
-                                Gui luc: <span th:text="${req.invitedDate != null ? #temporals.format(req.invitedDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
-                                <span th:if="${req.respondedDate != null}">
-                                    | Xu ly luc: <span th:text="${#temporals.format(req.respondedDate, 'dd/MM/yyyy HH:mm')}">-</span>
-                                </span>
-                            </span>
+                        <div class="request-actions" th:if="${item.notificationType == 'SENT_REQUEST'}">
+                            <button class="btn btn-disabled" type="button" disabled th:if="${item.invitation.status == 'PENDING'}">Đang chờ</button>
+                            <button class="btn btn-disabled" type="button" disabled th:if="${item.invitation.status != 'PENDING'}">Đã xử lý</button>
                         </div>
-                        <div class="request-text" th:if="${req.studentId != req.invitedByStudentId}">
-                            Ban da gui yeu cau moi <strong th:text="${req.studentName}">Sinh vien</strong>
-                            (<span th:text="${req.studentCode}">HE000000</span>)
-                            vao nhom <strong th:text="${req.groupName}">Ten nhom</strong>.
-                            <span class="status-badge status-pending" th:if="${req.status == 'PENDING'}">Dang cho xu ly</span>
-                            <span class="status-badge status-accepted" th:if="${req.status == 'ACCEPTED'}">Da duoc chap nhan</span>
-                            <span class="status-badge status-rejected" th:if="${req.status == 'REJECTED'}">Da bi tu choi</span>
-                            <span class="request-sub">
-                                Gui luc: <span th:text="${req.invitedDate != null ? #temporals.format(req.invitedDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
-                                <span th:if="${req.respondedDate != null}">
-                                    | Xu ly luc: <span th:text="${#temporals.format(req.respondedDate, 'dd/MM/yyyy HH:mm')}">-</span>
-                                </span>
-                            </span>
-                        </div>
-                        <div class="request-actions">
-                            <button class="btn btn-disabled" type="button" disabled th:if="${req.status == 'PENDING'}">Dang cho</button>
-                            <button class="btn btn-disabled" type="button" disabled th:if="${req.status != 'PENDING'}">Da xu ly</button>
+
+                        <div class="request-actions"
+                            th:if="${(item.notificationType == 'RECEIVED_INVITE' or item.notificationType == 'LEADER_REVIEW') and item.invitation.status != 'PENDING'}">
+                            <button class="btn btn-disabled" type="button" disabled>Đã xử lý</button>
                         </div>
                     </li>
                 </ul>
-                <div class="hint" th:if="${sentRequests == null or sentRequests.size() == 0}">
-                    Ban chua gui yeu cau nao.
+                <div class="hint" th:if="${notifications == null or notifications.size() == 0}">
+                    Chưa có thông báo nào.
+                </div>
+
+                <div class="pagination" th:if="${totalPages > 1}">
+                    <a class="page-btn" th:if="${hasPrev}" th:href="@{/student/group/notifications(page=${prevPage})}">Trang trước</a>
+                    <span class="page-btn disabled" th:unless="${hasPrev}">Trang trước</span>
+                    <span class="page-info">Trang <span th:text="${currentPage}">1</span> / <span th:text="${totalPages}">1</span></span>
+                    <a class="page-btn" th:if="${hasNext}" th:href="@{/student/group/notifications(page=${nextPage})}">Trang sau</a>
+                    <span class="page-btn disabled" th:unless="${hasNext}">Trang sau</span>
                 </div>
             </div>
         </div>
+        <div th:replace="~{student/home/footer :: pageFooter}"></div>
     </div>
 </body>
 
 </html>
+

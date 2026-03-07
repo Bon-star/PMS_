@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Duyệt project</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #f5f6f8;
+            color: #111827;
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 1080px;
+            margin: 26px auto;
+            padding: 0 16px 28px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            gap: 10px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .sub {
+            margin-top: 6px;
+            color: #4b5563;
+            font-size: 14px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            color: #111827;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 9px 13px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: #fff;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+
+        .btn-reject {
+            background: #fff;
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+
+        .alert {
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .project-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .project-title {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .meta {
+            margin-top: 7px;
+            color: #4b5563;
+            font-size: 13px;
+        }
+
+        .desc {
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .link-row {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            font-size: 14px;
+        }
+
+        .link-row a {
+            color: #1d4ed8;
+            text-decoration: none;
+        }
+
+        .approval-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 8px;
+            align-items: end;
+            margin-top: 14px;
+        }
+
+        .reject-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            align-items: end;
+            margin-top: 8px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        input {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-size: 14px;
+        }
+
+        .empty {
+            background: #fff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+            padding: 20px;
+            color: #475569;
+            font-size: 14px;
+        }
+
+        @media (max-width: 860px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .approval-grid,
+            .reject-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="topbar">
+            <div>
+                <h1>Duyệt project học viên</h1>
+                <div class="sub">Xin chào <strong th:text="${lecturerName} ?: 'Giảng viên'">Giảng viên</strong></div>
+            </div>
+            <div class="actions">
+                <a href="/lecturer/home" class="btn">Trang chủ</a>
+                <form action="/acc/logout" method="get">
+                    <button type="submit" class="btn btn-danger">Đăng xuất</button>
+                </form>
+            </div>
+        </div>
+
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+        <div th:if="${pendingProjects == null or #lists.isEmpty(pendingProjects)}" class="empty">
+            Hiện không có project nào đang chờ bạn duyệt.
+        </div>
+
+        <div th:each="p : ${pendingProjects}" class="project-card">
+            <h2 class="project-title" th:text="${#strings.isEmpty(p.projectName) ? 'Chưa đặt tên project' : p.projectName}">Tên project</h2>
+            <div class="meta"
+                th:text="${'Nhóm: ' + p.groupName + ' | Lớp: ' + p.className + ' | Trưởng nhóm: ' + (p.leaderName ?: 'Chưa có')}">
+                Nhóm
+            </div>
+            <div class="meta"
+                th:text="${'Nguồn: ' + p.topicSource + ' | Thời điểm gửi duyệt: ' + (p.submissionDate != null ? #temporals.format(p.submissionDate, 'dd/MM/yyyy HH:mm') : '-')}">
+            </div>
+            <div class="desc" th:text="${#strings.isEmpty(p.description) ? 'Không có mô tả.' : p.description}">Mô tả</div>
+            <div class="link-row">
+                <span>
+                    Mã nguồn:
+                    <a th:if="${!#strings.isEmpty(p.sourceCodeUrl)}" th:href="${p.sourceCodeUrl}" target="_blank">Mở liên kết</a>
+                    <span th:if="${#strings.isEmpty(p.sourceCodeUrl)}">Chưa có</span>
+                </span>
+                <span>
+                    Tài liệu:
+                    <a th:if="${!#strings.isEmpty(p.documentUrl)}" th:href="${p.documentUrl}" target="_blank">Mở liên kết</a>
+                    <span th:if="${#strings.isEmpty(p.documentUrl)}">Chưa có</span>
+                </span>
+            </div>
+
+            <form method="post" th:action="@{/lecturer/projects/{id}/approve(id=${p.projectId})}">
+                <div class="approval-grid">
+                    <div>
+                        <label>Từ ngày</label>
+                        <input type="date" name="startDate" required />
+                    </div>
+                    <div>
+                        <label>Đến ngày</label>
+                        <input type="date" name="endDate" required />
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" type="submit">Duyệt project</button>
+                    </div>
+                </div>
+            </form>
+
+            <form method="post" th:action="@{/lecturer/projects/{id}/reject(id=${p.projectId})}">
+                <div class="reject-grid">
+                    <div>
+                        <label>Lý do từ chối</label>
+                        <input type="text" name="reason" required placeholder="Nhập lý do để học viên cập nhật lại" />
+                    </div>
+                    <div>
+                        <button class="btn btn-reject" type="submit">Từ chối</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

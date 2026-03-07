@@ -3,100 +3,48 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Danh sach nhom</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #f6f8fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; }
-        .sidebar { width: 260px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; }
-        .sidebar-logo { font-size: 22px; font-weight: bold; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid rgba(255,255,255,0.2); }
-        .nav-link { display: block; padding: 12px 15px; color: white; text-decoration: none; border-radius: 6px; background: rgba(255,255,255,0.25); }
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .header { background: white; padding: 15px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
-        .header-left { font-size: 24px; font-weight: 600; color: #333; }
-        .header-actions { display: flex; align-items: center; gap: 10px; }
-        .notify-btn { text-decoration: none; background: #f0f4ff; border: 1px solid #c9d5ff; color: #27408b; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; }
-        .notify-btn.disabled { background: #f5f5f5; border-color: #ddd; color: #999; pointer-events: none; }
-        .user-info { display: flex; align-items: center; gap: 10px; }
-        .user-avatar img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-        .user-text .user-name { font-size: 14px; font-weight: 600; color: #333; }
-        .user-text .user-role { font-size: 12px; color: #999; }
-        .logout-btn { background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
-        .content { flex: 1; overflow-y: auto; padding: 30px; }
-        .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; }
-        .content-title { font-size: 28px; font-weight: 600; color: #333; }
-        .btn-primary { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-block; }
-        .hint { color: #666; font-size: 13px; }
-        .groups-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .group-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s ease; cursor: pointer; }
-        .group-card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0,0,0,0.12); }
-        .group-card a { text-decoration: none; color: inherit; display: block; }
-        .group-name { font-size: 18px; font-weight: 600; color: #333; margin-bottom: 10px; }
-        .group-info { font-size: 13px; color: #666; margin-bottom: 5px; }
-        .empty-state { text-align: center; padding: 60px 20px; }
-        .empty-state-text { font-size: 18px; color: #666; margin-bottom: 30px; }
-        .alert { padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
-        .alert-error { background: #fadbd8; color: #c0392b; border: 1px solid #e74c3c; }
-        .alert-success { background: #d4efdf; color: #186a3b; border: 1px solid #27ae60; }
-    </style>
+    <title>Danh sách nhóm</title>
+    <link rel="stylesheet" href="/student.css" />
 </head>
 
-<body>
-    <div class="sidebar">
-        <div class="sidebar-logo" th:text="${className} ?: 'PMS'">PMS</div>
-        <a href="/student/group/list" class="nav-link">Nhom cua toi</a>
-    </div>
+<body class="student-group-page student-group-list-page">
+    <div th:replace="~{student/home/header :: sidebar('group')}"></div>
 
     <div class="main-content">
-        <div class="header">
-            <div class="header-left">Danh sach nhom</div>
-            <div class="header-actions">
-                <a th:if="${invitationFeatureEnabled}" class="notify-btn" href="/student/group/notifications">
-                    Thong bao <span th:if="${notificationCount > 0}" th:text="'(' + ${notificationCount} + ')'">(0)</span>
-                </a>
-                <span th:unless="${invitationFeatureEnabled}" class="notify-btn disabled">Thong bao (chua bat)</span>
-                <div class="user-info">
-                    <div class="user-avatar"><img src="/img/user.png" alt="Avatar" /></div>
-                    <div class="user-text">
-                        <div class="user-name" th:text="${studentName} ?: 'Hoc sinh'">Hoc sinh</div>
-                        <div class="user-role" th:text="${userRole} ?: 'Hoc sinh'">Hoc sinh</div>
-                    </div>
-                </div>
-                <form action="/acc/logout" method="get"><button type="submit" class="logout-btn">Dang xuat</button></form>
-            </div>
-        </div>
+        <div th:replace="~{student/home/header :: topbar('Danh sách nhóm')}"></div>
 
         <div class="content">
             <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
             <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
             <div th:unless="${invitationFeatureEnabled}" class="alert alert-error">
-                Chuc nang thong bao/moi dang tat vi CSDL chua co bang <strong>Group_Invitations</strong>.
+                Chức năng thông báo/mời đang tắt vì CSDL chưa có bảng <strong>Group_Invitations</strong>.
             </div>
 
             <div class="content-header">
-                <div class="content-title" th:text="${hasActiveGroup} ? 'Nhom cua ban' : 'Nhom co the tham gia'">Danh sach nhom</div>
+                <div class="content-title" th:text="${hasActiveGroup} ? 'Nhóm của bạn' : 'Nhóm có thể tham gia'">Danh sách nhóm</div>
                 <div th:if="${canCreateGroup}">
-                    <a href="/student/group/create" class="btn-primary">+ Tao nhom moi</a>
+                    <a href="/student/group/create" class="btn-primary">+ Tạo nhóm mới</a>
                 </div>
                 <div th:if="${!canCreateGroup}" class="hint">
-                    Ban dang o trong mot nhom nen khong the tao nhom moi.
+                    Bạn đang ở trong một nhóm nên không thể tạo nhóm mới.
                 </div>
             </div>
 
             <div th:if="${groups != null && groups.size() > 0}" class="groups-container">
                 <div th:each="group : ${groups}" class="group-card">
                     <a th:href="@{/student/group/{id}(id=${group.groupId})}">
-                        <div class="group-name" th:text="${group.groupName}">Ten nhom</div>
-                        <div class="group-info"><strong>Nhom truong:</strong> <span th:text="${group.leaderName} ?: 'Chua co'">Ten nhom truong</span></div>
+                        <div class="group-name" th:text="${group.groupName}">Tên nhóm</div>
+                        <div class="group-info"><strong>Nhóm trưởng:</strong> <span th:text="${group.leaderName} ?: 'Chưa có'">Tên nhóm trưởng</span></div>
                         <div class="group-info" th:if="${hasActiveGroup}">
-                            <strong>Vai tro:</strong>
-                            <span th:if="${group.leaderId == studentId}" style="color:#27ae60;font-weight:600;">Nhom truong</span>
-                            <span th:unless="${group.leaderId == studentId}" style="color:#3498db;font-weight:600;">Thanh vien</span>
+                            <strong>Vai trò:</strong>
+                            <span th:if="${group.leaderId == studentId}" style="color:#27ae60;font-weight:600;">Nhóm trưởng</span>
+                            <span th:unless="${group.leaderId == studentId}" style="color:#3498db;font-weight:600;">Thành viên</span>
                         </div>
                         <div class="group-info" th:if="${!hasActiveGroup}">
-                            <strong>Trang thai:</strong>
-                            <span style="color:#3498db;font-weight:600;">Co the tham gia</span>
+                            <strong>Trạng thái:</strong>
+                            <span style="color:#3498db;font-weight:600;">Có thể tham gia</span>
                         </div>
-                        <div class="group-info"><strong>Ngay tao:</strong>
+                        <div class="group-info"><strong>Ngày tạo:</strong>
                             <span th:text="${#temporals.format(group.createdDate, 'dd/MM/yyyy HH:mm')}">01/01/2026 00:00</span>
                         </div>
                     </a>
@@ -104,11 +52,12 @@
             </div>
 
             <div th:if="${groups == null || groups.size() == 0}" class="empty-state">
-                <div class="empty-state-text" th:text="${hasActiveGroup} ? 'Ban chua co nhom nao' : 'Chua co nhom nao dang mo trong lop'">Khong co du lieu</div>
-                <a th:if="${canCreateGroup}" href="/student/group/create" class="btn-primary">Tao nhom dau tien</a>
+                <div class="empty-state-text" th:text="${hasActiveGroup} ? 'Bạn chưa có nhóm nào' : 'Chưa có nhóm nào đang mở trong lớp'">Không có dữ liệu</div>
             </div>
         </div>
+        <div th:replace="~{student/home/footer :: pageFooter}"></div>
     </div>
 </body>
 
 </html>
+

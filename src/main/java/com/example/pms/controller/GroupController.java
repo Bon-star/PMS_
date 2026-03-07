@@ -91,7 +91,7 @@ public class GroupController {
 
         int semesterId = getCurrentSemesterId();
         if (groupRepository.hasActiveGroup(student.getStudentId(), semesterId)) {
-            redirectAttributes.addFlashAttribute("error", "Ban da o trong mot nhom, khong the tao nhom moi.");
+            redirectAttributes.addFlashAttribute("error", "Bạn đã ở trong một nhóm, không thể tạo nhóm mới.");
             return "redirect:/student/group/list";
         }
 
@@ -112,34 +112,34 @@ public class GroupController {
 
         String normalizedGroupName = groupName == null ? "" : groupName.trim();
         if (normalizedGroupName.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "TÃƒÆ’Ã‚Âªn nhÃƒÆ’Ã‚Â³m khÃƒÆ’Ã‚Â´ng Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Â£c Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ trÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœng.");
+            redirectAttributes.addFlashAttribute("error", "Tên nhóm không được để trống.");
             return "redirect:/student/group/create";
         }
 
         int semesterId = getCurrentSemesterId();
         if (groupRepository.hasActiveGroup(student.getStudentId(), semesterId)) {
-            redirectAttributes.addFlashAttribute("error", "Ban da o trong mot nhom, khong the tao nhom moi.");
+            redirectAttributes.addFlashAttribute("error", "Bạn đã ở trong một nhóm, không thể tạo nhóm mới.");
             return "redirect:/student/group/list";
         }
 
         if (student.getClassId() == null) {
-            redirectAttributes.addFlashAttribute("error", "KhÃƒÆ’Ã‚Â´ng tÃƒÆ’Ã‚Â¬m thÃƒÂ¡Ã‚ÂºÃ‚Â¥y lÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºp cÃƒÂ¡Ã‚Â»Ã‚Â§a bÃƒÂ¡Ã‚ÂºÃ‚Â¡n Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã†â€™ tÃƒÂ¡Ã‚ÂºÃ‚Â¡o nhÃƒÆ’Ã‚Â³m.");
+            redirectAttributes.addFlashAttribute("error", "Không tìm thấy lớp của bạn để tạo nhóm.");
             return "redirect:/student/group/list";
         }
 
         int groupId = groupRepository.create(normalizedGroupName, student.getClassId(), semesterId, student.getStudentId());
         if (groupId <= 0) {
-            redirectAttributes.addFlashAttribute("error", "TÃƒÂ¡Ã‚ÂºÃ‚Â¡o nhÃƒÆ’Ã‚Â³m thÃƒÂ¡Ã‚ÂºÃ‚Â¥t bÃƒÂ¡Ã‚ÂºÃ‚Â¡i.");
+            redirectAttributes.addFlashAttribute("error", "Tạo nhóm thất bại.");
             return "redirect:/student/group/create";
         }
 
         int addResult = groupMemberRepository.addMember(groupId, student.getStudentId());
         if (addResult <= 0) {
-            redirectAttributes.addFlashAttribute("error", "TÃƒÂ¡Ã‚ÂºÃ‚Â¡o nhÃƒÆ’Ã‚Â³m thÃƒÆ’Ã‚Â nh cÃƒÆ’Ã‚Â´ng nhÃƒâ€ Ã‚Â°ng khÃƒÆ’Ã‚Â´ng thÃƒÂ¡Ã‚Â»Ã†â€™ thÃƒÆ’Ã‚Âªm trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã…Â¸ng nhÃƒÆ’Ã‚Â³m.");
+            redirectAttributes.addFlashAttribute("error", "Tạo nhóm thành công nhưng không thể thêm trưởng nhóm.");
             return "redirect:/student/group/list";
         }
 
-        redirectAttributes.addFlashAttribute("success", "TÃƒÂ¡Ã‚ÂºÃ‚Â¡o nhÃƒÆ’Ã‚Â³m thÃƒÆ’Ã‚Â nh cÃƒÆ’Ã‚Â´ng.");
+        redirectAttributes.addFlashAttribute("success", "Tạo nhóm thành công.");
         return "redirect:/student/group/" + groupId;
     }
 
@@ -155,12 +155,12 @@ public class GroupController {
 
         Group group = groupRepository.findById(groupId);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Nhom khong ton tai.");
+            redirectAttributes.addFlashAttribute("error", "Nhóm không tồn tại.");
             return "redirect:/student/group/list";
         }
 
         if (student.getClassId() == null || student.getClassId() != group.getClassId()) {
-            redirectAttributes.addFlashAttribute("error", "Ban chi duoc xem nhom trong lop cua minh.");
+            redirectAttributes.addFlashAttribute("error", "Bạn chỉ được xem nhóm trong lớp của mình.");
             return "redirect:/student/group/list";
         }
 
@@ -267,22 +267,22 @@ public class GroupController {
 
         Group group = groupRepository.findById(groupId);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃƒÆ’Ã‚Â³m khÃƒÆ’Ã‚Â´ng tÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n tÃƒÂ¡Ã‚ÂºÃ‚Â¡i.");
+            redirectAttributes.addFlashAttribute("error", "Nhóm không tồn tại.");
             return "redirect:/student/group/list";
         }
 
         if (!groupMemberRepository.isMember(groupId, me.getStudentId())) {
-            redirectAttributes.addFlashAttribute("error", "Ban khong phai thanh vien nhom nay.");
+            redirectAttributes.addFlashAttribute("error", "Bạn không phải thành viên nhóm này.");
             return "redirect:/student/group/list";
         }
         if (groupMemberRepository.countMembers(groupId) >= MAX_GROUP_MEMBERS) {
-            redirectAttributes.addFlashAttribute("error", "Nhom da du 4 thanh vien, khong the gui them loi moi.");
+            redirectAttributes.addFlashAttribute("error", "Nhóm đã đủ 4 thành viên, không thể gửi thêm lời mời.");
             return "redirect:/student/group/" + groupId;
         }
 
         String normalizedRef = studentRef == null ? "" : studentRef.trim();
         if (normalizedRef.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Vui lÃƒÆ’Ã‚Â²ng nhÃƒÂ¡Ã‚ÂºÃ‚Â­p MSSV hoÃƒÂ¡Ã‚ÂºÃ‚Â·c Student ID cÃƒÂ¡Ã‚ÂºÃ‚Â§n mÃƒÂ¡Ã‚Â»Ã‚Âi.");
+            redirectAttributes.addFlashAttribute("error", "Vui lòng nhập MSSV hoặc mã sinh viên cần mời.");
             return "redirect:/student/group/" + groupId;
         }
 
@@ -294,59 +294,59 @@ public class GroupController {
         }
 
         if (targetStudent == null) {
-            redirectAttributes.addFlashAttribute("error", "Khong tim thay sinh vien voi MSSV/ID da nhap.");
+            redirectAttributes.addFlashAttribute("error", "Không tìm thấy sinh viên với MSSV/ID đã nhập.");
             return "redirect:/student/group/" + groupId;
         }
 
         int targetId = targetStudent.getStudentId();
         if (!studentRepository.isStudentActivated(targetId)) {
             redirectAttributes.addFlashAttribute("error",
-                    "Sinh vien chua kich hoat tai khoan nen chua the duoc moi vao nhom.");
+                    "Sinh viên chưa kích hoạt tài khoản nên chưa thể được mời vào nhóm.");
             return "redirect:/student/group/" + groupId;
         }
         if (targetStudent.getClassId() == null || targetStudent.getClassId() != group.getClassId()) {
-            redirectAttributes.addFlashAttribute("error", "ChÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Â£c mÃƒÂ¡Ã‚Â»Ã‚Âi sinh viÃƒÆ’Ã‚Âªn cÃƒÆ’Ã‚Â¹ng lÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºp.");
+            redirectAttributes.addFlashAttribute("error", "Chỉ được mời sinh viên cùng lớp.");
             return "redirect:/student/group/" + groupId;
         }
 
         if (targetId == me.getStudentId()) {
-            redirectAttributes.addFlashAttribute("error", "KhÃƒÆ’Ã‚Â´ng thÃƒÂ¡Ã‚Â»Ã†â€™ mÃƒÂ¡Ã‚Â»Ã‚Âi chÃƒÆ’Ã‚Â­nh bÃƒÂ¡Ã‚ÂºÃ‚Â¡n vÃƒÆ’Ã‚Â o nhÃƒÆ’Ã‚Â³m.");
+            redirectAttributes.addFlashAttribute("error", "Không thể mời chính bạn vào nhóm.");
             return "redirect:/student/group/" + groupId;
         }
 
         if (groupMemberRepository.isMember(groupId, targetId)) {
-            redirectAttributes.addFlashAttribute("error", "Sinh vien nay da o trong nhom.");
+            redirectAttributes.addFlashAttribute("error", "Sinh viên này đã ở trong nhóm.");
             return "redirect:/student/group/" + groupId;
         }
 
         if (groupRepository.hasActiveGroup(targetId, group.getSemesterId())) {
-            redirectAttributes.addFlashAttribute("error", "Sinh vien nay da o trong nhom khac.");
+            redirectAttributes.addFlashAttribute("error", "Sinh viên này đã ở trong nhóm khác.");
             return "redirect:/student/group/" + groupId;
         }
 
         if (groupInvitationRepository.existsPendingByGroupAndStudent(groupId, targetId)) {
-            redirectAttributes.addFlashAttribute("error", "Sinh vien nay da co yeu cau moi dang cho xu ly.");
+            redirectAttributes.addFlashAttribute("error", "Sinh viên này đã có yêu cầu mời đang chờ xử lý.");
             return "redirect:/student/group/" + groupId;
         }
 
         int invitationId = groupInvitationRepository.create(groupId, targetId, me.getStudentId());
         if (invitationId == -2) {
             redirectAttributes.addFlashAttribute("error",
-                    "CSDL chÃƒâ€ Ã‚Â°a cÃƒÆ’Ã‚Â³ bÃƒÂ¡Ã‚ÂºÃ‚Â£ng Group_Invitations. Vui lÃƒÆ’Ã‚Â²ng chÃƒÂ¡Ã‚ÂºÃ‚Â¡y script cÃƒÂ¡Ã‚ÂºÃ‚Â­p nhÃƒÂ¡Ã‚ÂºÃ‚Â­t DB trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºc.");
+                    "CSDL chưa có bảng Group_Invitations. Vui lòng chạy script cập nhật DB trước.");
             return "redirect:/student/group/" + groupId;
         }
         if (invitationId <= 0) {
-            redirectAttributes.addFlashAttribute("error", "GÃƒÂ¡Ã‚Â»Ã‚Â­i yÃƒÆ’Ã‚Âªu cÃƒÂ¡Ã‚ÂºÃ‚Â§u mÃƒÂ¡Ã‚Â»Ã‚Âi thÃƒÂ¡Ã‚ÂºÃ‚Â¥t bÃƒÂ¡Ã‚ÂºÃ‚Â¡i.");
+            redirectAttributes.addFlashAttribute("error", "Gửi yêu cầu mời thất bại.");
             return "redirect:/student/group/" + groupId;
         }
 
         boolean isLeader = group.getLeaderId() != null && group.getLeaderId() == me.getStudentId();
         if (isLeader) {
             redirectAttributes.addFlashAttribute("success",
-                    "Da gui loi moi toi sinh vien. Sinh vien can xac nhan truoc khi vao nhom.");
+                    "Đã gửi lời mời tới sinh viên. Sinh viên cần xác nhận trước khi vào nhóm.");
         } else {
             redirectAttributes.addFlashAttribute("success",
-                    "Da gui de xuat moi toi nhom truong. Chi vao nhom sau khi duoc nhom truong duyet.");
+                    "Đã gửi đề xuất mời tới nhóm trưởng. Chỉ vào nhóm sau khi được nhóm trưởng duyệt.");
         }
         return "redirect:/student/group/" + groupId;
     }
@@ -362,46 +362,46 @@ public class GroupController {
 
         Group group = groupRepository.findById(groupId);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Nhom khong ton tai.");
+            redirectAttributes.addFlashAttribute("error", "Nhóm không tồn tại.");
             return "redirect:/student/group/list";
         }
 
         if (me.getClassId() == null || me.getClassId() != group.getClassId()) {
-            redirectAttributes.addFlashAttribute("error", "Chi duoc gui yeu cau vao nhom trong cung lop.");
+            redirectAttributes.addFlashAttribute("error", "Chỉ được gửi yêu cầu vào nhóm trong cùng lớp.");
             return "redirect:/student/group/list";
         }
 
         if (groupMemberRepository.isMember(groupId, me.getStudentId())) {
-            redirectAttributes.addFlashAttribute("error", "Ban da la thanh vien cua nhom nay.");
+            redirectAttributes.addFlashAttribute("error", "Bạn đã là thành viên của nhóm này.");
             return "redirect:/student/group/" + groupId;
         }
 
         if (groupRepository.hasActiveGroup(me.getStudentId(), group.getSemesterId())) {
-            redirectAttributes.addFlashAttribute("error", "Ban dang o trong mot nhom khac.");
+            redirectAttributes.addFlashAttribute("error", "Bạn đang ở trong một nhóm khác.");
             return "redirect:/student/group/list";
         }
         if (groupMemberRepository.countMembers(groupId) >= MAX_GROUP_MEMBERS) {
-            redirectAttributes.addFlashAttribute("error", "Nhom da du 4 thanh vien, khong the gui yeu cau tham gia.");
+            redirectAttributes.addFlashAttribute("error", "Nhóm đã đủ 4 thành viên, không thể gửi yêu cầu tham gia.");
             return "redirect:/student/group/" + groupId;
         }
 
         if (!groupInvitationRepository.isInvitationTableAvailable()) {
-            redirectAttributes.addFlashAttribute("error", "Chuc nang yeu cau tham gia nhom chua duoc bat.");
+            redirectAttributes.addFlashAttribute("error", "Chức năng yêu cầu tham gia nhóm chưa được bật.");
             return "redirect:/student/group/" + groupId;
         }
 
         if (groupInvitationRepository.existsPendingByGroupAndStudent(groupId, me.getStudentId())) {
-            redirectAttributes.addFlashAttribute("error", "Ban da gui yeu cau vao nhom nay va dang cho duyet.");
+            redirectAttributes.addFlashAttribute("error", "Bạn đã gửi yêu cầu vào nhóm này và đang chờ duyệt.");
             return "redirect:/student/group/" + groupId;
         }
 
         int invitationId = groupInvitationRepository.create(groupId, me.getStudentId(), me.getStudentId());
         if (invitationId <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Gui yeu cau tham gia nhom that bai.");
+            redirectAttributes.addFlashAttribute("error", "Gửi yêu cầu tham gia nhóm thất bại.");
             return "redirect:/student/group/" + groupId;
         }
 
-        redirectAttributes.addFlashAttribute("success", "Da gui yeu cau tham gia nhom. Vui long cho nhom truong duyet.");
+        redirectAttributes.addFlashAttribute("success", "Đã gửi yêu cầu tham gia nhóm. Vui lòng chờ nhóm trưởng duyệt.");
         return "redirect:/student/group/" + groupId;
     }
 
@@ -418,60 +418,60 @@ public class GroupController {
 
         Group group = groupRepository.findById(groupId);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃƒÆ’Ã‚Â³m khÃƒÆ’Ã‚Â´ng tÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n tÃƒÂ¡Ã‚ÂºÃ‚Â¡i.");
+            redirectAttributes.addFlashAttribute("error", "Nhóm không tồn tại.");
             return "redirect:/student/group/list";
         }
 
         boolean isLeader = group.getLeaderId() != null && group.getLeaderId() == me.getStudentId();
         if (!isLeader) {
-            redirectAttributes.addFlashAttribute("error", "ChÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° nhÃƒÆ’Ã‚Â³m trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã…Â¸ng mÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Â£c duyÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡t yÃƒÆ’Ã‚Âªu cÃƒÂ¡Ã‚ÂºÃ‚Â§u.");
+            redirectAttributes.addFlashAttribute("error", "Chỉ nhóm trưởng mới được duyệt yêu cầu.");
             return "redirect:/student/group/" + groupId;
         }
 
         GroupInvitation invitation = groupInvitationRepository.findById(invitationId);
         if (invitation == null || invitation.getGroupId() != groupId) {
-            redirectAttributes.addFlashAttribute("error", "YÃƒÆ’Ã‚Âªu cÃƒÂ¡Ã‚ÂºÃ‚Â§u mÃƒÂ¡Ã‚Â»Ã‚Âi khÃƒÆ’Ã‚Â´ng hÃƒÂ¡Ã‚Â»Ã‚Â£p lÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡.");
+            redirectAttributes.addFlashAttribute("error", "Yêu cầu mời không hợp lệ.");
             return "redirect:/student/group/" + groupId;
         }
 
         if (!"PENDING".equalsIgnoreCase(invitation.getStatus())) {
-            redirectAttributes.addFlashAttribute("error", "Yeu cau moi da duoc xu ly.");
+            redirectAttributes.addFlashAttribute("error", "Yêu cầu mời đã được xử lý.");
             return "redirect:/student/group/" + groupId;
         }
 
-        // ChÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° duyÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡t cÃƒÆ’Ã‚Â¡c Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â xuÃƒÂ¡Ã‚ÂºÃ‚Â¥t do thÃƒÆ’Ã‚Â nh viÃƒÆ’Ã‚Âªn gÃƒÂ¡Ã‚Â»Ã‚Â­i lÃƒÆ’Ã‚Âªn nhÃƒÆ’Ã‚Â³m trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã…Â¸ng
+        // Chỉ duyệt các đề xuất do thành viên gửi lên nhóm trưởng
         if (invitation.getInvitedByStudentId() == me.getStudentId()) {
-            redirectAttributes.addFlashAttribute("error", "YÃƒÆ’Ã‚Âªu cÃƒÂ¡Ã‚ÂºÃ‚Â§u nÃƒÆ’Ã‚Â y Ãƒâ€žÃ¢â‚¬Ëœang chÃƒÂ¡Ã‚Â»Ã‚Â sinh viÃƒÆ’Ã‚Âªn xÃƒÆ’Ã‚Â¡c nhÃƒÂ¡Ã‚ÂºÃ‚Â­n, khÃƒÆ’Ã‚Â´ng phÃƒÂ¡Ã‚ÂºÃ‚Â£i nhÃƒÆ’Ã‚Â³m trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã…Â¸ng duyÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡t.");
+            redirectAttributes.addFlashAttribute("error", "Yêu cầu này đang chờ sinh viên xác nhận, không phải nhóm trưởng duyệt.");
             return "redirect:/student/group/" + groupId;
         }
 
         if ("approve".equalsIgnoreCase(action)) {
             if (groupRepository.hasActiveGroup(invitation.getStudentId(), group.getSemesterId())) {
                 groupInvitationRepository.updateStatus(invitationId, "REJECTED");
-                redirectAttributes.addFlashAttribute("error", "Sinh vien da vao nhom khac. Yeu cau duoc tu choi.");
+                redirectAttributes.addFlashAttribute("error", "Sinh viên đã vào nhóm khác. Yêu cầu được từ chối.");
                 return "redirect:/student/group/" + groupId;
             }
             if (groupMemberRepository.countMembers(groupId) >= MAX_GROUP_MEMBERS) {
                 groupInvitationRepository.updateStatus(invitationId, "REJECTED");
-                redirectAttributes.addFlashAttribute("error", "Nhom da du 4 thanh vien. Yeu cau duoc tu choi.");
+                redirectAttributes.addFlashAttribute("error", "Nhóm đã đủ 4 thành viên. Yêu cầu được từ chối.");
                 return "redirect:/student/group/" + groupId;
             }
 
             if (!groupMemberRepository.isMember(groupId, invitation.getStudentId())) {
                 int addResult = groupMemberRepository.addMember(groupId, invitation.getStudentId());
                 if (addResult <= 0) {
-                    redirectAttributes.addFlashAttribute("error", "KhÃƒÆ’Ã‚Â´ng thÃƒÂ¡Ã‚Â»Ã†â€™ thÃƒÆ’Ã‚Âªm thÃƒÆ’Ã‚Â nh viÃƒÆ’Ã‚Âªn sau khi duyÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡t.");
+                    redirectAttributes.addFlashAttribute("error", "Không thể thêm thành viên sau khi duyệt.");
                     return "redirect:/student/group/" + groupId;
                 }
             }
 
             groupInvitationRepository.updateStatus(invitationId, "ACCEPTED");
-            redirectAttributes.addFlashAttribute("success", "Da duyet yeu cau, sinh vien chinh thuc vao nhom.");
+            redirectAttributes.addFlashAttribute("success", "Đã duyệt yêu cầu, sinh viên chính thức vào nhóm.");
             return "redirect:/student/group/" + groupId;
         }
 
         groupInvitationRepository.updateStatus(invitationId, "REJECTED");
-        redirectAttributes.addFlashAttribute("success", "Da tu choi yeu cau moi.");
+        redirectAttributes.addFlashAttribute("success", "Đã từ chối yêu cầu mời.");
         return "redirect:/student/group/" + groupId;
     }
 
@@ -488,58 +488,58 @@ public class GroupController {
 
         Group group = groupRepository.findById(groupId);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃƒÆ’Ã‚Â³m khÃƒÆ’Ã‚Â´ng tÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n tÃƒÂ¡Ã‚ÂºÃ‚Â¡i.");
+            redirectAttributes.addFlashAttribute("error", "Nhóm không tồn tại.");
             return "redirect:/student/group/list";
         }
 
         GroupInvitation invitation = groupInvitationRepository.findById(invitationId);
         if (invitation == null || invitation.getGroupId() != groupId) {
-            redirectAttributes.addFlashAttribute("error", "LÃƒÂ¡Ã‚Â»Ã‚Âi mÃƒÂ¡Ã‚Â»Ã‚Âi khÃƒÆ’Ã‚Â´ng hÃƒÂ¡Ã‚Â»Ã‚Â£p lÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¡.");
+            redirectAttributes.addFlashAttribute("error", "Lời mời không hợp lệ.");
             return "redirect:/student/group/notifications";
         }
 
         if (invitation.getStudentId() != me.getStudentId()) {
-            redirectAttributes.addFlashAttribute("error", "BÃƒÂ¡Ã‚ÂºÃ‚Â¡n khÃƒÆ’Ã‚Â´ng cÃƒÆ’Ã‚Â³ quyÃƒÂ¡Ã‚Â»Ã‚Ân xÃƒÂ¡Ã‚Â»Ã‚Â­ lÃƒÆ’Ã‚Â½ lÃƒÂ¡Ã‚Â»Ã‚Âi mÃƒÂ¡Ã‚Â»Ã‚Âi nÃƒÆ’Ã‚Â y.");
+            redirectAttributes.addFlashAttribute("error", "Bạn không có quyền xử lý lời mời này.");
             return "redirect:/student/group/notifications";
         }
 
         if (!"PENDING".equalsIgnoreCase(invitation.getStatus())) {
-            redirectAttributes.addFlashAttribute("error", "Loi moi da duoc xu ly.");
+            redirectAttributes.addFlashAttribute("error", "Lời mời đã được xử lý.");
             return "redirect:/student/group/notifications";
         }
 
         boolean invitedByLeader = group.getLeaderId() != null && invitation.getInvitedByStudentId() == group.getLeaderId();
         if (!invitedByLeader) {
-            redirectAttributes.addFlashAttribute("error", "YÃƒÆ’Ã‚Âªu cÃƒÂ¡Ã‚ÂºÃ‚Â§u nÃƒÆ’Ã‚Â y cÃƒÂ¡Ã‚ÂºÃ‚Â§n nhÃƒÆ’Ã‚Â³m trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã…Â¸ng xÃƒÂ¡Ã‚Â»Ã‚Â­ lÃƒÆ’Ã‚Â½, khÃƒÆ’Ã‚Â´ng phÃƒÂ¡Ã‚ÂºÃ‚Â£i bÃƒÂ¡Ã‚ÂºÃ‚Â¡n.");
+            redirectAttributes.addFlashAttribute("error", "Yêu cầu này cần nhóm trưởng xử lý, không phải bạn.");
             return "redirect:/student/group/notifications";
         }
 
         if ("accept".equalsIgnoreCase(action)) {
             if (groupRepository.hasActiveGroup(me.getStudentId(), group.getSemesterId())) {
                 groupInvitationRepository.updateStatus(invitationId, "REJECTED");
-                redirectAttributes.addFlashAttribute("error", "Ban da o trong nhom khac, khong the tham gia.");
+                redirectAttributes.addFlashAttribute("error", "Bạn đã ở trong nhóm khác, không thể tham gia.");
                 return "redirect:/student/group/notifications";
             }
             if (groupMemberRepository.countMembers(groupId) >= MAX_GROUP_MEMBERS) {
                 groupInvitationRepository.updateStatus(invitationId, "REJECTED");
-                redirectAttributes.addFlashAttribute("error", "Nhom da du 4 thanh vien, khong the tham gia.");
+                redirectAttributes.addFlashAttribute("error", "Nhóm đã đủ 4 thành viên, không thể tham gia.");
                 return "redirect:/student/group/notifications";
             }
 
             if (!groupMemberRepository.isMember(groupId, me.getStudentId())) {
                 int addResult = groupMemberRepository.addMember(groupId, me.getStudentId());
                 if (addResult <= 0) {
-                    redirectAttributes.addFlashAttribute("error", "KhÃƒÆ’Ã‚Â´ng thÃƒÂ¡Ã‚Â»Ã†â€™ tham gia nhÃƒÆ’Ã‚Â³m.");
+                    redirectAttributes.addFlashAttribute("error", "Không thể tham gia nhóm.");
                     return "redirect:/student/group/notifications";
                 }
             }
             groupInvitationRepository.updateStatus(invitationId, "ACCEPTED");
-            redirectAttributes.addFlashAttribute("success", "Ban da chap nhan loi moi va vao nhom thanh cong.");
+            redirectAttributes.addFlashAttribute("success", "Bạn đã chấp nhận lời mời và vào nhóm thành công.");
             return "redirect:/student/group/" + groupId;
         }
 
         groupInvitationRepository.updateStatus(invitationId, "REJECTED");
-        redirectAttributes.addFlashAttribute("success", "Ban da tu choi loi moi.");
+        redirectAttributes.addFlashAttribute("success", "Bạn đã từ chối lời mời.");
         return "redirect:/student/group/notifications";
     }
 
@@ -555,31 +555,31 @@ public class GroupController {
 
         Group group = groupRepository.findById(groupId);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃƒÆ’Ã‚Â³m khÃƒÆ’Ã‚Â´ng tÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n tÃƒÂ¡Ã‚ÂºÃ‚Â¡i.");
+            redirectAttributes.addFlashAttribute("error", "Nhóm không tồn tại.");
             return "redirect:/student/group/list";
         }
 
         boolean isLeader = group.getLeaderId() != null && group.getLeaderId() == me.getStudentId();
         if (!isLeader) {
-            redirectAttributes.addFlashAttribute("error", "ChÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° nhÃƒÆ’Ã‚Â³m trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã…Â¸ng mÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Â£c kick thÃƒÆ’Ã‚Â nh viÃƒÆ’Ã‚Âªn.");
+            redirectAttributes.addFlashAttribute("error", "Chỉ nhóm trưởng mới được mời thành viên ra khỏi nhóm.");
             return "redirect:/student/group/" + groupId;
         }
 
         if (group.getLeaderId() != null && targetId == group.getLeaderId()) {
-            redirectAttributes.addFlashAttribute("error", "NhÃƒÆ’Ã‚Â³m trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã…Â¸ng khÃƒÆ’Ã‚Â´ng thÃƒÂ¡Ã‚Â»Ã†â€™ tÃƒÂ¡Ã‚Â»Ã‚Â± kick chÃƒÆ’Ã‚Â­nh mÃƒÆ’Ã‚Â¬nh.");
+            redirectAttributes.addFlashAttribute("error", "Nhóm trưởng không thể tự kick chính mình.");
             return "redirect:/student/group/" + groupId;
         }
 
         if (!groupMemberRepository.isMember(groupId, targetId)) {
-            redirectAttributes.addFlashAttribute("error", "Sinh viÃƒÆ’Ã‚Âªn nÃƒÆ’Ã‚Â y khÃƒÆ’Ã‚Â´ng ÃƒÂ¡Ã‚Â»Ã…Â¸ trong nhÃƒÆ’Ã‚Â³m.");
+            redirectAttributes.addFlashAttribute("error", "Sinh viên này không ở trong nhóm.");
             return "redirect:/student/group/" + groupId;
         }
 
         int removed = groupMemberRepository.removeMember(groupId, targetId);
         if (removed > 0) {
-            redirectAttributes.addFlashAttribute("success", "Da kick thanh vien ra khoi nhom.");
+            redirectAttributes.addFlashAttribute("success", "Đã mời thành viên ra khỏi nhóm.");
         } else {
-            redirectAttributes.addFlashAttribute("error", "Kick thÃƒÆ’Ã‚Â nh viÃƒÆ’Ã‚Âªn thÃƒÂ¡Ã‚ÂºÃ‚Â¥t bÃƒÂ¡Ã‚ÂºÃ‚Â¡i.");
+            redirectAttributes.addFlashAttribute("error", "Mời thành viên ra khỏi nhóm thất bại.");
         }
         return "redirect:/student/group/" + groupId;
     }
@@ -593,26 +593,26 @@ public class GroupController {
 
         Group group = groupRepository.findById(groupId);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃƒÆ’Ã‚Â³m khÃƒÆ’Ã‚Â´ng tÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n tÃƒÂ¡Ã‚ÂºÃ‚Â¡i.");
+            redirectAttributes.addFlashAttribute("error", "Nhóm không tồn tại.");
             return "redirect:/student/group/list";
         }
 
         if (!groupMemberRepository.isMember(groupId, me.getStudentId())) {
-            redirectAttributes.addFlashAttribute("error", "Ban khong phai thanh vien nhom nay.");
+            redirectAttributes.addFlashAttribute("error", "Bạn không phải thành viên nhóm này.");
             return "redirect:/student/group/list";
         }
 
         boolean isLeader = group.getLeaderId() != null && group.getLeaderId() == me.getStudentId();
         if (isLeader) {
-            redirectAttributes.addFlashAttribute("error", "Nhom truong khong the roi nhom. Hay xoa nhom khi chi con mot minh ban.");
+            redirectAttributes.addFlashAttribute("error", "Nhóm trưởng không thể rời nhóm. Hãy xóa nhóm khi chỉ còn một mình bạn.");
             return "redirect:/student/group/" + groupId;
         }
 
         int removed = groupMemberRepository.removeMember(groupId, me.getStudentId());
         if (removed > 0) {
-            redirectAttributes.addFlashAttribute("success", "Ban da roi nhom.");
+            redirectAttributes.addFlashAttribute("success", "Bạn đã rời nhóm.");
         } else {
-            redirectAttributes.addFlashAttribute("error", "KhÃƒÆ’Ã‚Â´ng thÃƒÂ¡Ã‚Â»Ã†â€™ rÃƒÂ¡Ã‚Â»Ã‚Âi nhÃƒÆ’Ã‚Â³m.");
+            redirectAttributes.addFlashAttribute("error", "Không thể rời nhóm.");
         }
         return "redirect:/student/group/list";
     }
@@ -626,19 +626,19 @@ public class GroupController {
 
         Group group = groupRepository.findById(groupId);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃƒÆ’Ã‚Â³m khÃƒÆ’Ã‚Â´ng tÃƒÂ¡Ã‚Â»Ã¢â‚¬Å“n tÃƒÂ¡Ã‚ÂºÃ‚Â¡i.");
+            redirectAttributes.addFlashAttribute("error", "Nhóm không tồn tại.");
             return "redirect:/student/group/list";
         }
 
         boolean isLeader = group.getLeaderId() != null && group.getLeaderId() == me.getStudentId();
         if (!isLeader) {
-            redirectAttributes.addFlashAttribute("error", "ChÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° nhÃƒÆ’Ã‚Â³m trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã…Â¸ng mÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Â£c xÃƒÆ’Ã‚Â³a nhÃƒÆ’Ã‚Â³m.");
+            redirectAttributes.addFlashAttribute("error", "Chỉ nhóm trưởng mới được xóa nhóm.");
             return "redirect:/student/group/" + groupId;
         }
 
         int memberCount = groupMemberRepository.countMembers(groupId);
         if (memberCount > 1) {
-            redirectAttributes.addFlashAttribute("error", "ChÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Â£c xÃƒÆ’Ã‚Â³a nhÃƒÆ’Ã‚Â³m khi nhÃƒÆ’Ã‚Â³m chÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° cÃƒÆ’Ã‚Â²n nhÃƒÆ’Ã‚Â³m trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã…Â¸ng.");
+            redirectAttributes.addFlashAttribute("error", "Chỉ được xóa nhóm khi nhóm chỉ còn nhóm trưởng.");
             return "redirect:/student/group/" + groupId;
         }
 
@@ -646,9 +646,9 @@ public class GroupController {
         groupMemberRepository.removeByGroup(groupId);
         int deleted = groupRepository.deleteGroup(groupId);
         if (deleted > 0) {
-            redirectAttributes.addFlashAttribute("success", "Da xoa nhom.");
+            redirectAttributes.addFlashAttribute("success", "Đã xóa nhóm.");
         } else {
-            redirectAttributes.addFlashAttribute("error", "XÃƒÆ’Ã‚Â³a nhÃƒÆ’Ã‚Â³m thÃƒÂ¡Ã‚ÂºÃ‚Â¥t bÃƒÂ¡Ã‚ÂºÃ‚Â¡i.");
+            redirectAttributes.addFlashAttribute("error", "Xóa nhóm thất bại.");
         }
         return "redirect:/student/group/list";
     }
@@ -669,6 +669,13 @@ public class GroupController {
         return classObj != null ? classObj.getClassName() : "PMS";
     }
 
+    private LocalDateTime resolveNotificationTime(GroupInvitation invitation) {
+        if (invitation == null) {
+            return null;
+        }
+        return invitation.getRespondedDate() != null ? invitation.getRespondedDate() : invitation.getInvitedDate();
+    }
+
     private void addNotificationCount(Model model, int studentId) {
         int incomingFromLeader = groupInvitationRepository.countPendingByStudentFromLeader(studentId);
         int needLeaderApprove = groupInvitationRepository.countPendingForLeader(studentId);
@@ -679,8 +686,8 @@ public class GroupController {
         Object fullName = session.getAttribute("fullName");
         Object role = session.getAttribute("role");
         model.addAttribute("studentName",
-                fullName != null ? fullName : (student != null ? student.getFullName() : "Hoc sinh"));
-        model.addAttribute("userRole", role != null ? role : "Hoc sinh");
+                fullName != null ? fullName : (student != null ? student.getFullName() : "Học sinh"));
+        model.addAttribute("userRole", role != null ? role : "Học sinh");
         model.addAttribute("className", resolveClassName(student));
     }
 }

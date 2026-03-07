@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Trang chủ học sinh</title>
+    <link rel="stylesheet" href="/student.css" />
+</head>
+
+<body class="student-home-page">
+    <div th:replace="~{student/home/header :: sidebar('home')}"></div>
+
+    <div class="main-content">
+        <div th:replace="~{student/home/header :: topbar('Trang chủ')}"></div>
+
+        <div class="content">
+            <div class="welcome-section">
+                <div class="welcome-title">Chào mừng bạn!</div>
+                <div class="welcome-text">
+                    Đây là trang tổng quan. Bạn có thể vào khu vực nhóm để tạo nhóm, mời thành viên và theo dõi thông báo.
+                </div>
+            </div>
+
+            <div class="welcome-section">
+                <div class="welcome-title">Điều hướng nhanh</div>
+                <ul class="quick-links">
+                    <li><a href="/student/group/list">Nhóm của tôi</a></li>
+                    <li><a href="/student/project">Project của nhóm</a></li>
+                    <li><a href="/student/group/notifications">Thông báo nhóm</a></li>
+                    <li><a href="/student/group/create">Tạo nhóm mới</a></li>
+                </ul>
+            </div>
+        </div>
+        <div th:replace="~{student/home/footer :: pageFooter}"></div>
+    </div>
+</body>
+
+</html>

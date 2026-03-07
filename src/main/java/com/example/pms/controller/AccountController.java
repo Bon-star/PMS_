@@ -20,6 +20,9 @@ import com.example.pms.repository.StudentRepository;
 import com.example.pms.service.MailService;
 import com.example.pms.service.OtpService;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
@@ -44,7 +47,119 @@ public class AccountController {
     @Autowired
     private StaffRepository staffRepo;
 
-    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    private static class ResolvedIdentity {
+        private String role;
+        private String fullName;
+        private String phoneNumber;
+        private Integer accountId;
+        private Object profile;
+    }
+
+    private String normalizeInput(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private ResolvedIdentity resolveIdentityByEmail(String email) {
+        Student student = studentRepo.findBySchoolEmail(email);
+        if (student != null) {
+            ResolvedIdentity identity = new ResolvedIdentity();
+            identity.role = "Student";
+            identity.fullName = student.getFullName();
+            identity.phoneNumber = student.getPhoneNumber();
+            identity.accountId = student.getAccountId();
+            identity.profile = student;
+            return identity;
+        }
+
+        Lecturer lecturer = lecturerRepo.findBySchoolEmail(email);
+        if (lecturer != null) {
+            ResolvedIdentity identity = new ResolvedIdentity();
+            identity.role = "Lecturer";
+            identity.fullName = lecturer.getFullName();
+            identity.phoneNumber = lecturer.getPhoneNumber();
+            identity.accountId = lecturer.getAccountId();
+            identity.profile = lecturer;
+            return identity;
+        }
+
+        Staff staff = staffRepo.findBySchoolEmail(email);
+        if (staff != null) {
+            ResolvedIdentity identity = new ResolvedIdentity();
+            identity.role = "Staff";
+            identity.fullName = staff.getFullName();
+            identity.phoneNumber = staff.getPhoneNumber();
+            identity.accountId = staff.getAccountId();
+            identity.profile = staff;
+            return identity;
+        }
+
+        return null;
+    }
+
+    private void linkAccountToProfile(ResolvedIdentity identity, int accountId) {
+        if (identity == null) {
+            return;
+        }
+
+        if ("Student".equalsIgnoreCase(identity.role) && identity.profile instanceof Student) {
+            Student student = (Student) identity.profile;
+            studentRepo.linkAccount(student.getStudentId(), accountId);
+            student.setAccountId(accountId);
+        } else if ("Lecturer".equalsIgnoreCase(identity.role) && identity.profile instanceof Lecturer) {
+            Lecturer lecturer = (Lecturer) identity.profile;
+            lecturerRepo.linkAccount(lecturer.getLecturerId(), accountId);
+            lecturer.setAccountId(accountId);
+        } else if ("Staff".equalsIgnoreCase(identity.role) && identity.profile instanceof Staff) {
+            Staff staff = (Staff) identity.profile;
+            staffRepo.linkAccount(staff.getStaffId(), accountId);
+            staff.setAccountId(accountId);
+        }
+
+        identity.accountId = accountId;
+    }
+
+    private Account resolveAccountFromIdentity(ResolvedIdentity identity, String email, boolean createIfMissing) {
+        if (identity == null) {
+            return null;
+        }
+
+        if (identity.accountId != null) {
+            Account accountById = accountRepo.findById(identity.accountId);
+            if (accountById != null) {
+                return accountById;
+            }
+        }
+
+        Account accountByUsername = accountRepo.findByUsername(email);
+        if (accountByUsername != null) {
+            if (accountByUsername.getRole() != null && identity.role.equalsIgnoreCase(accountByUsername.getRole())) {
+                linkAccountToProfile(identity, accountByUsername.getId());
+                return accountByUsername;
+            }
+            return null;
+        }
+
+        if (!createIfMissing) {
+            return null;
+        }
+
+        int newAccountId = accountRepo.createLocalAccount(email, identity.role);
+        if (newAccountId <= 0) {
+            return null;
+        }
+
+        linkAccountToProfile(identity, newAccountId);
+        return accountRepo.findById(newAccountId);
+    }
+
+    private boolean isPhoneMatch(ResolvedIdentity identity, String phone) {
+        if (identity == null) {
+            return false;
+        }
+        return normalizeInput(identity.phoneNumber).equals(phone);
+    }
 
     @GetMapping("/log")
     public String loginPage(HttpSession session) {
@@ -56,55 +171,45 @@ public class AccountController {
     }
 
     @PostMapping("/ck")
-    public String checkLogin(@RequestParam("email") String email, @RequestParam("password") String pass,
-            HttpSession session, Model model) {
+    public String checkLogin(@RequestParam("email") String email,
+            @RequestParam("password") String pass,
+            HttpSession session,
+            Model model) {
 
-        Account account = accountRepo.findByUsername(email);
-
-        if (account != null && account.getPasswordHash() != null && passwordEncoder.matches(pass, account.getPasswordHash())) {
-            
-            if (!account.getIsActive()) {
-                model.addAttribute("error", "Tài khoản chưa được kích hoạt!");
-                return "login";
-            }
-
-            session.setAttribute("account", account);
-            session.setAttribute("role", account.getRole());
-
-            try {
-                String role = account.getRole();
-                if ("Student".equalsIgnoreCase(role)) {
-                    Student s = studentRepo.findBySchoolEmail(email);
-                    if (s != null) {
-                        session.setAttribute("userProfile", s);
-                        session.setAttribute("fullName", s.getFullName());
-                    }
-                } 
-                else if ("Lecturer".equalsIgnoreCase(role)) {
-                    Lecturer l = lecturerRepo.findBySchoolEmail(email);
-                    if (l != null) {
-                        session.setAttribute("userProfile", l);
-                        session.setAttribute("fullName", l.getFullName());
-                    }
-                } 
-                else if ("Staff".equalsIgnoreCase(role)) {
-                    Staff st = staffRepo.findBySchoolEmail(email);
-                    if (st != null) {
-                        session.setAttribute("userProfile", st);
-                        session.setAttribute("fullName", st.getFullName());
-                    }
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-
-            return redirectByRole(account.getRole());
-
-        } else {
+        String normalizedEmail = normalizeInput(email);
+        ResolvedIdentity identity = resolveIdentityByEmail(normalizedEmail);
+        if (identity == null) {
             model.addAttribute("error", "Sai email hoặc mật khẩu!");
-            model.addAttribute("email", email);
+            model.addAttribute("email", normalizedEmail);
             return "login";
         }
+
+        Account account = resolveAccountFromIdentity(identity, normalizedEmail, false);
+        if (account == null || account.getPasswordHash() == null || account.getPasswordHash().trim().isEmpty()
+                || !passwordEncoder.matches(pass, account.getPasswordHash())) {
+            model.addAttribute("error", "Sai email hoặc mật khẩu!");
+            model.addAttribute("email", normalizedEmail);
+            return "login";
+        }
+
+        if (account.getRole() == null || !identity.role.equalsIgnoreCase(account.getRole())) {
+            model.addAttribute("error", "Dữ liệu tài khoản không đồng bộ với hồ sơ người dùng.");
+            model.addAttribute("email", normalizedEmail);
+            return "login";
+        }
+
+        if (!account.getIsActive()) {
+            model.addAttribute("error", "Tài khoản chưa được kích hoạt!");
+            model.addAttribute("email", normalizedEmail);
+            return "login";
+        }
+
+        session.setAttribute("account", account);
+        session.setAttribute("role", identity.role);
+        session.setAttribute("userProfile", identity.profile);
+        session.setAttribute("fullName", identity.fullName);
+
+        return redirectByRole(identity.role);
     }
 
     private String redirectByRole(String role) {
@@ -122,93 +227,113 @@ public class AccountController {
         return "redirect:/acc/log";
     }
 
-    @GetMapping({"/reg", "/register"})
+    @GetMapping({ "/reg", "/register" })
     public String registerPage() {
         return "register";
     }
 
     @PostMapping("/register")
-    public String register(@RequestParam("email") String email, @RequestParam("phone") String phone,
-            @RequestParam("password") String pass, @RequestParam("repassword") String repass, Model model) {
+    public String register(@RequestParam("email") String email,
+            @RequestParam("phone") String phone,
+            @RequestParam("password") String pass,
+            @RequestParam("repassword") String repass,
+            Model model) {
+
+        String normalizedEmail = normalizeInput(email);
+        String normalizedPhone = normalizeInput(phone);
 
         if (!pass.equals(repass)) {
             model.addAttribute("error", "Mật khẩu nhập lại không khớp!");
-            model.addAttribute("email", email);
+            model.addAttribute("email", normalizedEmail);
+            model.addAttribute("phone", normalizedPhone);
             return "register";
         }
 
-        Account existingAcc = accountRepo.findByUsername(email);
-        if (existingAcc == null) {
-            model.addAttribute("error", "Email này chưa có trong hệ thống nhà trường!");
+        ResolvedIdentity identity = resolveIdentityByEmail(normalizedEmail);
+        if (identity == null) {
+            model.addAttribute("error", "Email này chưa có trong dữ liệu nhà trường!");
+            model.addAttribute("email", normalizedEmail);
+            model.addAttribute("phone", normalizedPhone);
             return "register";
         }
 
-        if (existingAcc.getIsActive()) {
+        if (!isPhoneMatch(identity, normalizedPhone)) {
+            model.addAttribute("error", "Số điện thoại không khớp với hồ sơ nhà trường!");
+            model.addAttribute("email", normalizedEmail);
+            model.addAttribute("phone", normalizedPhone);
+            return "register";
+        }
+
+        Account account = resolveAccountFromIdentity(identity, normalizedEmail, true);
+        if (account == null) {
+            model.addAttribute("error", "Không thể khởi tạo tài khoản. Vui lòng liên hệ quản trị hệ thống.");
+            model.addAttribute("email", normalizedEmail);
+            model.addAttribute("phone", normalizedPhone);
+            return "register";
+        }
+
+        if (account.getIsActive()) {
             model.addAttribute("error", "Tài khoản này đã được kích hoạt. Vui lòng đăng nhập.");
             return "register";
         }
 
-        boolean isPhoneMatch = false;
-        String role = existingAcc.getRole();
-
-        if ("Student".equalsIgnoreCase(role)) {
-            Student s = studentRepo.findBySchoolEmail(email);
-            if (s != null && s.getPhoneNumber().equals(phone)) isPhoneMatch = true;
-        } else if ("Lecturer".equalsIgnoreCase(role)) {
-            Lecturer l = lecturerRepo.findBySchoolEmail(email);
-            if (l != null && l.getPhoneNumber().equals(phone)) isPhoneMatch = true;
-        } else if ("Staff".equalsIgnoreCase(role)) {
-            Staff st = staffRepo.findBySchoolEmail(email);
-            if (st != null && st.getPhoneNumber().equals(phone)) isPhoneMatch = true;
-        }
-
-        if (!isPhoneMatch) {
-            model.addAttribute("error", "Số điện thoại không khớp với hồ sơ nhà trường!");
-            model.addAttribute("email", email);
-            return "register";
-        }
-
-        String otp = otpService.generateOtp(email);
+        String otp = otpService.generateOtp(normalizedEmail);
         try {
-            mailService.sendOtp(email, otp);
+            mailService.sendOtp(normalizedEmail, otp);
         } catch (Exception e) {
-            e.printStackTrace();
             model.addAttribute("error", "Lỗi gửi mail OTP. Vui lòng thử lại!");
+            model.addAttribute("email", normalizedEmail);
+            model.addAttribute("phone", normalizedPhone);
             return "register";
         }
 
-        model.addAttribute("email", email);
+        model.addAttribute("email", normalizedEmail);
         model.addAttribute("password", pass);
-        model.addAttribute("phone", phone);
+        model.addAttribute("phone", normalizedPhone);
         model.addAttribute("type", "REGISTER");
         return "verify-otp";
     }
 
     @PostMapping("/verify-otp")
-    public String verifyOtp(@RequestParam("email") String email, 
-                            @RequestParam("password") String password, 
-                            @RequestParam("otp") String otp, Model model) {
+    public String verifyOtp(@RequestParam("email") String email,
+            @RequestParam("password") String password,
+            @RequestParam("otp") String otp,
+            Model model) {
 
-        if (otpService.verify(email, otp)) {
-            Account acc = accountRepo.findByUsername(email);
+        String normalizedEmail = normalizeInput(email);
+
+        if (otpService.verify(normalizedEmail, otp)) {
+            ResolvedIdentity identity = resolveIdentityByEmail(normalizedEmail);
+            Account acc = resolveAccountFromIdentity(identity, normalizedEmail, false);
             if (acc != null) {
-                accountRepo.updatePassword(email, passwordEncoder.encode(password));
-                
+                accountRepo.updatePasswordById(acc.getId(), passwordEncoder.encode(password));
                 model.addAttribute("success", "Kích hoạt tài khoản thành công! Hãy đăng nhập.");
                 return "login";
             }
-        } 
-        
+        }
+
         model.addAttribute("error", "Mã OTP không đúng hoặc hết hạn!");
-        model.addAttribute("email", email);
+        model.addAttribute("email", normalizedEmail);
         model.addAttribute("password", password);
         model.addAttribute("type", "REGISTER");
         return "verify-otp";
     }
 
     @GetMapping("/logout")
-    public String logout(HttpSession session) {
+    public String logout(HttpServletRequest request, HttpServletResponse response, HttpSession session) {
         session.invalidate();
+
+        Cookie cookie = new Cookie("JSESSIONID", null);
+        String contextPath = request.getContextPath();
+        cookie.setPath((contextPath == null || contextPath.isEmpty()) ? "/" : contextPath);
+        cookie.setMaxAge(0);
+        cookie.setHttpOnly(true);
+        response.addCookie(cookie);
+
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+
         return "redirect:/acc/log";
     }
 
@@ -219,70 +344,96 @@ public class AccountController {
 
     @PostMapping("/forgot")
     public String sendForgotOtp(@RequestParam("email") String email, HttpSession session, Model model) {
-        Account acc = accountRepo.findByUsername(email);
+        String normalizedEmail = normalizeInput(email);
 
-        if (acc == null) {
+        ResolvedIdentity identity = resolveIdentityByEmail(normalizedEmail);
+        if (identity == null) {
             model.addAttribute("error", "Email không tồn tại!");
             return "forgot-password";
         }
-        
-        if (acc.getAuthProvider() != null && !"LOCAL".equals(acc.getAuthProvider())) {
-             model.addAttribute("error", "Tài khoản mạng xã hội không thể đổi mật khẩu!");
-             return "forgot-password";
+
+        Account acc = resolveAccountFromIdentity(identity, normalizedEmail, false);
+        if (acc == null) {
+            model.addAttribute("error", "Tài khoản chưa được khởi tạo hoặc không hợp lệ!");
+            return "forgot-password";
         }
 
-        String otp = otpService.generateOtp(email);
+        if (acc.getAuthProvider() != null && !"LOCAL".equalsIgnoreCase(acc.getAuthProvider())) {
+            model.addAttribute("error", "Tài khoản mạng xã hội không thể đổi mật khẩu!");
+            return "forgot-password";
+        }
+
+        String otp = otpService.generateOtp(normalizedEmail);
         try {
-            mailService.sendOtp(email, otp);
+            mailService.sendOtp(normalizedEmail, otp);
         } catch (Exception e) {
             model.addAttribute("error", "Lỗi gửi mail!");
             return "forgot-password";
         }
 
-        session.setAttribute("forgotEmail", email);
-        
-        model.addAttribute("email", email); 
+        session.setAttribute("forgotEmail", normalizedEmail);
+        session.setAttribute("forgotAccountId", acc.getId());
+
+        model.addAttribute("email", normalizedEmail);
         model.addAttribute("type", "RESET");
         return "verify-otp";
     }
-    
+
     @PostMapping("/verify-reset")
     public String verifyResetOtp(@RequestParam("otp") String otp, HttpSession session, Model model) {
         String email = (String) session.getAttribute("forgotEmail");
-        if(email == null) return "redirect:/acc/forgot";
-        
-        if(otpService.verify(email, otp)) {
+        if (email == null) {
+            return "redirect:/acc/forgot";
+        }
+
+        if (otpService.verify(email, otp)) {
             session.setAttribute("resetVerified", true);
             return "redirect:/acc/reset-pass";
-        } else {
-            model.addAttribute("error", "Mã OTP sai!");
-            model.addAttribute("email", email);
-            model.addAttribute("type", "RESET");
-            return "verify-otp";
         }
+
+        model.addAttribute("error", "Mã OTP sai!");
+        model.addAttribute("email", email);
+        model.addAttribute("type", "RESET");
+        return "verify-otp";
     }
 
     @GetMapping("/reset-pass")
     public String resetPassPage(HttpSession session) {
-        if(session.getAttribute("resetVerified") == null) return "redirect:/acc/forgot";
+        if (session.getAttribute("resetVerified") == null) {
+            return "redirect:/acc/forgot";
+        }
         return "reset-password";
     }
 
     @PostMapping("/reset-pass")
-    public String processReset(@RequestParam("password") String pass, @RequestParam("repassword") String repass, HttpSession session, Model model) {
+    public String processReset(@RequestParam("password") String pass,
+            @RequestParam("repassword") String repass,
+            HttpSession session,
+            Model model) {
+
         String email = (String) session.getAttribute("forgotEmail");
-        if(email == null) return "redirect:/acc/forgot";
-        
-        if(!pass.equals(repass)) {
+        if (email == null) {
+            return "redirect:/acc/forgot";
+        }
+
+        if (!pass.equals(repass)) {
             model.addAttribute("error", "Mật khẩu không khớp!");
             return "reset-password";
         }
-        
-        Account acc = accountRepo.findByUsername(email);
-        if(acc != null) {
-            accountRepo.updatePassword(email, passwordEncoder.encode(pass));
+
+        Integer accountId = (Integer) session.getAttribute("forgotAccountId");
+        if (accountId == null) {
+            ResolvedIdentity identity = resolveIdentityByEmail(email);
+            Account acc = resolveAccountFromIdentity(identity, email, false);
+            if (acc != null) {
+                accountId = acc.getId();
+            }
         }
-        
+
+        if (accountId != null) {
+            accountRepo.updatePasswordById(accountId, passwordEncoder.encode(pass));
+        }
+
         session.invalidate();
         model.addAttribute("success", "Đổi mật khẩu thành công!");
         return "login";

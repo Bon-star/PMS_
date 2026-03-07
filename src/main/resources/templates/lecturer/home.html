@@ -1,42 +1,79 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="utf-8" />
-    <title>Home</title>
+    <title>Trang chủ giảng viên</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
         body {
             background: #f6f8fa;
-            font-family: Arial, sans-serif;
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+            margin: 0;
         }
 
         .container {
             max-width: 900px;
-            margin: 80px auto;
-            padding: 30px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            margin: 60px auto;
+            padding: 24px;
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
         }
 
         .top {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 12px;
         }
 
         .greet {
-            font-size: 20px;
-            font-weight: 600;
+            font-size: 22px;
+            font-weight: 700;
+            color: #111827;
         }
 
-        .btn-logout {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
+        .sub {
+            margin-top: 6px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            border: 1px solid #d1d5db;
+            background: #fff;
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #111827;
             cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: #fff;
+        }
+
+        .info {
+            margin-top: 20px;
+            font-size: 15px;
+            color: #374151;
+            line-height: 1.6;
         }
     </style>
 </head>
@@ -46,18 +83,20 @@
         <div class="top">
             <div>
                 <div class="greet">Xin chào, <span th:text="${lecturerName} ?: 'Giảng viên'">Giảng viên</span></div>
-                <div style="font-size:13px; color:#666; margin-top:6px;">Chào mừng bạn đến với hệ thống</div>
+                <div class="sub">Khu vực dành cho giảng viên</div>
             </div>
-            <div>
+            <div class="actions">
+                <a href="/lecturer/projects" class="btn btn-primary">Duyệt project</a>
                 <form action="/acc/logout" method="get">
-                    <button type="submit" class="btn-logout">Đăng xuất</button>
+                    <button type="submit" class="btn btn-danger">Đăng xuất</button>
                 </form>
             </div>
         </div>
 
-        <hr style="margin:18px 0">
-
-        <p>Trang này dùng để kiểm tra tên giảng viên đã đăng nhập và chức năng đăng xuất.</p>
+        <div class="info">
+            Tại mục <strong>Duyệt project</strong>, giảng viên sẽ nhận các project học viên gửi xét duyệt,
+            duyệt hoặc từ chối kèm lý do để học viên cập nhật lại.
+        </div>
     </div>
 </body>
 

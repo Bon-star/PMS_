@@ -44,4 +44,22 @@ public class SemesterRepository {
             return null;
         }
     }
+
+    public List<Semester> findAll() {
+        String sql = "SELECT * FROM Semesters ORDER BY StartDate DESC, SemesterID DESC";
+        return db.query(sql, (rs, rn) -> {
+            Semester s = new Semester();
+            s.setSemesterId(rs.getInt("SemesterID"));
+            s.setSemesterName(rs.getString("SemesterName"));
+            java.sql.Date start = rs.getDate("StartDate");
+            java.sql.Date end = rs.getDate("EndDate");
+            if (start != null) {
+                s.setStartDate(start.toLocalDate());
+            }
+            if (end != null) {
+                s.setEndDate(end.toLocalDate());
+            }
+            return s;
+        });
+    }
 }

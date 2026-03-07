@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<body>
+    <div th:fragment="sidebar(activeMenu)" class="sidebar">
+        <div class="sidebar-logo" th:text="${className} ?: 'PMS'">PMS</div>
+        <div class="sidebar-controls">
+            <button type="button" class="sidebar-toggle" onclick="toggleStudentSidebar()"
+                aria-label="Thu gọn hoặc mở rộng thanh bên">
+                <span class="toggle-icon">☰</span>
+                <span class="toggle-text">Thu gọn</span>
+            </button>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="/student/home" title="Trang chủ" class="nav-link" th:classappend="${activeMenu == 'home'} ? ' active'">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Trang chủ</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/student/group/list" title="Nhóm của tôi" class="nav-link" th:classappend="${activeMenu == 'group'} ? ' active'">
+                    <span class="nav-icon">📚</span>
+                    <span class="nav-text">Nhóm của tôi</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/student/project" title="Project của nhóm" class="nav-link" th:classappend="${activeMenu == 'project'} ? ' active'">
+                    <span class="nav-icon">🗂️</span>
+                    <span class="nav-text">Project của nhóm</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div th:fragment="topbar(pageTitle)" class="header">
+        <div class="header-left" th:text="${pageTitle}">Trang</div>
+        <div class="header-actions">
+            <a th:if="${invitationFeatureEnabled == null or invitationFeatureEnabled}" class="notify-btn" href="/student/group/notifications">
+                Thông báo
+                <span th:if="${notificationCount != null and notificationCount > 0}" th:text="'(' + ${notificationCount} + ')'">(0)</span>
+            </a>
+            <span th:unless="${invitationFeatureEnabled == null or invitationFeatureEnabled}" class="notify-btn disabled">Thông báo (chưa bật)</span>
+            <div class="user-info">
+                <div class="user-avatar"><img src="/img/user.png" alt="Avatar" /></div>
+                <div class="user-text">
+                    <div class="user-name" th:text="${studentName} ?: 'Học sinh'">Học sinh</div>
+                    <div class="user-role" th:text="${userRole} ?: 'Học sinh'">Học sinh</div>
+                </div>
+            </div>
+            <form action="/acc/logout" method="get"><button type="submit" class="logout-btn">Đăng xuất</button></form>
+        </div>
+    </div>
+</body>
+
+</html>

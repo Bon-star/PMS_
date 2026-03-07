@@ -1,0 +1,676 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Project của nhóm</title>
+    <link rel="stylesheet" href="/student.css" />
+    <style>
+        .student-project-page .panel {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .student-project-page .panel-title {
+            margin: 0 0 8px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .student-project-page .muted {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .student-project-page .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px 12px;
+            margin-top: 8px;
+        }
+
+        .student-project-page .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .student-project-page .status-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .student-project-page .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .student-project-page .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .student-project-page .status-waiting {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .student-project-page .status-todo {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .student-project-page .status-progress {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .student-project-page .status-submitted {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .student-project-page .status-done {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .student-project-page .status-returned {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .student-project-page .status-failed {
+            background: #fecaca;
+            color: #7f1d1d;
+        }
+
+        .student-project-page .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .student-project-page .alert-error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .student-project-page .alert-success {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .student-project-page .alert-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .student-project-page .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .student-project-page .full {
+            grid-column: 1 / -1;
+        }
+
+        .student-project-page label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .student-project-page input,
+        .student-project-page textarea,
+        .student-project-page select {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #fff;
+        }
+
+        .student-project-page textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .student-project-page .row-actions {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .student-project-page .btn {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #fff;
+            color: #111827;
+            text-decoration: none;
+        }
+
+        .student-project-page .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+
+        .student-project-page .btn-danger-soft {
+            background: #fff;
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+
+        .student-project-page table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .student-project-page th,
+        .student-project-page td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .student-project-page th {
+            background: #f9fafb;
+            color: #374151;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .student-project-page .task-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 10px;
+            background: #fafafa;
+        }
+
+        .student-project-page .task-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .student-project-page .task-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .student-project-page .task-meta {
+            margin-top: 6px;
+            color: #374151;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .student-project-page .task-body {
+            margin-top: 8px;
+            white-space: pre-wrap;
+            font-size: 13px;
+        }
+
+        .student-project-page .task-proof {
+            margin-top: 8px;
+            border-top: 1px dashed #d1d5db;
+            padding-top: 8px;
+        }
+
+        @media (max-width: 900px) {
+            .student-project-page .form-grid,
+            .student-project-page .meta-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body class="student-group-page student-project-page">
+    <div th:replace="~{student/home/header :: sidebar('project')}"></div>
+
+    <div class="main-content">
+        <div th:replace="~{student/home/header :: topbar('Project của nhóm')}"></div>
+
+        <div class="content">
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+            <div class="panel" th:if="${noGroup}">
+                <h2 class="panel-title">Bạn chưa có nhóm</h2>
+                <p class="muted">Hãy vào khu vực nhóm để tham gia hoặc tạo nhóm trước khi quản lý project.</p>
+                <a href="/student/group/list" class="btn">Đến trang nhóm</a>
+            </div>
+
+            <div th:if="${!noGroup}">
+                <div class="panel">
+                    <h2 class="panel-title" th:text="${'Nhóm: ' + group.groupName}">Nhóm</h2>
+                    <div class="muted"
+                        th:text="${'Trưởng nhóm: ' + (group.leaderName ?: 'Chưa có') + ' • Số thành viên: ' + members.size()}">
+                    </div>
+                </div>
+
+                <div class="panel" th:if="${noProject}">
+                    <h2 class="panel-title">Chưa có project</h2>
+                    <p class="muted">Nhân viên đào tạo chưa tạo project cho nhóm của bạn trong học kỳ này.</p>
+                </div>
+
+                <div th:if="${!noProject}">
+                    <div class="panel">
+                        <h2 class="panel-title" th:text="${#strings.isEmpty(project.projectName) ? 'Project chưa có tên' : project.projectName}">
+                            Tên project
+                        </h2>
+                        <div class="meta-grid">
+                            <div><strong>Nguồn:</strong> <span th:text="${project.topicSource}">STUDENT</span></div>
+                            <div>
+                                <strong>Trạng thái:</strong>
+                                <span th:if="${project.approvalStatus == 1}" class="badge status-approved">Đã duyệt</span>
+                                <span th:if="${project.approvalStatus == 2}" class="badge status-pending">Chờ giảng viên duyệt</span>
+                                <span th:if="${project.approvalStatus == 3}" class="badge status-rejected">Bị từ chối</span>
+                                <span th:if="${project.approvalStatus == 4}" class="badge status-waiting">Chờ học viên cập nhật</span>
+                            </div>
+                            <div><strong>Bắt đầu:</strong> <span th:text="${project.startDate != null ? #temporals.format(project.startDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span></div>
+                            <div><strong>Kết thúc:</strong> <span th:text="${project.endDate != null ? #temporals.format(project.endDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span></div>
+                        </div>
+                        <p class="muted" style="margin-top:8px; white-space: pre-wrap;"
+                            th:text="${#strings.isEmpty(project.description) ? 'Chưa có mô tả project.' : project.description}">
+                        </p>
+                        <div class="muted">
+                            Mã nguồn:
+                            <a th:if="${!#strings.isEmpty(project.sourceCodeUrl)}" th:href="${project.sourceCodeUrl}" target="_blank">Mở liên kết</a>
+                            <span th:if="${#strings.isEmpty(project.sourceCodeUrl)}">Chưa có</span>
+                            <span> • </span>
+                            Tài liệu:
+                            <a th:if="${!#strings.isEmpty(project.documentUrl)}" th:href="${project.documentUrl}" target="_blank">Mở liên kết</a>
+                            <span th:if="${#strings.isEmpty(project.documentUrl)}">Chưa có</span>
+                        </div>
+                        <div class="alert alert-error" style="margin-top:10px;"
+                            th:if="${project.approvalStatus == 3 and !#strings.isEmpty(project.rejectReason)}"
+                            th:text="${'Lý do giảng viên từ chối: ' + project.rejectReason}">
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" th:if="${projectNotStarted}">
+                        Project chưa đến thời gian bắt đầu xây dựng, bạn chỉ có thể theo dõi thông tin.
+                    </div>
+                    <div class="alert alert-error" th:if="${projectLockedForWork}">
+                        Project đã hết thời gian xây dựng. Các thao tác task/sprint đã bị khóa.
+                    </div>
+
+                    <div class="panel" th:if="${canUpdateFinalLinks}">
+                        <h3 class="panel-title" style="font-size:18px;">Nộp link bàn giao cuối project</h3>
+                        <p class="muted">Trưởng nhóm có 1 ngày sau khi project kết thúc để cập nhật link source code và tài liệu.</p>
+                        <form method="post" action="/student/project/finalize-links">
+                            <div class="form-grid">
+                                <div>
+                                    <label for="finalSource">Link source code</label>
+                                    <input id="finalSource" name="sourceCodeUrl" type="text" th:value="${project.sourceCodeUrl}" required />
+                                </div>
+                                <div>
+                                    <label for="finalDoc">Link tài liệu</label>
+                                    <input id="finalDoc" name="documentUrl" type="text" th:value="${project.documentUrl}" required />
+                                </div>
+                            </div>
+                            <div class="row-actions">
+                                <button class="btn btn-primary" type="submit">Cập nhật link bàn giao</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="panel" th:if="${withinFinalLinkGrace and !canUpdateFinalLinks}">
+                        <p class="muted">Chỉ trưởng nhóm mới được cập nhật link bàn giao trong giai đoạn này.</p>
+                    </div>
+
+                    <div class="panel" th:if="${latestEditRequest != null}">
+                        <h3 class="panel-title" style="font-size:18px;">Yêu cầu cấp quyền gần nhất</h3>
+                        <div class="muted">
+                            Trạng thái:
+                            <strong th:text="${latestEditRequest.status}">PENDING</strong>
+                            <span th:if="${latestEditRequest.requestedDate != null}"
+                                th:text="${' • Gửi lúc: ' + #temporals.format(latestEditRequest.requestedDate, 'dd/MM/yyyy HH:mm')}"></span>
+                        </div>
+                        <p class="muted" th:if="${!#strings.isEmpty(latestEditRequest.requestNote)}"
+                            th:text="${'Ghi chú: ' + latestEditRequest.requestNote}">
+                        </p>
+                        <div class="alert alert-error"
+                            th:if="${'REJECTED'.equalsIgnoreCase(latestEditRequest.status) and !#strings.isEmpty(latestEditRequest.responseReason)}"
+                            th:text="${'Lý do nhân viên từ chối: ' + latestEditRequest.responseReason}">
+                        </div>
+                    </div>
+
+                    <div class="panel" th:if="${canRequestEdit}">
+                        <h3 class="panel-title" style="font-size:18px;">Xin cấp quyền cập nhật nội dung project</h3>
+                        <form method="post" action="/student/project/request-edit">
+                            <label for="requestNote">Ghi chú (tùy chọn)</label>
+                            <textarea id="requestNote" name="requestNote"
+                                placeholder="Ví dụ: Nhóm đã chuẩn bị nội dung và cần cập nhật đề tài chi tiết"></textarea>
+                            <div class="row-actions">
+                                <button type="submit" class="btn btn-primary">Gửi yêu cầu</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="panel" th:if="${canEditContent}">
+                        <h3 class="panel-title" style="font-size:18px;">Cập nhật nội dung project</h3>
+                        <form method="post" action="/student/project/update-content">
+                            <div class="form-grid">
+                                <div class="full">
+                                    <label for="projectName">Tên project</label>
+                                    <input id="projectName" name="projectName" type="text"
+                                        th:value="${project.projectName}" required />
+                                </div>
+                                <div class="full">
+                                    <label for="description">Mô tả project</label>
+                                    <textarea id="description" name="description" th:text="${project.description}"></textarea>
+                                </div>
+                                <div>
+                                    <label for="sourceCodeUrl">Link mã nguồn</label>
+                                    <input id="sourceCodeUrl" name="sourceCodeUrl" type="text" th:value="${project.sourceCodeUrl}" />
+                                </div>
+                                <div>
+                                    <label for="documentUrl">Link tài liệu</label>
+                                    <input id="documentUrl" name="documentUrl" type="text" th:value="${project.documentUrl}" />
+                                </div>
+                            </div>
+                            <div class="row-actions">
+                                <button type="submit" class="btn">Lưu nội dung</button>
+                            </div>
+                        </form>
+
+                        <form method="post" action="/student/project/submit-review" style="margin-top:8px;">
+                            <button type="submit" class="btn btn-primary" th:disabled="${!canSubmitReview}">
+                                Gửi giảng viên xét duyệt
+                            </button>
+                        </form>
+                        <p class="muted" th:if="${!canSubmitReview}">
+                            Cần có tên project trước khi gửi duyệt.
+                        </p>
+                    </div>
+
+                    <div class="panel" th:if="${project.topicSource == 'STUDENT' and !canEditContent and !canRequestEdit}">
+                        <p class="muted">Project đang chờ xử lý cấp quyền hoặc đang trong quá trình giảng viên duyệt.</p>
+                    </div>
+
+                    <div class="panel">
+                        <h3 class="panel-title" style="font-size:18px;">Sprint</h3>
+                        <div class="muted" th:if="${openSprint != null}"
+                            th:text="${'Sprint đang mở: ' + (openSprint.sprintName ?: ('Sprint #' + openSprint.sprintId)) + ' (' + #temporals.format(openSprint.startDate, 'dd/MM/yyyy') + ' - ' + #temporals.format(openSprint.endDate, 'dd/MM/yyyy') + ')'}">
+                        </div>
+                        <div class="muted" th:if="${openSprint == null}">
+                            Hiện không có sprint đang mở.
+                        </div>
+
+                        <form method="post" action="/student/project/sprints/create" th:if="${canCreateSprint}" style="margin-top:8px;">
+                            <div class="form-grid">
+                                <div>
+                                    <label for="sprintName">Tên sprint mới (tùy chọn)</label>
+                                    <input id="sprintName" name="sprintName" type="text" placeholder="Để trống sẽ tự tăng Sprint 1,2,3..." />
+                                </div>
+                            </div>
+                            <div class="row-actions">
+                                <button type="submit" class="btn btn-primary">Tạo sprint mới</button>
+                            </div>
+                        </form>
+
+                        <table th:if="${sprints != null and !#lists.isEmpty(sprints)}" style="margin-top:10px;">
+                            <thead>
+                                <tr>
+                                    <th>Sprint</th>
+                                    <th>Bắt đầu</th>
+                                    <th>Kết thúc</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="sp : ${sprints}">
+                                    <td th:text="${sp.sprintName ?: ('Sprint #' + sp.sprintId)}">Sprint</td>
+                                    <td th:text="${sp.startDate != null ? #temporals.format(sp.startDate, 'dd/MM/yyyy') : '-'}">-</td>
+                                    <td th:text="${sp.endDate != null ? #temporals.format(sp.endDate, 'dd/MM/yyyy') : '-'}">-</td>
+                                    <td th:text="${sp.closed ? 'Đã đóng' : 'Đang mở'}">Đang mở</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="panel">
+                        <h3 class="panel-title" style="font-size:18px;">Tạo task trong sprint</h3>
+                        <p class="muted">1 point = 4 giờ. Mỗi task phải có 1 người thực hiện và 1 người kiểm tra khác nhau.</p>
+
+                        <form th:if="${canCreateTask}" method="post" action="/student/project/tasks/create">
+                            <input type="hidden" name="sprintId" th:value="${openSprint.sprintId}" />
+                            <div class="form-grid">
+                                <div class="full">
+                                    <label>Sprint nhận task</label>
+                                    <input type="text"
+                                        th:value="${openSprint.sprintName ?: ('Sprint #' + openSprint.sprintId)}"
+                                        readonly />
+                                </div>
+                                <div>
+                                    <label for="taskName">Tên task</label>
+                                    <input id="taskName" name="taskName" type="text" required />
+                                </div>
+                                <div>
+                                    <label for="estimatedPoints">Point ước lượng</label>
+                                    <input id="estimatedPoints" name="estimatedPoints" type="number" min="0.1" step="0.1" required />
+                                </div>
+                                <div class="full">
+                                    <label for="taskDescription">Mô tả task</label>
+                                    <textarea id="taskDescription" name="description"></textarea>
+                                </div>
+                                <div>
+                                    <label for="taskImage">Link ảnh đính kèm (nếu có)</label>
+                                    <input id="taskImage" name="taskImage" type="text" />
+                                </div>
+                                <div></div>
+                                <div>
+                                    <label for="assigneeId">Người thực hiện</label>
+                                    <select id="assigneeId" name="assigneeId" required>
+                                        <option value="">-- Chọn thành viên --</option>
+                                        <option th:each="m : ${members}" th:value="${m.studentId}"
+                                            th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="reviewerId">Người kiểm tra</label>
+                                    <select id="reviewerId" name="reviewerId" required>
+                                        <option value="">-- Chọn thành viên --</option>
+                                        <option th:each="m : ${members}" th:value="${m.studentId}"
+                                            th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row-actions">
+                                <button type="submit" class="btn btn-primary">Tạo task</button>
+                            </div>
+                        </form>
+
+                        <div class="muted" th:if="${!canCreateTask}">
+                            Chỉ trưởng nhóm được tạo task và phải có sprint đang mở trong thời gian project cho phép làm việc.
+                        </div>
+                    </div>
+
+                    <div class="panel" th:if="${failedTasks != null and !#lists.isEmpty(failedTasks)}">
+                        <h3 class="panel-title" style="font-size:18px;">Task thất bại cần đưa vào sprint mới</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Sprint cũ</th>
+                                    <th>Người cũ</th>
+                                    <th>Lý do</th>
+                                    <th>Chuyển sprint</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="f : ${failedTasks}">
+                                    <td>
+                                        <div th:text="${f.taskName}">Task</div>
+                                        <div class="muted" th:text="${f.estimatedPoints + ' point'}">0 point</div>
+                                    </td>
+                                    <td th:text="${f.sprintName ?: ('Sprint #' + f.sprintId)}">Sprint</td>
+                                    <td th:text="${f.assigneeName + ' / ' + (f.reviewerName ?: 'Chưa có reviewer')}">Thành viên</td>
+                                    <td th:text="${!#strings.isEmpty(f.reviewComment) ? f.reviewComment : 'Task chưa hoàn thành trước khi sprint kết thúc.'}">Lý do</td>
+                                    <td>
+                                        <form th:if="${canReplanFailed and openSprint != null}"
+                                            th:action="@{/student/project/sprints/{id}/replan(id=${openSprint.sprintId})}"
+                                            method="post">
+                                            <input type="hidden" name="taskId" th:value="${f.taskId}" />
+                                            <div class="form-grid" style="grid-template-columns: 1fr; gap:6px;">
+                                                <select name="assigneeId" required>
+                                                    <option th:each="m : ${members}" th:value="${m.studentId}"
+                                                        th:selected="${m.studentId == f.assigneeId}"
+                                                        th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
+                                                </select>
+                                                <select name="reviewerId" required>
+                                                    <option th:each="m : ${members}" th:value="${m.studentId}"
+                                                        th:selected="${f.reviewerId != null and m.studentId == f.reviewerId}"
+                                                        th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
+                                                </select>
+                                                <button type="submit" class="btn">Đưa vào sprint mở</button>
+                                            </div>
+                                        </form>
+                                        <span th:if="${!canReplanFailed or openSprint == null}" class="muted">
+                                            Cần là trưởng nhóm và có sprint đang mở.
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="panel">
+                        <h3 class="panel-title" style="font-size:18px;">Danh sách task</h3>
+                        <div class="muted" th:if="${tasks == null or #lists.isEmpty(tasks)}">Chưa có task nào.</div>
+
+                        <div th:each="t : ${tasks}" class="task-card">
+                            <div class="task-head">
+                                <h4 class="task-title" th:text="${t.taskName}">Task</h4>
+                                <span th:if="${t.status == 0}" class="badge status-todo">Chờ xử lý</span>
+                                <span th:if="${t.status == 1}" class="badge status-progress">Đang xây dựng</span>
+                                <span th:if="${t.status == 2}" class="badge status-submitted">Chờ kiểm tra</span>
+                                <span th:if="${t.status == 3}" class="badge status-done">Hoàn thành</span>
+                                <span th:if="${t.status == 4}" class="badge status-returned">Trả lại</span>
+                                <span th:if="${t.status == 5}" class="badge status-failed">Thất bại sprint</span>
+                            </div>
+
+                            <div class="task-meta">
+                                Sprint: <strong th:text="${t.sprintName ?: ('Sprint #' + t.sprintId)}">Sprint</strong>
+                                • Point: <strong th:text="${t.estimatedPoints}">0</strong>
+                                (≈ <span th:text="${#numbers.formatDecimal(t.estimatedHours, 1, 1)}">0</span> giờ)
+                            </div>
+                            <div class="task-meta">
+                                Người thực hiện: <strong th:text="${t.assigneeName + ' (' + t.assigneeCode + ')'}">Assignee</strong>
+                                • Reviewer: <strong th:text="${t.reviewerName ?: 'Chưa gán'}">Reviewer</strong>
+                            </div>
+                            <div class="task-meta">
+                                Bắt đầu thực tế:
+                                <span th:text="${t.actualStartTime != null ? #temporals.format(t.actualStartTime, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                • Deadline dự kiến:
+                                <span th:text="${t.expectedEndTime != null ? #temporals.format(t.expectedEndTime, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                • Kết thúc thực tế:
+                                <span th:text="${t.actualEndTime != null ? #temporals.format(t.actualEndTime, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                            </div>
+
+                            <div class="task-body" th:if="${!#strings.isEmpty(t.description)}" th:text="${t.description}"></div>
+                            <div class="task-meta" th:if="${!#strings.isEmpty(t.taskImage)}">
+                                Ảnh mô tả: <a th:href="${t.taskImage}" target="_blank">Mở ảnh</a>
+                            </div>
+
+                            <div class="task-proof" th:if="${!#strings.isEmpty(t.submissionNote) or !#strings.isEmpty(t.submissionUrl)}">
+                                <div class="task-meta"><strong>Nội dung nộp:</strong></div>
+                                <div class="task-body" th:if="${!#strings.isEmpty(t.submissionNote)}" th:text="${t.submissionNote}"></div>
+                                <div class="task-meta" th:if="${!#strings.isEmpty(t.submissionUrl)}">
+                                    Link minh chứng: <a th:href="${t.submissionUrl}" target="_blank">Mở link</a>
+                                </div>
+                                <div class="task-meta" th:if="${t.submittedAt != null}">
+                                    Thời điểm nộp: <span th:text="${#temporals.format(t.submittedAt, 'dd/MM/yyyy HH:mm')}"></span>
+                                </div>
+                            </div>
+
+                            <div class="task-proof" th:if="${!#strings.isEmpty(t.reviewComment)}">
+                                <div class="task-meta">
+                                    <strong th:text="${t.status == 4 ? 'Lý do trả lại:' : 'Nhận xét reviewer:'}">Nhận xét:</strong>
+                                </div>
+                                <div class="task-body" th:text="${t.reviewComment}"></div>
+                                <div class="task-meta" th:if="${t.reviewedAt != null}">
+                                    Thời điểm review: <span th:text="${#temporals.format(t.reviewedAt, 'dd/MM/yyyy HH:mm')}"></span>
+                                </div>
+                            </div>
+
+                            <div class="row-actions"
+                                th:if="${!projectLockedForWork and t.assigneeId == studentId and (t.status == 0 or t.status == 4)}">
+                                <form method="post" th:action="@{/student/project/tasks/{id}/start(id=${t.taskId})}">
+                                    <button type="submit" class="btn">Bắt đầu làm task</button>
+                                </form>
+                            </div>
+
+                            <form th:if="${!projectLockedForWork and t.assigneeId == studentId and t.status == 1}" method="post"
+                                th:action="@{/student/project/tasks/{id}/submit(id=${t.taskId})}">
+                                <div class="form-grid" style="margin-top:10px;">
+                                    <div class="full">
+                                        <label th:for="${'submissionNote_' + t.taskId}">Nội dung hoàn thành</label>
+                                        <textarea th:id="${'submissionNote_' + t.taskId}" name="submissionNote"
+                                            placeholder="Mô tả bạn đã làm gì, kết quả ra sao..."></textarea>
+                                    </div>
+                                    <div class="full">
+                                        <label th:for="${'submissionUrl_' + t.taskId}">Link minh chứng (repo/PR/tài liệu/demo)</label>
+                                        <input th:id="${'submissionUrl_' + t.taskId}" name="submissionUrl" type="text"
+                                            placeholder="https://..." />
+                                    </div>
+                                </div>
+                                <div class="row-actions">
+                                    <button type="submit" class="btn btn-primary">Nộp task để duyệt</button>
+                                </div>
+                            </form>
+
+                            <form th:if="${!projectLockedForWork and (isLeader or (t.reviewerId != null and t.reviewerId == studentId)) and t.assigneeId != studentId and t.status == 2}"
+                                method="post"
+                                th:action="@{/student/project/tasks/{id}/review(id=${t.taskId})}">
+                                <div class="form-grid" style="margin-top:10px;">
+                                    <div class="full">
+                                        <label th:for="${'reviewComment_' + t.taskId}">Nhận xét review</label>
+                                        <textarea th:id="${'reviewComment_' + t.taskId}" name="reviewComment"
+                                            placeholder="Nếu trả lại task thì lý do là bắt buộc."></textarea>
+                                    </div>
+                                </div>
+                                <div class="row-actions">
+                                    <button type="submit" name="action" value="approve" class="btn btn-primary">Duyệt hoàn thành</button>
+                                    <button type="submit" name="action" value="reject" class="btn btn-danger-soft">Trả lại task</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div th:replace="~{student/home/footer :: pageFooter}"></div>
+    </div>
+</body>
+
+</html>

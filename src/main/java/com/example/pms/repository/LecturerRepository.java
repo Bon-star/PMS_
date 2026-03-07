@@ -35,5 +35,37 @@ public class LecturerRepository {
         } catch (EmptyResultDataAccessException e) {
             return null;
         }
-    }    
+    }
+
+    public int linkAccount(int lecturerId, int accountId) {
+        try {
+            String sql = "UPDATE Lecturers SET AccountID = ? WHERE LecturerID = ?";
+            return db.update(sql, accountId, lecturerId);
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+
+    public Lecturer findByAccountId(int accountId) {
+        try {
+            String sql = "SELECT * FROM Lecturers WHERE AccountID = ?";
+            return db.queryForObject(sql, (rs, rowNum) -> {
+                Lecturer l = new Lecturer();
+                l.setLecturerId(rs.getInt("LecturerID"));
+                l.setLecturerCode(rs.getString("LecturerCode"));
+                l.setFullName(rs.getString("FullName"));
+                l.setSchoolEmail(rs.getString("SchoolEmail"));
+                l.setPhoneNumber(rs.getString("PhoneNumber"));
+                int accId = rs.getInt("AccountID");
+                if (rs.wasNull()) {
+                    l.setAccountId(null);
+                } else {
+                    l.setAccountId(accId);
+                }
+                return l;
+            }, accountId);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
 }

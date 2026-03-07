@@ -180,4 +180,46 @@ public class StudentRepository {
             return null;
         }
     }
+
+    public Student findByPhoneNumber(String phoneNumber) {
+        try {
+            String sql = "SELECT * FROM Students WHERE PhoneNumber = ?";
+            return db.queryForObject(sql, (rs, rn) -> {
+                Student s = new Student();
+                s.setStudentId(rs.getInt("StudentID"));
+                s.setStudentCode(rs.getString("StudentCode"));
+                s.setFullName(rs.getString("FullName"));
+                s.setSchoolEmail(rs.getString("SchoolEmail"));
+                s.setPhoneNumber(rs.getString("PhoneNumber"));
+                int cid = rs.getInt("ClassID");
+                if (rs.wasNull()) s.setClassId(null); else s.setClassId(cid);
+                int accId = rs.getInt("AccountID");
+                if (rs.wasNull()) s.setAccountId(null); else s.setAccountId(accId);
+                return s;
+            }, phoneNumber);
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
+    }
+
+    public int createStudent(String studentCode, String fullName, String schoolEmail, String phoneNumber, int classId, int accountId) {
+        try {
+            String sql = "INSERT INTO Students (StudentCode, FullName, SchoolEmail, PhoneNumber, ClassID, AccountID) " +
+                    "OUTPUT INSERTED.StudentID VALUES (?, ?, ?, ?, ?, ?)";
+            Integer studentId = db.queryForObject(sql, Integer.class,
+                    studentCode, fullName, schoolEmail, phoneNumber, classId, accountId);
+            return studentId != null ? studentId : -1;
+        } catch (Exception ex) {
+            return -1;
+        }
+    }
+
+    public int linkAccount(int studentId, int accountId) {
+        try {
+            String sql = "UPDATE Students SET AccountID = ? WHERE StudentID = ?";
+            return db.update(sql, accountId, studentId);
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
 }

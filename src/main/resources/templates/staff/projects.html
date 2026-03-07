@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Quản lý project</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #f5f6f8;
+            color: #1f2937;
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 24px auto;
+            padding: 0 16px 28px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            margin-top: 6px;
+            color: #4b5563;
+            font-size: 14px;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #fff;
+            color: #111827;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: #fff;
+        }
+
+        .btn-small {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .card-title {
+            margin: 0 0 12px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .hint {
+            margin: 0 0 12px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .alert {
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .alert-success {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #fff;
+        }
+
+        textarea {
+            min-height: 92px;
+            resize: vertical;
+        }
+
+        .form-actions {
+            margin-top: 10px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 10px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f9fafb;
+            font-size: 13px;
+            color: #374151;
+            font-weight: 700;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-waiting {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .badge-empty {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .request-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+
+        .request-title {
+            margin: 0 0 6px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .request-meta {
+            margin: 0 0 8px;
+            color: #4b5563;
+            font-size: 13px;
+        }
+
+        .request-note {
+            margin: 0 0 10px;
+            font-size: 13px;
+            color: #111827;
+            white-space: pre-wrap;
+        }
+
+        .request-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .request-actions form {
+            margin: 0;
+        }
+
+        .inline-input {
+            min-width: 260px;
+        }
+
+        @media (max-width: 900px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="topbar">
+            <div>
+                <h1 class="title">Quản lý project theo học kỳ</h1>
+                <div class="subtitle">Xin chào <strong th:text="${staffName} ?: 'Nhân viên'">Nhân viên</strong></div>
+            </div>
+            <div class="top-actions">
+                <a class="btn" href="/staff/home">Quản lý học viên</a>
+                <form action="/acc/logout" method="get">
+                    <button type="submit" class="btn btn-danger">Đăng xuất</button>
+                </form>
+            </div>
+        </div>
+
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+        <div class="card">
+            <form method="get" action="/staff/projects" class="grid">
+                <div>
+                    <label for="semesterId">Học kỳ</label>
+                    <select id="semesterId" name="semesterId">
+                        <option th:each="sem : ${semesters}"
+                            th:value="${sem.semesterId}"
+                            th:text="${sem.semesterName}"
+                            th:selected="${selectedSemesterId == sem.semesterId}">
+                        </option>
+                    </select>
+                </div>
+                <div style="display:flex; align-items:flex-end;">
+                    <button type="submit" class="btn btn-primary">Xem danh sách</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Tạo project cho nhóm</h2>
+            <p class="hint">
+                Nguồn <strong>Ấn Độ</strong> hoặc <strong>Giảng viên</strong> sẽ mặc định trạng thái đã duyệt.
+                Nguồn <strong>Học viên</strong> sẽ chờ học viên cập nhật nội dung và gửi giảng viên duyệt.
+            </p>
+            <form method="post" action="/staff/projects/create">
+                <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                <div class="grid">
+                    <div class="full">
+                        <label for="groupId">Nhóm chưa có project</label>
+                        <select id="groupId" name="groupId" required>
+                            <option value="">-- Chọn nhóm --</option>
+                            <option th:each="item : ${projectOverview}"
+                                th:if="${item.projectId == 0}"
+                                th:value="${item.groupId}"
+                                th:text="${item.groupName + ' | ' + (item.className ?: '') + ' | Trưởng nhóm: ' + (item.leaderName ?: 'Chưa có')}">
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="topicSource">Nguồn nội dung project</label>
+                        <select id="topicSource" name="topicSource" required>
+                            <option value="INDIA">Ấn Độ</option>
+                            <option value="LECTURER">Giảng viên</option>
+                            <option value="STUDENT">Học viên tự đề xuất</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="projectName">Tên project</label>
+                        <input id="projectName" name="projectName" type="text"
+                            placeholder="Bắt buộc nếu nguồn là Ấn Độ/Giảng viên" />
+                    </div>
+                    <div class="full">
+                        <label for="description">Nội dung yêu cầu project</label>
+                        <textarea id="description" name="description"
+                            placeholder="Nhập yêu cầu project, phạm vi, mục tiêu..."></textarea>
+                    </div>
+                    <div>
+                        <label for="startDate">Thời gian bắt đầu xây dựng</label>
+                        <input id="startDate" name="startDate" type="datetime-local" />
+                    </div>
+                    <div>
+                        <label for="endDate">Thời gian kết thúc</label>
+                        <input id="endDate" name="endDate" type="datetime-local" />
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Tạo project</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Danh sách project trong học kỳ</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nhóm</th>
+                        <th>Lớp</th>
+                        <th>Trưởng nhóm</th>
+                        <th>Tên project</th>
+                        <th>Nguồn</th>
+                        <th>Trạng thái</th>
+                        <th>Thời gian xây dựng</th>
+                        <th>Theo dõi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${projectOverview == null or #lists.isEmpty(projectOverview)}">
+                        <td colspan="8">Không có dữ liệu nhóm trong học kỳ này.</td>
+                    </tr>
+                    <tr th:each="p : ${projectOverview}">
+                        <td th:text="${p.groupName}">Nhóm</td>
+                        <td th:text="${p.className}">Lớp</td>
+                        <td th:text="${p.leaderName ?: 'Chưa có'}">Trưởng nhóm</td>
+                        <td th:text="${p.projectId > 0 ? (p.projectName ?: 'Chưa có tên') : 'Chưa tạo'}">Tên project</td>
+                        <td>
+                            <span th:if="${p.projectId <= 0}">-</span>
+                            <span th:if="${p.projectId > 0}" th:text="${p.topicSource}">Nguồn</span>
+                        </td>
+                        <td>
+                            <span th:if="${p.projectId <= 0}" class="badge badge-empty">Chưa tạo</span>
+                            <span th:if="${p.projectId > 0 and p.approvalStatus == 1}" class="badge badge-approved">Đã duyệt</span>
+                            <span th:if="${p.projectId > 0 and p.approvalStatus == 2}" class="badge badge-pending">Chờ giảng viên duyệt</span>
+                            <span th:if="${p.projectId > 0 and p.approvalStatus == 3}" class="badge badge-rejected">Bị từ chối</span>
+                            <span th:if="${p.projectId > 0 and p.approvalStatus == 4}" class="badge badge-waiting">Chờ học viên cập nhật</span>
+                        </td>
+                        <td>
+                            <span th:if="${p.startDate != null}" th:text="${#temporals.format(p.startDate, 'dd/MM/yyyy HH:mm')}"></span>
+                            <span th:if="${p.startDate == null}">-</span>
+                            <span> → </span>
+                            <span th:if="${p.endDate != null}" th:text="${#temporals.format(p.endDate, 'dd/MM/yyyy HH:mm')}"></span>
+                            <span th:if="${p.endDate == null}">-</span>
+                        </td>
+                        <td>
+                            <a th:if="${p.projectId > 0}"
+                                th:href="@{/staff/projects/{id}/performance(id=${p.projectId}, semesterId=${selectedSemesterId})}"
+                                class="btn btn-small">Hiệu suất</a>
+                            <span th:if="${p.projectId <= 0}" class="hint">-</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Yêu cầu cấp quyền cập nhật nội dung project</h2>
+            <div th:if="${pendingEditRequests == null or #lists.isEmpty(pendingEditRequests)}" class="hint">
+                Hiện không có yêu cầu chờ xử lý.
+            </div>
+            <div th:each="req : ${pendingEditRequests}" class="request-item">
+                <p class="request-title" th:text="${'Nhóm ' + req.groupName + ' - Project ID: ' + req.projectId}">Nhóm</p>
+                <p class="request-meta"
+                    th:text="${'Học viên: ' + req.requestedByName + ' (' + req.requestedByCode + ') • Gửi lúc: ' + #temporals.format(req.requestedDate, 'dd/MM/yyyy HH:mm')}">
+                </p>
+                <p class="request-note" th:text="${#strings.isEmpty(req.requestNote) ? 'Không có ghi chú.' : req.requestNote}">
+                    Ghi chú
+                </p>
+                <div class="request-actions">
+                    <form method="post" th:action="@{/staff/projects/requests/{id}/approve(id=${req.requestId})}">
+                        <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                        <button type="submit" class="btn btn-primary">Duyệt cấp quyền</button>
+                    </form>
+                    <form method="post" th:action="@{/staff/projects/requests/{id}/reject(id=${req.requestId})}">
+                        <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                        <input class="inline-input" type="text" name="reason" placeholder="Lý do từ chối" required />
+                        <button type="submit" class="btn">Từ chối</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
