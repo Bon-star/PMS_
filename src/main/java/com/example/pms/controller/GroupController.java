@@ -19,14 +19,17 @@ import com.example.pms.model.Classes;
 import com.example.pms.model.Group;
 import com.example.pms.model.GroupInvitation;
 import com.example.pms.model.GroupNotificationItem;
+import com.example.pms.model.Project;
 import com.example.pms.model.Semester;
 import com.example.pms.model.Student;
 import com.example.pms.repository.ClassRepository;
 import com.example.pms.repository.GroupInvitationRepository;
 import com.example.pms.repository.GroupMemberRepository;
 import com.example.pms.repository.GroupRepository;
+import com.example.pms.repository.ProjectRepository;
 import com.example.pms.repository.SemesterRepository;
 import com.example.pms.repository.StudentRepository;
+import com.example.pms.util.RoleDisplayUtil;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -52,6 +55,9 @@ public class GroupController {
 
     @Autowired
     private StudentRepository studentRepository;
+
+    @Autowired
+    private ProjectRepository projectRepository;
 
     @GetMapping("/list")
     public String listGroups(Model model, HttpSession session) {
@@ -175,6 +181,11 @@ public class GroupController {
                         student.getStudentId())
                 : List.of();
         int memberCount = groupMemberRepository.countMembers(groupId);
+        Project groupProject = projectRepository.findByGroupId(group.getGroupId());
+        boolean groupHasProject = groupProject != null;
+        if (groupHasProject) {
+            availableStudents = List.of();
+        }
 
         boolean hasActiveGroup = groupRepository.hasActiveGroup(student.getStudentId(), group.getSemesterId());
         boolean hasPendingJoinRequest = !isMember
@@ -183,7 +194,9 @@ public class GroupController {
                 && !hasActiveGroup
                 && !hasPendingJoinRequest
                 && memberCount < MAX_GROUP_MEMBERS
+                && !groupHasProject
                 && groupInvitationRepository.isInvitationTableAvailable();
+        boolean membershipLockedByProjectStart = isGroupMembershipLockedByStartedProject(groupProject);
 
         addCommonPageAttributes(model, session, student);
         addNotificationCount(model, student.getStudentId());
@@ -197,8 +210,10 @@ public class GroupController {
         model.addAttribute("availableStudents", availableStudents);
         model.addAttribute("hasActiveGroup", hasActiveGroup);
         model.addAttribute("hasPendingJoinRequest", hasPendingJoinRequest);
+        model.addAttribute("groupHasProject", groupHasProject);
         model.addAttribute("canRequestJoin", canRequestJoin);
-        model.addAttribute("canDeleteGroup", isLeader && memberCount == 1);
+        model.addAttribute("membershipLockedByProjectStart", membershipLockedByProjectStart);
+        model.addAttribute("canDeleteGroup", isLeader && memberCount == 1 && !membershipLockedByProjectStart);
         return "student/group/detail";
     }
 
@@ -274,6 +289,10 @@ public class GroupController {
         if (!groupMemberRepository.isMember(groupId, me.getStudentId())) {
             redirectAttributes.addFlashAttribute("error", "Bạn không phải thành viên nhóm này.");
             return "redirect:/student/group/list";
+        }
+        if (hasAssignedProject(group)) {
+            redirectAttributes.addFlashAttribute("error", "Nhóm đã có project nên không thể mời thêm thành viên.");
+            return "redirect:/student/group/" + groupId;
         }
         if (groupMemberRepository.countMembers(groupId) >= MAX_GROUP_MEMBERS) {
             redirectAttributes.addFlashAttribute("error", "Nhóm đã đủ 4 thành viên, không thể gửi thêm lời mời.");
@@ -380,6 +399,10 @@ public class GroupController {
             redirectAttributes.addFlashAttribute("error", "Bạn đang ở trong một nhóm khác.");
             return "redirect:/student/group/list";
         }
+        if (hasAssignedProject(group)) {
+            redirectAttributes.addFlashAttribute("error", "Nhóm này đã có project nên không nhận thêm yêu cầu tham gia.");
+            return "redirect:/student/group/" + groupId;
+        }
         if (groupMemberRepository.countMembers(groupId) >= MAX_GROUP_MEMBERS) {
             redirectAttributes.addFlashAttribute("error", "Nhóm đã đủ 4 thành viên, không thể gửi yêu cầu tham gia.");
             return "redirect:/student/group/" + groupId;
@@ -446,6 +469,12 @@ public class GroupController {
         }
 
         if ("approve".equalsIgnoreCase(action)) {
+            if (hasAssignedProject(group)) {
+                groupInvitationRepository.updateStatus(invitationId, "REJECTED");
+                redirectAttributes.addFlashAttribute("error",
+                        "Nhóm đã có project nên không thể duyệt thêm thành viên mới.");
+                return "redirect:/student/group/" + groupId;
+            }
             if (groupRepository.hasActiveGroup(invitation.getStudentId(), group.getSemesterId())) {
                 groupInvitationRepository.updateStatus(invitationId, "REJECTED");
                 redirectAttributes.addFlashAttribute("error", "Sinh viên đã vào nhóm khác. Yêu cầu được từ chối.");
@@ -515,6 +544,12 @@ public class GroupController {
         }
 
         if ("accept".equalsIgnoreCase(action)) {
+            if (hasAssignedProject(group)) {
+                groupInvitationRepository.updateStatus(invitationId, "REJECTED");
+                redirectAttributes.addFlashAttribute("error",
+                        "Nhóm này đã có project nên bạn không thể tham gia nữa.");
+                return "redirect:/student/group/notifications";
+            }
             if (groupRepository.hasActiveGroup(me.getStudentId(), group.getSemesterId())) {
                 groupInvitationRepository.updateStatus(invitationId, "REJECTED");
                 redirectAttributes.addFlashAttribute("error", "Bạn đã ở trong nhóm khác, không thể tham gia.");
@@ -575,6 +610,12 @@ public class GroupController {
             return "redirect:/student/group/" + groupId;
         }
 
+        if (isGroupMembershipLockedByStartedProject(group)) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Project c\u1ee7a nh\u00f3m \u0111\u00e3 b\u1eaft \u0111\u1ea7u n\u00ean kh\u00f4ng th\u1ec3 m\u1eddi th\u00e0nh vi\u00ean ra kh\u1ecfi nh\u00f3m.");
+            return "redirect:/student/group/" + groupId;
+        }
+
         int removed = groupMemberRepository.removeMember(groupId, targetId);
         if (removed > 0) {
             redirectAttributes.addFlashAttribute("success", "Đã mời thành viên ra khỏi nhóm.");
@@ -605,6 +646,12 @@ public class GroupController {
         boolean isLeader = group.getLeaderId() != null && group.getLeaderId() == me.getStudentId();
         if (isLeader) {
             redirectAttributes.addFlashAttribute("error", "Nhóm trưởng không thể rời nhóm. Hãy xóa nhóm khi chỉ còn một mình bạn.");
+            return "redirect:/student/group/" + groupId;
+        }
+
+        if (isGroupMembershipLockedByStartedProject(group)) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Project c\u1ee7a nh\u00f3m \u0111\u00e3 b\u1eaft \u0111\u1ea7u n\u00ean b\u1ea1n kh\u00f4ng th\u1ec3 r\u1eddi nh\u00f3m.");
             return "redirect:/student/group/" + groupId;
         }
 
@@ -642,6 +689,12 @@ public class GroupController {
             return "redirect:/student/group/" + groupId;
         }
 
+        if (isGroupMembershipLockedByStartedProject(group)) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Project c\u1ee7a nh\u00f3m \u0111\u00e3 b\u1eaft \u0111\u1ea7u n\u00ean kh\u00f4ng th\u1ec3 x\u00f3a nh\u00f3m.");
+            return "redirect:/student/group/" + groupId;
+        }
+
         groupInvitationRepository.deleteByGroup(groupId);
         groupMemberRepository.removeByGroup(groupId);
         int deleted = groupRepository.deleteGroup(groupId);
@@ -676,6 +729,24 @@ public class GroupController {
         return invitation.getRespondedDate() != null ? invitation.getRespondedDate() : invitation.getInvitedDate();
     }
 
+    private boolean hasAssignedProject(Group group) {
+        if (group == null) {
+            return false;
+        }
+        return projectRepository.findByGroupId(group.getGroupId()) != null;
+    }
+
+    private boolean isGroupMembershipLockedByStartedProject(Group group) {
+        return group != null && isGroupMembershipLockedByStartedProject(projectRepository.findByGroupId(group.getGroupId()));
+    }
+
+    private boolean isGroupMembershipLockedByStartedProject(Project project) {
+        return project != null
+                && project.getApprovalStatus() == Project.STATUS_APPROVED
+                && project.getStartDate() != null
+                && !project.getStartDate().isAfter(LocalDateTime.now());
+    }
+
     private void addNotificationCount(Model model, int studentId) {
         int incomingFromLeader = groupInvitationRepository.countPendingByStudentFromLeader(studentId);
         int needLeaderApprove = groupInvitationRepository.countPendingForLeader(studentId);
@@ -686,8 +757,8 @@ public class GroupController {
         Object fullName = session.getAttribute("fullName");
         Object role = session.getAttribute("role");
         model.addAttribute("studentName",
-                fullName != null ? fullName : (student != null ? student.getFullName() : "Học sinh"));
-        model.addAttribute("userRole", role != null ? role : "Học sinh");
+                fullName != null ? fullName : (student != null ? student.getFullName() : "H\u1ecdc vi\u00ean"));
+        model.addAttribute("userRole", RoleDisplayUtil.toDisplayRole(role != null ? role : "Student"));
         model.addAttribute("className", resolveClassName(student));
     }
 }

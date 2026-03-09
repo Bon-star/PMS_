@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -32,9 +32,11 @@
                             <div class="member-main">
                                 <strong th:text="${m.fullName}">Tên thành viên</strong>
                                 <span>(<span th:text="${m.studentCode}">HE000000</span>)</span>
-                                <span class="member-badge" th:if="${group.leaderId != null and group.leaderId == m.studentId}">Nhóm trưởng</span>
+                                <span class="member-badge"
+                                    th:if="${group.leaderId != null and group.leaderId == m.studentId}">Nhóm trưởng</span>
                             </div>
-                            <div class="row-actions" th:if="${isLeader and m.studentId != studentId}">
+                            <div class="row-actions"
+                                th:if="${isLeader and m.studentId != studentId and !membershipLockedByProjectStart}">
                                 <form method="post" th:action="@{/student/group/{id}/kick(id=${group.groupId})}">
                                     <input type="hidden" name="studentId" th:value="${m.studentId}" />
                                     <button class="btn-small btn-danger" type="submit">Mời ra khỏi nhóm</button>
@@ -42,9 +44,12 @@
                             </div>
                         </li>
                     </ul>
+                    <div class="hint" th:if="${membershipLockedByProjectStart}">
+                        Project đã bắt đầu nên không thể mời thành viên ra khỏi nhóm hoặc rời nhóm.
+                    </div>
                 </div>
 
-                <div class="section" th:if="${isMember and invitationFeatureEnabled}">
+                <div class="section" th:if="${isMember and invitationFeatureEnabled and !groupHasProject}">
                     <h2>Mời thành viên</h2>
                     <div class="hint">Trang này chỉ để gửi lời mời/đề xuất. Duyệt và xác nhận tại trang <strong>Thông báo</strong>.</div>
                     <form class="invite-form" method="post" th:action="@{/student/group/{id}/invite(id=${group.groupId})}">
@@ -63,7 +68,7 @@
                         <tbody>
                             <tr th:each="s : ${availableStudents}">
                                 <td th:text="${s.studentCode}">HE000000</td>
-                                <td th:text="${s.fullName}">Nguyen Van A</td>
+                                <td th:text="${s.fullName}">Nguyễn Văn A</td>
                                 <td th:text="${s.schoolEmail}">a@fpt.edu.vn</td>
                                 <td>
                                     <form method="post" th:action="@{/student/group/{id}/invite(id=${group.groupId})}">
@@ -79,9 +84,15 @@
                     </div>
                 </div>
 
+                <div class="section" th:if="${isMember and groupHasProject}">
+                    <h2>Mời thành viên</h2>
+                    <div class="hint">Nhóm đã có project nên không thể nhận thêm thành viên mới.</div>
+                </div>
+
                 <div class="section" th:if="${!isMember}">
                     <h2>Yêu cầu tham gia nhóm</h2>
                     <div class="hint" th:if="${!invitationFeatureEnabled}">Chức năng thông báo chưa bật nên không gửi yêu cầu được.</div>
+                    <div class="hint" th:if="${invitationFeatureEnabled and groupHasProject}">Nhóm này đã có project nên không nhận thêm yêu cầu tham gia.</div>
                     <div class="hint" th:if="${invitationFeatureEnabled and hasActiveGroup}">Bạn đang ở trong một nhóm khác nên không thể gửi yêu cầu.</div>
                     <div class="hint" th:if="${invitationFeatureEnabled and !hasActiveGroup and hasPendingJoinRequest}">Bạn đã gửi yêu cầu vào nhóm này và đang chờ nhóm trưởng duyệt.</div>
                     <form th:if="${canRequestJoin}" method="post" th:action="@{/student/group/{id}/join-request(id=${group.groupId})}">
@@ -91,7 +102,7 @@
 
                 <div class="section" th:if="${isMember}">
                     <h2>Thao tác</h2>
-                    <div th:if="${!isLeader}">
+                    <div th:if="${!isLeader and !membershipLockedByProjectStart}">
                         <form method="post" th:action="@{/student/group/{id}/leave(id=${group.groupId})}">
                             <button class="btn-small btn-danger" type="submit">Rời nhóm</button>
                         </form>
@@ -103,7 +114,10 @@
                         </form>
                         <div class="hint">Nhóm chỉ còn nhóm trưởng nên có thể xóa.</div>
                     </div>
-                    <div class="hint" th:if="${isLeader and !canDeleteGroup}">
+                    <div class="hint" th:if="${membershipLockedByProjectStart}">
+                        Project đã bắt đầu nên thành viên không thể rời nhóm, bị kick hoặc xóa nhóm.
+                    </div>
+                    <div class="hint" th:if="${isLeader and !canDeleteGroup and !membershipLockedByProjectStart}">
                         Nhóm trưởng không thể rời nhóm. Hãy mời thành viên ra khỏi nhóm, sau đó xóa nhóm khi chỉ còn một mình.
                     </div>
                 </div>

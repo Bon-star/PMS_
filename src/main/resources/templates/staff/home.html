@@ -1,250 +1,97 @@
 ﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-
 <head>
     <meta charset="utf-8" />
-    <title>Quản lý học viên</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            background: #f6f8fa;
-            color: #1f2937;
-            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-        }
-
-        .container {
-            max-width: 980px;
-            margin: 34px auto;
-            padding: 0 16px;
-        }
-
-        .card {
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 22px;
-        }
-
-        .top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .title {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .sub {
-            margin-top: 6px;
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        .top-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn {
-            border: none;
-            border-radius: 8px;
-            padding: 10px 14px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: #2563eb;
-            color: #fff;
-        }
-
-        .btn-logout {
-            background: #ef4444;
-            color: #fff;
-        }
-
-        .alert {
-            margin-top: 16px;
-            border-radius: 8px;
-            padding: 12px 14px;
-            font-size: 14px;
-        }
-
-        .alert-error {
-            background: #fee2e2;
-            border: 1px solid #fca5a5;
-            color: #991b1b;
-        }
-
-        .alert-success {
-            background: #dcfce7;
-            border: 1px solid #86efac;
-            color: #166534;
-        }
-
-        .info {
-            margin-top: 16px;
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            color: #1e3a8a;
-            border-radius: 8px;
-            padding: 12px 14px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .form-grid {
-            margin-top: 18px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .form-group.full {
-            grid-column: 1 / -1;
-        }
-
-        label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        input,
-        select {
-            width: 100%;
-            height: 42px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            padding: 0 12px;
-            font-size: 14px;
-            outline: none;
-        }
-
-        input:focus,
-        select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-        }
-
-        .actions {
-            margin-top: 18px;
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        .btn-submit {
-            border: none;
-            border-radius: 8px;
-            padding: 11px 18px;
-            background: #2563eb;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        @media (max-width: 760px) {
-            .top {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <title>Nhân viên • Thêm học viên</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
 </head>
+<body class="backoffice-body staff-home-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{staff/layout/header :: sidebar('home')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{staff/layout/header :: topbar('Thêm học viên và tạo tài khoản')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
 
-<body>
-    <div class="container">
-        <div class="card">
-            <div class="top">
-                <div>
-                    <h1 class="title">Thêm học viên và tạo tài khoản</h1>
-                    <div class="sub">Xin chào, <strong th:text="${staffName} ?: 'Nhân viên'">Nhân viên</strong></div>
-                </div>
-                <div class="top-actions">
-                    <a href="/staff/projects" class="btn btn-primary">Quản lý project</a>
-                    <form action="/acc/logout" method="get">
-                        <button type="submit" class="btn btn-logout">Đăng xuất</button>
+                <section class="page-section summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-label">Quy trình nhập liệu</div>
+                        <div class="summary-value">1 lần</div>
+                        <div class="summary-note">Nhân viên chỉ nhập thông tin học viên một lần.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Tài khoản</div>
+                        <div class="summary-value">Tự tạo</div>
+                        <div class="summary-note">Hệ thống tạo luôn tài khoản học viên chưa kích hoạt.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Kích hoạt mật khẩu</div>
+                        <div class="summary-value">Học viên</div>
+                        <div class="summary-note">Học viên tự vào trang đăng ký để đặt mật khẩu lần đầu.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Điều hướng nhanh</div>
+                        <div class="button-row" style="margin-top:10px;">
+                            <a class="btn btn-primary btn-small" href="/staff/projects">Quản lý project</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Nguyên tắc xử lý</h2>
+                    <div class="meta">
+                        Nhân viên quản lý đào tạo nhập mã học viên, họ tên, email, số điện thoại và lớp. Sau khi lưu thành công,
+                        hệ thống gắn luôn một tài khoản học viên theo email trường để học viên tự hoàn tất bước đặt mật khẩu.
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Thông tin học viên mới</h2>
+                    <form method="post" action="/staff/students/create">
+                        <div class="form-grid">
+                            <div>
+                                <label for="studentCode">Mã học viên</label>
+                                <input id="studentCode" name="studentCode" type="text" maxlength="20"
+                                    th:value="${studentCode}" placeholder="Ví dụ: HE123456" required />
+                            </div>
+                            <div>
+                                <label for="fullName">Họ và tên</label>
+                                <input id="fullName" name="fullName" type="text" maxlength="100"
+                                    th:value="${fullNameInput}" placeholder="Ví dụ: Nguyễn Văn A" required />
+                            </div>
+                            <div>
+                                <label for="schoolEmail">Email học viên</label>
+                                <input id="schoolEmail" name="schoolEmail" type="email" maxlength="100"
+                                    th:value="${schoolEmail}" placeholder="Ví dụ: he123456@fpt.edu.vn" required />
+                            </div>
+                            <div>
+                                <label for="phoneNumber">Số điện thoại</label>
+                                <input id="phoneNumber" name="phoneNumber" type="text" maxlength="15"
+                                    th:value="${phoneNumber}" placeholder="Ví dụ: 0912345678" required />
+                            </div>
+                            <div class="full">
+                                <label for="classId">Lớp</label>
+                                <select id="classId" name="classId" required>
+                                    <option value="" disabled th:selected="${selectedClassId == null}">-- Chọn lớp --</option>
+                                    <option th:each="c : ${classes}"
+                                        th:value="${c.classId}"
+                                        th:text="${(c.courseYear != null and !#strings.isEmpty(c.courseYear)) ? c.className + ' - ' + c.courseYear : c.className}"
+                                        th:selected="${selectedClassId != null and selectedClassId == c.classId}">
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Tạo học viên và tài khoản</button>
+                        </div>
                     </form>
-                </div>
-            </div>
-
-            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
-            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-
-            <div class="info">
-                Nhân viên chỉ nhập thông tin học viên một lần. Hệ thống sẽ tạo luôn tài khoản học viên
-                (trạng thái chưa kích hoạt), học viên dùng email vừa tạo để đăng ký mật khẩu ở trang đăng ký.
-            </div>
-
-            <form method="post" action="/staff/students/create">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="studentCode">Mã học viên</label>
-                        <input id="studentCode" name="studentCode" type="text" maxlength="20"
-                            th:value="${studentCode}" placeholder="Ví dụ: HE123456" required />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="fullName">Họ và tên</label>
-                        <input id="fullName" name="fullName" type="text" maxlength="100"
-                            th:value="${fullNameInput}" placeholder="Ví dụ: Nguyễn Văn A" required />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="schoolEmail">Email học viên</label>
-                        <input id="schoolEmail" name="schoolEmail" type="email" maxlength="100"
-                            th:value="${schoolEmail}" placeholder="Ví dụ: he123456@fpt.edu.vn" required />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="phoneNumber">Số điện thoại</label>
-                        <input id="phoneNumber" name="phoneNumber" type="text" maxlength="15"
-                            th:value="${phoneNumber}" placeholder="Ví dụ: 0912345678" required />
-                    </div>
-
-                    <div class="form-group full">
-                        <label for="classId">Lớp</label>
-                        <select id="classId" name="classId" required>
-                            <option value="" disabled th:selected="${selectedClassId == null}">-- Chọn lớp --</option>
-                            <option th:each="c : ${classes}"
-                                th:value="${c.classId}"
-                                th:text="${(c.courseYear != null and !#strings.isEmpty(c.courseYear)) ? c.className + ' - ' + c.courseYear : c.className}"
-                                th:selected="${selectedClassId != null and selectedClassId == c.classId}">
-                            </option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="actions">
-                    <button type="submit" class="btn-submit">Tạo học viên và tài khoản</button>
-                </div>
-            </form>
+                </section>
+            </main>
+            <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
         </div>
     </div>
 </body>
-
 </html>

@@ -2,17 +2,23 @@ package com.example.pms.controller;
 
 import com.example.pms.model.Account;
 import com.example.pms.model.Project;
+import com.example.pms.model.ProjectChangeRequest;
 import com.example.pms.model.ProjectEditRequest;
 import com.example.pms.model.Semester;
 import com.example.pms.model.Staff;
+import com.example.pms.repository.ProjectChangeRequestRepository;
 import com.example.pms.repository.ProjectEditRequestRepository;
 import com.example.pms.repository.ProjectRepository;
 import com.example.pms.repository.ProjectTaskRepository;
 import com.example.pms.repository.SemesterRepository;
 import com.example.pms.repository.SprintRepository;
 import com.example.pms.repository.StaffRepository;
+import com.example.pms.service.MailService;
+import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -40,10 +46,16 @@ public class StaffProjectController {
     private ProjectEditRequestRepository projectEditRequestRepository;
 
     @Autowired
+    private ProjectChangeRequestRepository projectChangeRequestRepository;
+
+    @Autowired
     private ProjectTaskRepository projectTaskRepository;
 
     @Autowired
     private SprintRepository sprintRepository;
+
+    @Autowired
+    private MailService mailService;
 
     private Account getSessionAccount(HttpSession session) {
         return (Account) session.getAttribute("account");
@@ -80,11 +92,14 @@ public class StaffProjectController {
 
     private void bindCommon(Model model, HttpSession session, int semesterId) {
         Object fullName = session.getAttribute("fullName");
-        model.addAttribute("staffName", fullName != null ? fullName : "Nhân viên");
+        model.addAttribute("staffName", fullName != null ? fullName : "Nh\u00e2n vi\u00ean");
+        model.addAttribute("displayName", fullName != null ? fullName : "Nh\u00e2n vi\u00ean");
+        model.addAttribute("displayRole", RoleDisplayUtil.toDisplayRole("Staff"));
         model.addAttribute("selectedSemesterId", semesterId);
         model.addAttribute("semesters", semesterRepository.findAll());
         model.addAttribute("projectOverview", projectRepository.findProjectOverviewBySemester(semesterId));
         model.addAttribute("pendingEditRequests", projectEditRequestRepository.findPendingRequests());
+        model.addAttribute("pendingChangeRequests", projectChangeRequestRepository.findPendingForStaff());
     }
 
     @GetMapping
@@ -123,20 +138,20 @@ public class StaffProjectController {
             normalizedStartDate = parseDateTimeInput(startDate);
             normalizedEndDate = parseDateTimeInput(endDate);
         } catch (Exception ex) {
-            redirectAttributes.addFlashAttribute("error", "Thời gian bắt đầu/kết thúc không hợp lệ.");
+            redirectAttributes.addFlashAttribute("error", "Thá»i gian báº¯t Ä‘áº§u/káº¿t thÃºc khÃ´ng há»£p lá»‡.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         if (!"INDIA".equals(normalizedSource)
                 && !"LECTURER".equals(normalizedSource)
                 && !"STUDENT".equals(normalizedSource)) {
-            redirectAttributes.addFlashAttribute("error", "Nguồn nội dung project không hợp lệ.");
+            redirectAttributes.addFlashAttribute("error", "Nguá»“n ná»™i dung project khÃ´ng há»£p lá»‡.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         Project existed = projectRepository.findByGroupId(groupId);
         if (existed != null && existed.getProjectId() > 0) {
-            redirectAttributes.addFlashAttribute("error", "Nhóm này đã có project.");
+            redirectAttributes.addFlashAttribute("error", "NhÃ³m nÃ y Ä‘Ã£ cÃ³ project.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
@@ -145,20 +160,20 @@ public class StaffProjectController {
         if ("STUDENT".equals(normalizedSource)) {
             approvalStatus = Project.STATUS_WAITING_STUDENT_CONTENT;
             if (normalizedName.isEmpty()) {
-                normalizedName = "Đề tài do học viên đề xuất";
+                normalizedName = "Äá» tÃ i do há»c viÃªn Ä‘á» xuáº¥t";
             }
         } else {
             approvalStatus = Project.STATUS_APPROVED;
             if (normalizedName.isEmpty()) {
-                redirectAttributes.addFlashAttribute("error", "Vui lòng nhập tên project.");
+                redirectAttributes.addFlashAttribute("error", "Vui lÃ²ng nháº­p tÃªn project.");
                 return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
             }
             if (normalizedStartDate == null || normalizedEndDate == null) {
-                redirectAttributes.addFlashAttribute("error", "Project đã duyệt phải có thời gian bắt đầu và kết thúc.");
+                redirectAttributes.addFlashAttribute("error", "Project Ä‘Ã£ duyá»‡t pháº£i cÃ³ thá»i gian báº¯t Ä‘áº§u vÃ  káº¿t thÃºc.");
                 return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
             }
             if (!normalizedEndDate.isAfter(normalizedStartDate)) {
-                redirectAttributes.addFlashAttribute("error", "Thời gian kết thúc phải sau thời gian bắt đầu.");
+                redirectAttributes.addFlashAttribute("error", "Thá»i gian káº¿t thÃºc pháº£i sau thá»i gian báº¯t Ä‘áº§u.");
                 return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
             }
         }
@@ -173,11 +188,11 @@ public class StaffProjectController {
                 approvalStatus == Project.STATUS_APPROVED ? normalizedEndDate : null,
                 studentCanEdit);
         if (projectId <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể tạo project. Vui lòng kiểm tra dữ liệu.");
+            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ táº¡o project. Vui lÃ²ng kiá»ƒm tra dá»¯ liá»‡u.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
-        redirectAttributes.addFlashAttribute("success", "Đã tạo project thành công cho nhóm.");
+        redirectAttributes.addFlashAttribute("success", "ÄÃ£ táº¡o project thÃ nh cÃ´ng cho nhÃ³m.");
         return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
     }
 
@@ -193,7 +208,7 @@ public class StaffProjectController {
         int resolvedSemesterId = resolveSemesterId(semesterId);
         ProjectEditRequest request = projectEditRequestRepository.findById(requestId);
         if (request == null || !"PENDING".equalsIgnoreCase(request.getStatus())) {
-            redirectAttributes.addFlashAttribute("error", "Yêu cầu cấp quyền không hợp lệ hoặc đã xử lý.");
+            redirectAttributes.addFlashAttribute("error", "YÃªu cáº§u cáº¥p quyá»n khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ xá»­ lÃ½.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
@@ -203,12 +218,12 @@ public class StaffProjectController {
 
         int updated = projectEditRequestRepository.approve(requestId, staffId);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể duyệt yêu cầu cấp quyền.");
+            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ duyá»‡t yÃªu cáº§u cáº¥p quyá»n.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         projectRepository.setStudentCanEdit(request.getProjectId(), true);
-        redirectAttributes.addFlashAttribute("success", "Đã cấp quyền cập nhật nội dung project cho học viên.");
+        redirectAttributes.addFlashAttribute("success", "ÄÃ£ cáº¥p quyá»n cáº­p nháº­t ná»™i dung project cho há»c viÃªn.");
         return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
     }
 
@@ -225,13 +240,13 @@ public class StaffProjectController {
         int resolvedSemesterId = resolveSemesterId(semesterId);
         String normalizedReason = normalize(reason);
         if (normalizedReason.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Vui lòng nhập lý do từ chối.");
+            redirectAttributes.addFlashAttribute("error", "Vui lÃ²ng nháº­p lÃ½ do tá»« chá»‘i.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         ProjectEditRequest request = projectEditRequestRepository.findById(requestId);
         if (request == null || !"PENDING".equalsIgnoreCase(request.getStatus())) {
-            redirectAttributes.addFlashAttribute("error", "Yêu cầu cấp quyền không hợp lệ hoặc đã xử lý.");
+            redirectAttributes.addFlashAttribute("error", "YÃªu cáº§u cáº¥p quyá»n khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ xá»­ lÃ½.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
@@ -241,12 +256,116 @@ public class StaffProjectController {
 
         int updated = projectEditRequestRepository.reject(requestId, staffId, normalizedReason);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể từ chối yêu cầu cấp quyền.");
+            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ tá»« chá»‘i yÃªu cáº§u cáº¥p quyá»n.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         projectRepository.setStudentCanEdit(request.getProjectId(), false);
-        redirectAttributes.addFlashAttribute("success", "Đã từ chối yêu cầu cấp quyền cập nhật project.");
+        redirectAttributes.addFlashAttribute("success", "ÄÃ£ tá»« chá»‘i yÃªu cáº§u cáº¥p quyá»n cáº­p nháº­t project.");
+        return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+    }
+
+    @PostMapping("/change-requests/{requestId}/approve")
+    public String approveChangeRequest(@PathVariable("requestId") int requestId,
+            @RequestParam(name = "semesterId", required = false) Integer semesterId,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isStaff(session)) {
+            return "redirect:/acc/log";
+        }
+
+        int resolvedSemesterId = resolveSemesterId(semesterId);
+        ProjectChangeRequest request = projectChangeRequestRepository.findById(requestId);
+        if (request == null || !ProjectChangeRequest.STATUS_PENDING_STAFF.equalsIgnoreCase(request.getStatus())) {
+            redirectAttributes.addFlashAttribute("error", "YÃªu cáº§u Ä‘á»•i project khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ xá»­ lÃ½.");
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+
+        Project project = projectRepository.findById(request.getProjectId());
+        if (project == null) {
+            redirectAttributes.addFlashAttribute("error", "Project khÃ´ng cÃ²n tá»“n táº¡i.");
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+        if (projectTaskRepository.hasDoneTasksByProject(project.getProjectId())) {
+            redirectAttributes.addFlashAttribute("error", "Project Ä‘Ã£ cÃ³ cÃ´ng viá»‡c hoÃ n thÃ nh nÃªn khÃ´ng thá»ƒ chuyá»ƒn yÃªu cáº§u Ä‘á»•i Ä‘á» tÃ i cho giáº£ng viÃªn.");
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+
+        Account account = getSessionAccount(session);
+        Staff staff = account != null ? staffRepository.findByAccountId(account.getId()) : null;
+        int staffId = staff != null ? staff.getStaffId() : 0;
+
+        int updated = projectChangeRequestRepository.approveByStaff(requestId, staffId);
+        if (updated <= 0) {
+            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ chuyá»ƒn yÃªu cáº§u Ä‘á»•i project sang giáº£ng viÃªn.");
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+
+        Set<String> uniqueEmails = new LinkedHashSet<>();
+        for (String email : projectRepository.findLecturerEmailsForProject(project.getProjectId())) {
+            String normalizedEmail = normalize(email).toLowerCase();
+            if (!normalizedEmail.isEmpty()) {
+                uniqueEmails.add(normalizedEmail);
+            }
+        }
+        int sent = 0;
+        for (String email : uniqueEmails) {
+            try {
+                mailService.sendProjectChangeReviewRequest(
+                        email,
+                        normalize(project.getProjectName()).isEmpty() ? "Project chÆ°a cÃ³ tÃªn" : project.getProjectName(),
+                        request.getProposedProjectName(),
+                        request.getGroupName());
+                sent++;
+            } catch (Exception ex) {
+                // Keep workflow successful even if some email fails.
+            }
+        }
+
+        if (uniqueEmails.isEmpty()) {
+            redirectAttributes.addFlashAttribute("success",
+                    "ÄÃ£ chuyá»ƒn yÃªu cáº§u Ä‘á»•i project sang bÆ°á»›c giáº£ng viÃªn duyá»‡t. Hiá»‡n chÆ°a cÃ³ giáº£ng viÃªn nÃ o nháº­n Ä‘Æ°á»£c email.");
+        } else {
+            redirectAttributes.addFlashAttribute("success",
+                    "ÄÃ£ chuyá»ƒn yÃªu cáº§u Ä‘á»•i project sang giáº£ng viÃªn duyá»‡t. Email Ä‘Ã£ gá»­i: " + sent + "/" + uniqueEmails.size() + ".");
+        }
+        return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+    }
+
+    @PostMapping("/change-requests/{requestId}/reject")
+    public String rejectChangeRequest(@PathVariable("requestId") int requestId,
+            @RequestParam("reason") String reason,
+            @RequestParam(name = "semesterId", required = false) Integer semesterId,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isStaff(session)) {
+            return "redirect:/acc/log";
+        }
+
+        int resolvedSemesterId = resolveSemesterId(semesterId);
+        String normalizedReason = normalize(reason);
+        if (normalizedReason.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Vui lÃ²ng nháº­p lÃ½ do tá»« chá»‘i yÃªu cáº§u Ä‘á»•i project.");
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+
+        ProjectChangeRequest request = projectChangeRequestRepository.findById(requestId);
+        if (request == null || !ProjectChangeRequest.STATUS_PENDING_STAFF.equalsIgnoreCase(request.getStatus())) {
+            redirectAttributes.addFlashAttribute("error", "YÃªu cáº§u Ä‘á»•i project khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ xá»­ lÃ½.");
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+
+        Account account = getSessionAccount(session);
+        Staff staff = account != null ? staffRepository.findByAccountId(account.getId()) : null;
+        int staffId = staff != null ? staff.getStaffId() : 0;
+
+        int updated = projectChangeRequestRepository.rejectByStaff(requestId, staffId, normalizedReason);
+        if (updated <= 0) {
+            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ tá»« chá»‘i yÃªu cáº§u Ä‘á»•i project.");
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+
+        redirectAttributes.addFlashAttribute("success", "ÄÃ£ tá»« chá»‘i yÃªu cáº§u Ä‘á»•i project.");
         return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
     }
 
@@ -263,14 +382,16 @@ public class StaffProjectController {
         Project project = projectRepository.findById(projectId);
         if (project == null || project.getProjectId() <= 0) {
             int resolvedSemesterId = resolveSemesterId(semesterId);
-            redirectAttributes.addFlashAttribute("error", "Project không tồn tại.");
+            redirectAttributes.addFlashAttribute("error", "Project khÃ´ng tá»“n táº¡i.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         int resolvedSemesterId = resolveSemesterId(
                 semesterId != null ? semesterId : project.getSemesterId());
         Object fullName = session.getAttribute("fullName");
-        model.addAttribute("staffName", fullName != null ? fullName : "Nhân viên");
+        model.addAttribute("staffName", fullName != null ? fullName : "Nh\u00e2n vi\u00ean");
+        model.addAttribute("displayName", fullName != null ? fullName : "Nh\u00e2n vi\u00ean");
+        model.addAttribute("displayRole", RoleDisplayUtil.toDisplayRole("Staff"));
         model.addAttribute("selectedSemesterId", resolvedSemesterId);
         model.addAttribute("project", project);
 

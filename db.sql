@@ -1,4 +1,4 @@
-USE master;
+﻿USE master;
 GO
 
 IF DB_ID('PMS') IS NOT NULL
@@ -14,33 +14,11 @@ GO
 USE PMS;
 GO
 
--- Drop tables in reverse dependency order
-DROP TABLE IF EXISTS Project_Scores;
-DROP TABLE IF EXISTS Presentation_Schedules;
-DROP TABLE IF EXISTS Tasks;
-DROP TABLE IF EXISTS Sprints;
-DROP TABLE IF EXISTS Project_Edit_Requests;
-DROP TABLE IF EXISTS Projects;
-DROP TABLE IF EXISTS Class_Lecturers;
-DROP TABLE IF EXISTS Group_Invitations;
-DROP TABLE IF EXISTS Group_Members;
-DROP TABLE IF EXISTS Groups;
-DROP TABLE IF EXISTS Group_Registration_Periods;
-DROP TABLE IF EXISTS OTP_Verifications;
-DROP TABLE IF EXISTS Staff;
-DROP TABLE IF EXISTS Lecturers;
-DROP TABLE IF EXISTS Students;
-DROP TABLE IF EXISTS Semesters;
-DROP TABLE IF EXISTS Classes;
-DROP TABLE IF EXISTS Accounts;
-GO
-
--- Core tables
 CREATE TABLE Accounts (
     AccountID INT PRIMARY KEY IDENTITY(1,1),
     Username VARCHAR(100) UNIQUE NOT NULL,
     PasswordHash NVARCHAR(MAX) NULL,
-    Role NVARCHAR(20) NOT NULL, -- Student, Staff, Lecturer
+    Role NVARCHAR(20) NOT NULL,
     IsActive BIT NOT NULL DEFAULT 0,
     AuthProvider VARCHAR(20) NOT NULL DEFAULT 'LOCAL',
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE()
@@ -89,7 +67,6 @@ CREATE TABLE Staff (
 );
 GO
 
--- Only enforce uniqueness when AccountID is present (allow many NULL before account linking)
 CREATE UNIQUE INDEX UX_Students_AccountID ON Students(AccountID) WHERE AccountID IS NOT NULL;
 CREATE UNIQUE INDEX UX_Lecturers_AccountID ON Lecturers(AccountID) WHERE AccountID IS NOT NULL;
 CREATE UNIQUE INDEX UX_Staff_AccountID ON Staff(AccountID) WHERE AccountID IS NOT NULL;
@@ -112,7 +89,6 @@ CREATE TABLE Semesters (
 );
 GO
 
--- Group/project tables
 CREATE TABLE Group_Registration_Periods (
     PeriodID INT PRIMARY KEY IDENTITY(1,1),
     ClassID INT NOT NULL,
@@ -172,7 +148,7 @@ CREATE TABLE Class_Lecturers (
     ID INT PRIMARY KEY IDENTITY(1,1),
     ClassID INT NOT NULL,
     LecturerID INT NOT NULL,
-    RoleType INT NOT NULL, -- 1 Mentor, 2 Grader
+    RoleType INT NOT NULL,
     SemesterID INT NOT NULL,
     CONSTRAINT FK_ClassLecturers_Classes FOREIGN KEY (ClassID) REFERENCES Classes(ClassID),
     CONSTRAINT FK_ClassLecturers_Lecturers FOREIGN KEY (LecturerID) REFERENCES Lecturers(LecturerID),
@@ -217,6 +193,32 @@ GO
 CREATE INDEX IX_ProjectEditReq_Status ON Project_Edit_Requests(Status, RequestedDate DESC);
 GO
 
+CREATE TABLE Project_Change_Requests (
+    RequestID INT PRIMARY KEY IDENTITY(1,1),
+    ProjectID INT NOT NULL,
+    RequestedByStudentID INT NOT NULL,
+    ProposedProjectName NVARCHAR(200) NOT NULL,
+    ProposedDescription NVARCHAR(MAX) NULL,
+    ChangeReason NVARCHAR(MAX) NOT NULL,
+    Status VARCHAR(30) NOT NULL DEFAULT 'PENDING_STAFF',
+    StaffReviewedByStaffID INT NULL,
+    StaffRejectReason NVARCHAR(MAX) NULL,
+    StaffReviewedAt DATETIME NULL,
+    LecturerReviewedByLecturerID INT NULL,
+    LecturerRejectReason NVARCHAR(MAX) NULL,
+    LecturerReviewedAt DATETIME NULL,
+    RequestedDate DATETIME NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT FK_ProjectChangeReq_Project FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID),
+    CONSTRAINT FK_ProjectChangeReq_Student FOREIGN KEY (RequestedByStudentID) REFERENCES Students(StudentID),
+    CONSTRAINT FK_ProjectChangeReq_Staff FOREIGN KEY (StaffReviewedByStaffID) REFERENCES Staff(StaffID),
+    CONSTRAINT FK_ProjectChangeReq_Lecturer FOREIGN KEY (LecturerReviewedByLecturerID) REFERENCES Lecturers(LecturerID)
+);
+GO
+
+CREATE INDEX IX_ProjectChangeReq_Status ON Project_Change_Requests(Status, RequestedDate DESC);
+CREATE INDEX IX_ProjectChangeReq_Project ON Project_Change_Requests(ProjectID, RequestedDate DESC);
+GO
+
 CREATE TABLE Sprints (
     SprintID INT PRIMARY KEY IDENTITY(1,1),
     ProjectID INT NOT NULL,
@@ -224,6 +226,10 @@ CREATE TABLE Sprints (
     StartDate DATE NOT NULL,
     EndDate DATE NOT NULL,
     IsClosed BIT NOT NULL DEFAULT 0,
+    IsCancelled BIT NOT NULL DEFAULT 0,
+    CancelReason NVARCHAR(MAX) NULL,
+    CancelledByStudentID INT NULL,
+    CancelledAt DATETIME NULL,
     CONSTRAINT FK_Sprints_Projects FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID)
 );
 GO
@@ -245,10 +251,27 @@ CREATE TABLE Tasks (
     ReviewedAt DATETIME NULL,
     ActualStartTime DATETIME NULL,
     ActualEndTime DATETIME NULL,
+    CancelledReason NVARCHAR(MAX) NULL,
+    CancelledByStudentID INT NULL,
+    CancelledAt DATETIME NULL,
     CONSTRAINT FK_Tasks_Sprints FOREIGN KEY (SprintID) REFERENCES Sprints(SprintID),
     CONSTRAINT FK_Tasks_Assignee FOREIGN KEY (AssigneeID) REFERENCES Students(StudentID),
     CONSTRAINT FK_Tasks_Reviewer FOREIGN KEY (ReviewerID) REFERENCES Students(StudentID)
 );
+GO
+
+CREATE TABLE Project_Comments (
+    CommentID INT PRIMARY KEY IDENTITY(1,1),
+    ProjectID INT NOT NULL,
+    LecturerID INT NOT NULL,
+    CommentContent NVARCHAR(MAX) NOT NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT FK_ProjectComments_Project FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID),
+    CONSTRAINT FK_ProjectComments_Lecturer FOREIGN KEY (LecturerID) REFERENCES Lecturers(LecturerID)
+);
+GO
+
+CREATE INDEX IX_ProjectComments_Project ON Project_Comments(ProjectID, CreatedAt DESC);
 GO
 
 CREATE TABLE Presentation_Schedules (
@@ -278,9 +301,9 @@ CREATE TABLE Project_Scores (
 );
 GO
 
--- Seed data (profile-first)
 INSERT INTO Semesters (SemesterName, StartDate, EndDate)
 VALUES (N'Spring 2026', '2026-01-01', '2026-04-30');
+GO
 
 INSERT INTO Classes (ClassName, CourseYear)
 VALUES ('SE1701', '2023-2027'),
@@ -289,6 +312,7 @@ VALUES ('SE1701', '2023-2027'),
 GO
 
 DECLARE @ClassA INT = (SELECT TOP 1 ClassID FROM Classes WHERE ClassName = 'SE1701');
+DECLARE @SemesterSpring INT = (SELECT TOP 1 SemesterID FROM Semesters WHERE SemesterName = N'Spring 2026');
 
 INSERT INTO Staff (StaffCode, FullName, SchoolEmail, PhoneNumber, AccountID)
 VALUES ('STF001', N'Nhan Vien 1', 'duc47xuan@gmail.com', '0812559433', NULL);
@@ -308,7 +332,6 @@ VALUES ('duc47xuan@gmail.com', NULL, 'Staff', 0, 'LOCAL'),
        ('cunhocit05@gmail.com', NULL, 'Student', 0, 'LOCAL');
 GO
 
--- Link Accounts to Profiles
 UPDATE st
 SET st.AccountID = a.AccountID
 FROM Staff st
@@ -323,4 +346,15 @@ UPDATE s
 SET s.AccountID = a.AccountID
 FROM Students s
 INNER JOIN Accounts a ON a.Username = s.SchoolEmail AND a.Role = 'Student';
+GO
+
+DECLARE @LecturerA INT = (SELECT TOP 1 LecturerID FROM Lecturers WHERE LecturerCode = 'LEC001');
+DECLARE @ClassForLecturer INT = (SELECT TOP 1 ClassID FROM Classes WHERE ClassName = 'SE1701');
+DECLARE @SemesterForLecturer INT = (SELECT TOP 1 SemesterID FROM Semesters WHERE SemesterName = N'Spring 2026');
+IF @ClassForLecturer IS NOT NULL AND @SemesterForLecturer IS NOT NULL AND @LecturerA IS NOT NULL
+BEGIN
+    INSERT INTO Class_Lecturers (ClassID, LecturerID, RoleType, SemesterID)
+    VALUES (@ClassForLecturer, @LecturerA, 1, @SemesterForLecturer),
+           (@ClassForLecturer, @LecturerA, 2, @SemesterForLecturer);
+END
 GO

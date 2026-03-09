@@ -1,6 +1,7 @@
 package com.example.pms.model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class Sprint {
     private int sprintId;
@@ -9,6 +10,10 @@ public class Sprint {
     private LocalDate startDate;
     private LocalDate endDate;
     private boolean closed;
+    private boolean cancelled;
+    private String cancelReason;
+    private Integer cancelledByStudentId;
+    private LocalDateTime cancelledAt;
 
     public int getSprintId() {
         return sprintId;
@@ -56,5 +61,37 @@ public class Sprint {
 
     public void setClosed(boolean closed) {
         this.closed = closed;
+    }
+
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    public void setCancelled(boolean cancelled) {
+        this.cancelled = cancelled;
+    }
+
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
+
+    public Integer getCancelledByStudentId() {
+        return cancelledByStudentId;
+    }
+
+    public void setCancelledByStudentId(Integer cancelledByStudentId) {
+        this.cancelledByStudentId = cancelledByStudentId;
+    }
+
+    public LocalDateTime getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(LocalDateTime cancelledAt) {
+        this.cancelledAt = cancelledAt;
     }
 }

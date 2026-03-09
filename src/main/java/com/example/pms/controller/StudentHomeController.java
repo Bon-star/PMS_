@@ -3,6 +3,7 @@ package com.example.pms.controller;
 import com.example.pms.model.Account;
 import com.example.pms.model.Classes;
 import com.example.pms.model.Student;
+import com.example.pms.util.RoleDisplayUtil;
 import com.example.pms.repository.ClassRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,12 +44,7 @@ public class StudentHomeController {
             model.addAttribute("studentName", student.getFullName());
         }
 
-        if (role != null && !role.isEmpty()) {
-            String displayRole = "Student".equalsIgnoreCase(role) ? "Học sinh" : role;
-            model.addAttribute("userRole", displayRole);
-        } else {
-            model.addAttribute("userRole", "Học sinh");
-        }
+        model.addAttribute("userRole", RoleDisplayUtil.toDisplayRole(role != null ? role : "Student"));
 
         return "student/home/index";
     }

@@ -9,6 +9,7 @@ public class ProjectTask {
     public static final int STATUS_DONE = 3;
     public static final int STATUS_REJECTED = 4;
     public static final int STATUS_FAILED_SPRINT = 5;
+    public static final int STATUS_CANCELLED = 6;
 
     private int taskId;
     private int projectId;
@@ -35,6 +36,9 @@ public class ProjectTask {
     private LocalDateTime submittedAt;
     private String reviewComment;
     private LocalDateTime reviewedAt;
+    private String cancelledReason;
+    private Integer cancelledByStudentId;
+    private LocalDateTime cancelledAt;
 
     public int getTaskId() {
         return taskId;
@@ -234,5 +238,29 @@ public class ProjectTask {
 
     public void setReviewedAt(LocalDateTime reviewedAt) {
         this.reviewedAt = reviewedAt;
+    }
+
+    public String getCancelledReason() {
+        return cancelledReason;
+    }
+
+    public void setCancelledReason(String cancelledReason) {
+        this.cancelledReason = cancelledReason;
+    }
+
+    public Integer getCancelledByStudentId() {
+        return cancelledByStudentId;
+    }
+
+    public void setCancelledByStudentId(Integer cancelledByStudentId) {
+        this.cancelledByStudentId = cancelledByStudentId;
+    }
+
+    public LocalDateTime getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(LocalDateTime cancelledAt) {
+        this.cancelledAt = cancelledAt;
     }
 }

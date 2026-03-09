@@ -1,103 +1,68 @@
 ﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-
 <head>
     <meta charset="utf-8" />
-    <title>Trang chủ giảng viên</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        body {
-            background: #f6f8fa;
-            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-            margin: 0;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 60px auto;
-            padding: 24px;
-            background: #fff;
-            border-radius: 10px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .greet {
-            font-size: 22px;
-            font-weight: 700;
-            color: #111827;
-        }
-
-        .sub {
-            margin-top: 6px;
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        .actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn {
-            border: 1px solid #d1d5db;
-            background: #fff;
-            border-radius: 8px;
-            padding: 9px 12px;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-            color: #111827;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background: #2563eb;
-            border-color: #2563eb;
-            color: #fff;
-        }
-
-        .btn-danger {
-            background: #ef4444;
-            border-color: #ef4444;
-            color: #fff;
-        }
-
-        .info {
-            margin-top: 20px;
-            font-size: 15px;
-            color: #374151;
-            line-height: 1.6;
-        }
-    </style>
+    <title>Giảng viên • Trang chủ</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
 </head>
+<body class="backoffice-body lecturer-home-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{lecturer/layout/header :: sidebar('home')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{lecturer/layout/header :: topbar('Trang chủ giảng viên')}"></div>
+            <main class="backoffice-content">
+                <section class="page-section summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-label">Project chờ duyệt</div>
+                        <div class="summary-value" th:text="${pendingProjectCount}">0</div>
+                        <div class="summary-note">Đề tài học viên đang chờ giảng viên xét duyệt.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Yêu cầu đổi project</div>
+                        <div class="summary-value" th:text="${pendingChangeCount}">0</div>
+                        <div class="summary-note">Yêu cầu đổi đề tài đang chờ quyết định từ giảng viên.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Project theo dõi</div>
+                        <div class="summary-value" th:text="${trackedProjectCount}">0</div>
+                        <div class="summary-note">Project đã duyệt và đang trong giai đoạn triển khai.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Điều hướng nhanh</div>
+                        <div class="button-row" style="margin-top:10px;">
+                            <a class="btn btn-primary btn-small" href="/lecturer/projects">Mở khu vực project</a>
+                        </div>
+                    </div>
+                </section>
 
-<body>
-    <div class="container">
-        <div class="top">
-            <div>
-                <div class="greet">Xin chào, <span th:text="${lecturerName} ?: 'Giảng viên'">Giảng viên</span></div>
-                <div class="sub">Khu vực dành cho giảng viên</div>
-            </div>
-            <div class="actions">
-                <a href="/lecturer/projects" class="btn btn-primary">Duyệt project</a>
-                <form action="/acc/logout" method="get">
-                    <button type="submit" class="btn btn-danger">Đăng xuất</button>
-                </form>
-            </div>
-        </div>
+                <section class="page-section panel">
+                    <h2 class="panel-title">Vai trò của giảng viên trong PMS</h2>
+                    <div class="meta">
+                        Giảng viên duyệt nội dung project do học viên đề xuất, duyệt yêu cầu đổi project sau bước nhân viên,
+                        theo dõi tiến độ thực hiện theo đợt làm việc và đưa ra bình luận trực tiếp trên project.
+                    </div>
+                </section>
 
-        <div class="info">
-            Tại mục <strong>Duyệt project</strong>, giảng viên sẽ nhận các project học viên gửi xét duyệt,
-            duyệt hoặc từ chối kèm lý do để học viên cập nhật lại.
+                <section class="page-section metrics-grid">
+                    <article class="info-card">
+                        <h3 class="info-title">Duyệt đề tài</h3>
+                        <div class="meta">
+                            Kiểm tra tên project, mô tả, link minh chứng và xác nhận thời gian bắt đầu, kết thúc.
+                            Nếu chưa đạt, từ chối kèm lý do để học viên cập nhật lại.
+                        </div>
+                    </article>
+                    <article class="info-card">
+                        <h3 class="info-title">Theo dõi tiến độ</h3>
+                        <div class="meta">
+                            Xem đợt làm việc, lịch sử công việc, hiệu suất theo thành viên và trạng thái thực thi thực tế của từng nhóm.
+                        </div>
+                    </article>
+                </section>
+            </main>
+            <div th:replace="~{lecturer/layout/footer :: pageFooter}"></div>
         </div>
     </div>
 </body>
-
 </html>

@@ -29,4 +29,19 @@ public class MailService {
                 "Vui lòng đăng nhập hệ thống PMS để xem chi tiết và duyệt/từ chối.");
         mailSender.send(mail);
     }
+
+    public void sendProjectChangeReviewRequest(String to,
+            String currentProjectName,
+            String proposedProjectName,
+            String groupName) {
+        SimpleMailMessage mail = new SimpleMailMessage();
+        mail.setTo(to);
+        mail.setSubject("PMS - Có yêu cầu đổi project cần xét duyệt");
+        mail.setText("Có yêu cầu đổi project cần xét duyệt trong PMS.\n\n" +
+                "Nhóm: " + groupName + "\n" +
+                "Project hiện tại: " + currentProjectName + "\n" +
+                "Project đề xuất mới: " + proposedProjectName + "\n\n" +
+                "Vui lòng đăng nhập hệ thống PMS để xem chi tiết và duyệt/từ chối.");
+        mailSender.send(mail);
+    }
 }

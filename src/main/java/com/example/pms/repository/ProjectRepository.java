@@ -250,6 +250,30 @@ public class ProjectRepository {
         }
     }
 
+    public int applyApprovedChange(int projectId,
+            String projectName,
+            String description,
+            LocalDateTime startDate,
+            LocalDateTime endDate) {
+        ensureSchema();
+        try {
+            String sql = "UPDATE Projects SET " +
+                    "ProjectName = ?, Description = ?, ApprovalStatus = ?, RejectReason = NULL, " +
+                    "SourceCodeUrl = NULL, DocumentUrl = NULL, SubmissionDate = NULL, " +
+                    "StartDate = ?, EndDate = ?, StudentCanEdit = 0 " +
+                    "WHERE ProjectID = ?";
+            return db.update(sql,
+                    projectName,
+                    description,
+                    Project.STATUS_APPROVED,
+                    toTimestamp(startDate),
+                    toTimestamp(endDate),
+                    projectId);
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+
     public List<Project> findPendingForLecturer(int lecturerId) {
         ensureSchema();
         String sql = "SELECT DISTINCT " +
@@ -269,6 +293,38 @@ public class ProjectRepository {
                 "WHERE cl.LecturerID = ? AND p.ApprovalStatus = ? " +
                 "ORDER BY p.SubmissionDate DESC";
         return db.query(sql, (rs, rn) -> mapProject(rs), lecturerId, Project.STATUS_PENDING_LECTURER);
+    }
+
+    public List<Project> findApprovedForLecturer(int lecturerId) {
+        ensureSchema();
+        String sql = "SELECT DISTINCT " +
+                "p.ProjectID, g.GroupID, g.GroupName, " +
+                "g.ClassID, c.ClassName, " +
+                "g.SemesterID, sem.SemesterName, " +
+                "g.LeaderID, leader.FullName AS LeaderName, " +
+                "p.ProjectName, p.Description, p.TopicSource, p.ApprovalStatus, p.RejectReason, " +
+                "p.SourceCodeUrl, p.DocumentUrl, p.SubmissionDate, p.StartDate, p.EndDate, " +
+                "ISNULL(p.StudentCanEdit, 0) AS StudentCanEdit " +
+                "FROM Projects p " +
+                "INNER JOIN Groups g ON g.GroupID = p.GroupID " +
+                "INNER JOIN Classes c ON c.ClassID = g.ClassID " +
+                "LEFT JOIN Semesters sem ON sem.SemesterID = g.SemesterID " +
+                "LEFT JOIN Students leader ON leader.StudentID = g.LeaderID " +
+                "INNER JOIN Class_Lecturers cl ON cl.ClassID = g.ClassID AND cl.SemesterID = g.SemesterID " +
+                "WHERE cl.LecturerID = ? AND p.ApprovalStatus = ? " +
+                "ORDER BY ISNULL(p.EndDate, p.StartDate) DESC, p.ProjectID DESC";
+        return db.query(sql, (rs, rn) -> mapProject(rs), lecturerId, Project.STATUS_APPROVED);
+    }
+
+    public boolean canLecturerAccessProject(int lecturerId, int projectId) {
+        ensureSchema();
+        String sql = "SELECT COUNT(*) " +
+                "FROM Projects p " +
+                "INNER JOIN Groups g ON g.GroupID = p.GroupID " +
+                "INNER JOIN Class_Lecturers cl ON cl.ClassID = g.ClassID AND cl.SemesterID = g.SemesterID " +
+                "WHERE cl.LecturerID = ? AND p.ProjectID = ?";
+        Integer count = db.queryForObject(sql, Integer.class, lecturerId, projectId);
+        return count != null && count > 0;
     }
 
     public List<String> findLecturerEmailsForProject(int projectId) {

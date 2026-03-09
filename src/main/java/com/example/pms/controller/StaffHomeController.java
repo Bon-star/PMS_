@@ -3,6 +3,7 @@ package com.example.pms.controller;
 import com.example.pms.model.Account;
 import com.example.pms.repository.ClassRepository;
 import com.example.pms.service.StaffStudentService;
+import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -29,7 +30,9 @@ public class StaffHomeController {
 
     private void bindCommon(Model model, HttpSession session) {
         Object fullName = session.getAttribute("fullName");
-        model.addAttribute("staffName", fullName != null ? fullName : "Nhân viên");
+        model.addAttribute("staffName", fullName != null ? fullName : "Nh\u00e2n vi\u00ean");
+        model.addAttribute("displayName", fullName != null ? fullName : "Nh\u00e2n vi\u00ean");
+        model.addAttribute("displayRole", RoleDisplayUtil.toDisplayRole("Staff"));
         model.addAttribute("classes", classRepository.findAll());
     }
 
