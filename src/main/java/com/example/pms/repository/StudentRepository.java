@@ -214,6 +214,15 @@ public class StudentRepository {
         }
     }
 
+    public int updateStudentInfo(int studentId, String fullName, String schoolEmail, String phoneNumber, Integer classId) {
+        try {
+            String sql = "UPDATE Students SET FullName = ?, SchoolEmail = ?, PhoneNumber = ?, ClassID = ? WHERE StudentID = ?";
+            return db.update(sql, fullName, schoolEmail, phoneNumber, classId, studentId);
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+
     public int linkAccount(int studentId, int accountId) {
         try {
             String sql = "UPDATE Students SET AccountID = ? WHERE StudentID = ?";

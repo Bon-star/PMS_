@@ -28,6 +28,8 @@ public class ProjectTaskRepository {
             }
             db.execute("IF COL_LENGTH('Tasks', 'SubmissionNote') IS NULL ALTER TABLE Tasks ADD SubmissionNote NVARCHAR(MAX) NULL;");
             db.execute("IF COL_LENGTH('Tasks', 'SubmissionUrl') IS NULL ALTER TABLE Tasks ADD SubmissionUrl NVARCHAR(500) NULL;");
+            db.execute("IF COL_LENGTH('Tasks', 'SubmissionFiles') IS NULL ALTER TABLE Tasks ADD SubmissionFiles NVARCHAR(MAX) NULL;");
+            db.execute("IF COL_LENGTH('Tasks', 'SubmissionCode') IS NULL ALTER TABLE Tasks ADD SubmissionCode NVARCHAR(MAX) NULL;");
             db.execute("IF COL_LENGTH('Tasks', 'SubmittedAt') IS NULL ALTER TABLE Tasks ADD SubmittedAt DATETIME NULL;");
             db.execute("IF COL_LENGTH('Tasks', 'ReviewComment') IS NULL ALTER TABLE Tasks ADD ReviewComment NVARCHAR(MAX) NULL;");
             db.execute("IF COL_LENGTH('Tasks', 'ReviewedAt') IS NULL ALTER TABLE Tasks ADD ReviewedAt DATETIME NULL;");
@@ -98,9 +100,9 @@ public class ProjectTaskRepository {
         ensureSchema();
         try {
             String sql = "INSERT INTO Tasks (SprintID, TaskName, Description, TaskImage, EstimatedPoints, AssigneeID, ReviewerID, Status, " +
-                    "SubmissionNote, SubmissionUrl, SubmittedAt, ReviewComment, ReviewedAt, ActualStartTime, ActualEndTime, " +
+                    "SubmissionNote, SubmissionUrl, SubmissionFiles, SubmissionCode, SubmittedAt, ReviewComment, ReviewedAt, ActualStartTime, ActualEndTime, " +
                     "CancelledReason, CancelledByStudentID, CancelledAt) " +
-                    "OUTPUT INSERTED.TaskID VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)";
+                    "OUTPUT INSERTED.TaskID VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)";
             Integer taskId = db.queryForObject(sql, Integer.class,
                     sprintId,
                     taskName,
@@ -122,7 +124,7 @@ public class ProjectTaskRepository {
                 "t.AssigneeID, ass.FullName AS AssigneeName, ass.StudentCode AS AssigneeCode, " +
                 "t.ReviewerID, rev.FullName AS ReviewerName, " +
                 "t.Status, t.ActualStartTime, t.ActualEndTime, " +
-                "t.SubmissionNote, t.SubmissionUrl, t.SubmittedAt, t.ReviewComment, t.ReviewedAt, " +
+                "t.SubmissionNote, t.SubmissionUrl, t.SubmissionFiles, t.SubmissionCode, t.SubmittedAt, t.ReviewComment, t.ReviewedAt, " +
                 "t.CancelledReason, t.CancelledByStudentID, t.CancelledAt " +
                 "FROM Tasks t " +
                 "INNER JOIN Sprints sp ON sp.SprintID = t.SprintID " +
@@ -155,19 +157,33 @@ public class ProjectTaskRepository {
                 ProjectTask.STATUS_REJECTED);
     }
 
-    public int submitTask(int taskId, int assigneeId, String submissionNote, String submissionUrl) {
+    public int submitTask(int taskId, int assigneeId, String submissionNote, String submissionUrl, String submissionFiles, String submissionCode) {
         ensureSchema();
         String sql = "UPDATE Tasks " +
-                "SET Status = ?, SubmissionNote = ?, SubmissionUrl = ?, SubmittedAt = GETDATE(), " +
+                "SET Status = ?, SubmissionNote = ?, SubmissionUrl = ?, SubmissionFiles = ?, SubmissionCode = ?, SubmittedAt = GETDATE(), " +
                 "ReviewComment = NULL, ReviewedAt = NULL " +
                 "WHERE TaskID = ? AND AssigneeID = ? AND Status = ?";
         return db.update(sql,
                 ProjectTask.STATUS_SUBMITTED,
                 submissionNote,
                 submissionUrl,
+                submissionFiles,
+                submissionCode,
                 taskId,
                 assigneeId,
                 ProjectTask.STATUS_IN_PROGRESS);
+    }
+
+    public int unsubmitTask(int taskId, int assigneeId) {
+        ensureSchema();
+        String sql = "UPDATE Tasks " +
+                "SET Status = ?, SubmittedAt = NULL, ReviewComment = NULL, ReviewedAt = NULL, ActualEndTime = NULL " +
+                "WHERE TaskID = ? AND AssigneeID = ? AND Status = ?";
+        return db.update(sql,
+                ProjectTask.STATUS_IN_PROGRESS,
+                taskId,
+                assigneeId,
+                ProjectTask.STATUS_SUBMITTED);
     }
 
     public int approveTask(int taskId, String reviewComment) {
@@ -222,7 +238,7 @@ public class ProjectTaskRepository {
         ensureSchema();
         String sql = "UPDATE Tasks " +
                 "SET SprintID = ?, AssigneeID = ?, ReviewerID = ?, Status = ?, " +
-                "SubmissionNote = NULL, SubmissionUrl = NULL, SubmittedAt = NULL, " +
+                "SubmissionNote = NULL, SubmissionUrl = NULL, SubmissionFiles = NULL, SubmissionCode = NULL, SubmittedAt = NULL, " +
                 "ReviewComment = NULL, ReviewedAt = NULL, ActualStartTime = NULL, ActualEndTime = NULL, " +
                 "CancelledReason = NULL, CancelledByStudentID = NULL, CancelledAt = NULL " +
                 "WHERE TaskID = ? AND Status = ?";
@@ -455,6 +471,8 @@ public class ProjectTaskRepository {
         task.setStatus(rs.getInt("Status"));
         task.setSubmissionNote(rs.getString("SubmissionNote"));
         task.setSubmissionUrl(rs.getString("SubmissionUrl"));
+        task.setSubmissionFiles(rs.getString("SubmissionFiles"));
+        task.setSubmissionCode(rs.getString("SubmissionCode"));
         task.setReviewComment(rs.getString("ReviewComment"));
         task.setCancelledReason(rs.getString("CancelledReason"));
 

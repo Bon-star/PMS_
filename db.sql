@@ -246,6 +246,8 @@ CREATE TABLE Tasks (
     Status INT NOT NULL DEFAULT 0,
     SubmissionNote NVARCHAR(MAX) NULL,
     SubmissionUrl NVARCHAR(500) NULL,
+    SubmissionFiles NVARCHAR(MAX) NULL,
+    SubmissionCode NVARCHAR(MAX) NULL,
     SubmittedAt DATETIME NULL,
     ReviewComment NVARCHAR(MAX) NULL,
     ReviewedAt DATETIME NULL,

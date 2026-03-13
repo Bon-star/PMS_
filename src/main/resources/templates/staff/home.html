@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Nhân viên • Thêm học viên</title>
+    <title>Nhan vien • Tong quan</title>
     <link rel="stylesheet" href="/backoffice.css" />
     <script src="/js/backoffice-layout.js" defer></script>
 </head>
@@ -11,83 +11,84 @@
     <div class="backoffice-shell">
         <div th:replace="~{staff/layout/header :: sidebar('home')}"></div>
         <div class="backoffice-main">
-            <div th:replace="~{staff/layout/header :: topbar('Thêm học viên và tạo tài khoản')}"></div>
+            <div th:replace="~{staff/layout/header :: topbar('Tong quan nhan vien')}"></div>
             <main class="backoffice-content">
                 <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
                 <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
 
                 <section class="page-section summary-grid">
-                    <div class="summary-card">
-                        <div class="summary-label">Quy trình nhập liệu</div>
-                        <div class="summary-value">1 lần</div>
-                        <div class="summary-note">Nhân viên chỉ nhập thông tin học viên một lần.</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-label">Tài khoản</div>
-                        <div class="summary-value">Tự tạo</div>
-                        <div class="summary-note">Hệ thống tạo luôn tài khoản học viên chưa kích hoạt.</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-label">Kích hoạt mật khẩu</div>
-                        <div class="summary-value">Học viên</div>
-                        <div class="summary-note">Học viên tự vào trang đăng ký để đặt mật khẩu lần đầu.</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-label">Điều hướng nhanh</div>
+                    <div class="summary-card accent-card accent-blue">
+                        <div class="summary-label">Ho so hoc vien</div>
+                        <div class="summary-value">Quan ly</div>
+                        <div class="summary-note">Cap nhat email, so dien thoai, lop hoc.</div>
                         <div class="button-row" style="margin-top:10px;">
-                            <a class="btn btn-primary btn-small" href="/staff/projects">Quản lý project</a>
+                            <a class="btn btn-primary btn-small" href="/staff/students">Mo danh muc</a>
+                        </div>
+                    </div>
+                    <div class="summary-card accent-card accent-emerald">
+                        <div class="summary-label">Project theo hoc ky</div>
+                        <div class="summary-value">Theo doi</div>
+                        <div class="summary-note">Tao project, xu ly yeu cau va bao cao.</div>
+                        <div class="button-row" style="margin-top:10px;">
+                            <a class="btn btn-secondary btn-small" href="/staff/projects">Quan ly project</a>
+                        </div>
+                    </div>
+                    <div class="summary-card accent-card accent-amber">
+                        <div class="summary-label">Yeu cau can xu ly</div>
+                        <div class="summary-value">Uu tien</div>
+                        <div class="summary-note">Theo doi yeu cau cap quyen va doi project.</div>
+                    </div>
+                    <div class="summary-card accent-card accent-rose">
+                        <div class="summary-label">Huong dan nhanh</div>
+                        <div class="summary-value">3 buoc</div>
+                        <div class="summary-note">Tra cuu -> Cap nhat -> Thong bao cho hoc vien.</div>
+                    </div>
+                </section>
+
+                <section class="page-section metrics-grid">
+                    <div class="card">
+                        <h2 class="card-title">Khu vuc hoc vien</h2>
+                        <p class="meta">Tap trung vao cap nhat thong tin lien lac va xu ly thay doi lop.</p>
+                        <div class="button-row" style="margin-top:12px;">
+                            <a class="btn btn-primary" href="/staff/students">Tra cuu hoc vien</a>
+                            <a class="btn btn-secondary" href="/staff/students">Tao tai khoan</a>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h2 class="card-title">Khu vuc project</h2>
+                        <p class="meta">Quan ly danh sach nhom, xu ly noi dung project va theo doi hieu suat.</p>
+                        <div class="button-row" style="margin-top:12px;">
+                            <a class="btn btn-secondary" href="/staff/projects">Danh sach project</a>
+                            <a class="btn btn-primary" href="/staff/projects">Tao project</a>
                         </div>
                     </div>
                 </section>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Nguyên tắc xử lý</h2>
-                    <div class="meta">
-                        Nhân viên quản lý đào tạo nhập mã học viên, họ tên, email, số điện thoại và lớp. Sau khi lưu thành công,
-                        hệ thống gắn luôn một tài khoản học viên theo email trường để học viên tự hoàn tất bước đặt mật khẩu.
-                    </div>
+                    <h2 class="panel-title">Quy trinh xu ly nhanh</h2>
+                    <ul class="meta" style="padding-left:18px;">
+                        <li>Tra cuu hoc vien theo ma hoac email de mo ho so.</li>
+                        <li>Cap nhat thong tin lien lac, kiem tra trung lap.</li>
+                        <li>Thong bao cho hoc vien ve email dang nhap moi neu co thay doi.</li>
+                    </ul>
                 </section>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Thông tin học viên mới</h2>
-                    <form method="post" action="/staff/students/create">
-                        <div class="form-grid">
-                            <div>
-                                <label for="studentCode">Mã học viên</label>
-                                <input id="studentCode" name="studentCode" type="text" maxlength="20"
-                                    th:value="${studentCode}" placeholder="Ví dụ: HE123456" required />
-                            </div>
-                            <div>
-                                <label for="fullName">Họ và tên</label>
-                                <input id="fullName" name="fullName" type="text" maxlength="100"
-                                    th:value="${fullNameInput}" placeholder="Ví dụ: Nguyễn Văn A" required />
-                            </div>
-                            <div>
-                                <label for="schoolEmail">Email học viên</label>
-                                <input id="schoolEmail" name="schoolEmail" type="email" maxlength="100"
-                                    th:value="${schoolEmail}" placeholder="Ví dụ: he123456@fpt.edu.vn" required />
-                            </div>
-                            <div>
-                                <label for="phoneNumber">Số điện thoại</label>
-                                <input id="phoneNumber" name="phoneNumber" type="text" maxlength="15"
-                                    th:value="${phoneNumber}" placeholder="Ví dụ: 0912345678" required />
-                            </div>
-                            <div class="full">
-                                <label for="classId">Lớp</label>
-                                <select id="classId" name="classId" required>
-                                    <option value="" disabled th:selected="${selectedClassId == null}">-- Chọn lớp --</option>
-                                    <option th:each="c : ${classes}"
-                                        th:value="${c.classId}"
-                                        th:text="${(c.courseYear != null and !#strings.isEmpty(c.courseYear)) ? c.className + ' - ' + c.courseYear : c.className}"
-                                        th:selected="${selectedClassId != null and selectedClassId == c.classId}">
-                                    </option>
-                                </select>
-                            </div>
+                    <h2 class="panel-title">Goi y to chuc cong viec</h2>
+                    <div class="form-grid form-grid-3">
+                        <div>
+                            <label>Cap nhat ho so</label>
+                            <div class="meta">Xu ly yeu cau doi email, so dien thoai truoc 24h.</div>
                         </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Tạo học viên và tài khoản</button>
+                        <div>
+                            <label>Quan ly lop</label>
+                            <div class="meta">Kiem tra lop chinh xac truoc khi doi nhom.</div>
                         </div>
-                    </form>
+                        <div>
+                            <label>Project</label>
+                            <div class="meta">Theo doi tinh trang yeu cau cap quyen.</div>
+                        </div>
+                    </div>
                 </section>
             </main>
             <div th:replace="~{staff/layout/footer :: pageFooter}"></div>

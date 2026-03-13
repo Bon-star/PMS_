@@ -35,7 +35,7 @@
                     <div class="summary-card">
                         <div class="summary-label">Điều hướng nhanh</div>
                         <div class="button-row" style="margin-top:10px;">
-                            <a class="btn btn-secondary btn-small" href="/staff/home">Thêm học viên</a>
+                            <a class="btn btn-secondary btn-small" href="/staff/students">Quản lý học viên</a>
                         </div>
                     </div>
                 </section>
@@ -68,13 +68,24 @@
                     <form method="post" action="/staff/projects/create">
                         <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
                         <div class="form-grid form-grid-3">
+                            <div>
+                                <label for="classId">Lớp</label>
+                                <select id="classId" name="classId" required>
+                                    <option value="">-- Chọn lớp --</option>
+                                    <option th:each="entry : ${classOptions}"
+                                        th:value="${entry.key}"
+                                        th:text="${entry.value}">
+                                    </option>
+                                </select>
+                            </div>
                             <div class="full">
                                 <label for="groupId">Nhóm chưa có project</label>
-                                <select id="groupId" name="groupId" required>
+                                <select id="groupId" name="groupId" required disabled>
                                     <option value="">-- Chọn nhóm --</option>
                                     <option th:each="item : ${projectOverview}"
                                         th:if="${item.projectId == 0}"
                                         th:value="${item.groupId}"
+                                        th:attr="data-class-id=${item.classId}"
                                         th:text="${item.groupName + ' | ' + (item.className ?: '') + ' | Trưởng nhóm: ' + (item.leaderName ?: 'Chưa có')}">
                                     </option>
                                 </select>
@@ -226,5 +237,30 @@
             <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
         </div>
     </div>
+    <script>
+        (function () {
+            const classSelect = document.getElementById('classId');
+            const groupSelect = document.getElementById('groupId');
+            if (!classSelect || !groupSelect) {
+                return;
+            }
+            const options = Array.from(groupSelect.querySelectorAll('option[data-class-id]'));
+            const updateGroups = () => {
+                const classId = classSelect.value;
+                let hasAny = false;
+                options.forEach(option => {
+                    const match = option.dataset.classId === classId;
+                    option.hidden = !match;
+                    if (match) {
+                        hasAny = true;
+                    }
+                });
+                groupSelect.value = '';
+                groupSelect.disabled = !classId || !hasAny;
+            };
+            classSelect.addEventListener('change', updateGroups);
+            updateGroups();
+        })();
+    </script>
 </body>
 </html>

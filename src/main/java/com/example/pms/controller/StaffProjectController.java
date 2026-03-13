@@ -17,7 +17,9 @@ import com.example.pms.service.MailService;
 import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -97,7 +99,20 @@ public class StaffProjectController {
         model.addAttribute("displayRole", RoleDisplayUtil.toDisplayRole("Staff"));
         model.addAttribute("selectedSemesterId", semesterId);
         model.addAttribute("semesters", semesterRepository.findAll());
-        model.addAttribute("projectOverview", projectRepository.findProjectOverviewBySemester(semesterId));
+        java.util.List<Project> overview = projectRepository.findProjectOverviewBySemester(semesterId);
+        model.addAttribute("projectOverview", overview);
+        Map<Integer, String> classOptions = new LinkedHashMap<>();
+        for (Project item : overview) {
+            if (item == null || item.getProjectId() > 0) {
+                continue;
+            }
+            Integer classId = item.getClassId();
+            String className = item.getClassName();
+            if (classId != null && className != null && !classOptions.containsKey(classId)) {
+                classOptions.put(classId, className);
+            }
+        }
+        model.addAttribute("classOptions", classOptions);
         model.addAttribute("pendingEditRequests", projectEditRequestRepository.findPendingRequests());
         model.addAttribute("pendingChangeRequests", projectChangeRequestRepository.findPendingForStaff());
     }

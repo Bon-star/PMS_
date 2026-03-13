@@ -24,12 +24,32 @@ import com.example.pms.repository.SprintRepository;
 import com.example.pms.service.MailService;
 import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -39,6 +59,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 @RequestMapping("/student/project")
@@ -80,8 +101,291 @@ public class StudentProjectController {
     @Autowired
     private MailService mailService;
 
+    private static final long MAX_UPLOAD_BYTES = 10L * 1024L * 1024L;
+    private static final int MAX_UPLOAD_FILES = 50;
+    private static final long MAX_CODE_VIEW_BYTES = 200L * 1024L;
+    private static final String TASK_UPLOAD_DIR = "uploads/task-submissions";
+
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
+            "zip", "rar", "7z",
+            "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx",
+            "txt", "md", "java", "js", "ts", "py", "html", "css", "json", "xml", "yml", "yaml", "sql",
+            "png", "jpg", "jpeg", "gif", "webp");
+
+    private static final Set<String> CODE_EXTENSIONS = Set.of(
+            "txt", "md", "java", "js", "ts", "py", "html", "css", "json", "xml", "yml", "yaml", "sql");
+
+    public static class TaskAttachment {
+        private final String displayName;
+        private final String storedName;
+        private final String contentType;
+        private final long size;
+        private final boolean viewable;
+
+        public TaskAttachment(String displayName, String storedName, String contentType, long size, boolean viewable) {
+            this.displayName = displayName;
+            this.storedName = storedName;
+            this.contentType = contentType;
+            this.size = size;
+            this.viewable = viewable;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public String getStoredName() {
+            return storedName;
+        }
+
+        public String getContentType() {
+            return contentType;
+        }
+
+        public long getSize() {
+            return size;
+        }
+
+        public boolean isViewable() {
+            return viewable;
+        }
+    }
+
     private String normalize(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private String normalizeFileName(String originalName) {
+        String safe = originalName == null ? "file" : Paths.get(originalName).getFileName().toString();
+        safe = safe.replaceAll("[^A-Za-z0-9._-]", "_");
+        if (safe.length() > 80) {
+            safe = safe.substring(0, 80);
+        }
+        if (safe.isEmpty()) {
+            safe = "file";
+        }
+        return safe;
+    }
+
+    private String normalizeDisplayPath(String originalName) {
+        if (originalName == null) {
+            return "file";
+        }
+        String normalized = originalName.replace("\\", "/");
+        String[] parts = normalized.split("/");
+        List<String> cleaned = new ArrayList<>();
+        for (String part : parts) {
+            if (part == null || part.isBlank()) {
+                continue;
+            }
+            String safe = part.replaceAll("[^A-Za-z0-9._-]", "_");
+            if (safe.isBlank() || ".".equals(safe) || "..".equals(safe)) {
+                continue;
+            }
+            if (safe.length() > 80) {
+                safe = safe.substring(0, 80);
+            }
+            cleaned.add(safe);
+        }
+        if (cleaned.isEmpty()) {
+            return "file";
+        }
+        String joined = String.join("/", cleaned);
+        if (joined.length() > 160) {
+            joined = joined.substring(joined.length() - 160);
+        }
+        return joined;
+    }
+
+    private String fileExtension(String fileName) {
+        if (fileName == null) {
+            return "";
+        }
+        String baseName = fileName;
+        try {
+            baseName = Paths.get(fileName).getFileName().toString();
+        } catch (Exception ex) {
+            baseName = fileName;
+        }
+        int idx = baseName.lastIndexOf('.');
+        if (idx < 0 || idx == baseName.length() - 1) {
+            return "";
+        }
+        return baseName.substring(idx + 1).toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isAllowedFile(String fileName) {
+        String ext = fileExtension(fileName);
+        return ext.isEmpty() ? false : ALLOWED_EXTENSIONS.contains(ext);
+    }
+
+    private boolean isViewableCodeFile(String fileName) {
+        String ext = fileExtension(fileName);
+        return ext.isEmpty() ? false : CODE_EXTENSIONS.contains(ext);
+    }
+
+    private Path resolveTaskUploadDir(int taskId) throws IOException {
+        Path baseDir = Paths.get(System.getProperty("user.dir"), TASK_UPLOAD_DIR, String.valueOf(taskId));
+        if (!Files.exists(baseDir)) {
+            Files.createDirectories(baseDir);
+        }
+        return baseDir;
+    }
+
+    private String serializeAttachments(List<TaskAttachment> attachments) {
+        if (attachments == null || attachments.isEmpty()) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (TaskAttachment attachment : attachments) {
+            if (attachment == null) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append("\n");
+            }
+            builder.append("name=").append(URLEncoder.encode(attachment.getDisplayName(), StandardCharsets.UTF_8));
+            builder.append("&stored=").append(URLEncoder.encode(attachment.getStoredName(), StandardCharsets.UTF_8));
+            builder.append("&type=").append(URLEncoder.encode(
+                    attachment.getContentType() == null ? "" : attachment.getContentType(), StandardCharsets.UTF_8));
+            builder.append("&size=").append(attachment.getSize());
+        }
+        return builder.toString();
+    }
+
+    private List<TaskAttachment> parseAttachments(String raw) {
+        List<TaskAttachment> result = new ArrayList<>();
+        if (isBlank(raw)) {
+            return result;
+        }
+        String[] lines = raw.split("\\r?\\n");
+        for (String line : lines) {
+            if (isBlank(line)) {
+                continue;
+            }
+            String displayName = "";
+            String storedName = "";
+            String type = "";
+            long size = 0L;
+            String[] parts = line.split("&");
+            for (String part : parts) {
+                int eq = part.indexOf('=');
+                if (eq < 0) {
+                    continue;
+                }
+                String key = part.substring(0, eq);
+                String value = part.substring(eq + 1);
+                String decoded = URLDecoder.decode(value, StandardCharsets.UTF_8);
+                switch (key) {
+                    case "name":
+                        displayName = decoded;
+                        break;
+                    case "stored":
+                        storedName = decoded;
+                        break;
+                    case "type":
+                        type = decoded;
+                        break;
+                    case "size":
+                        try {
+                            size = Long.parseLong(decoded);
+                        } catch (NumberFormatException ex) {
+                            size = 0L;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+            if (!isBlank(storedName)) {
+                boolean viewable = isViewableCodeFile(displayName);
+                result.add(new TaskAttachment(displayName, storedName, type, size, viewable));
+            }
+        }
+        return result;
+    }
+
+    private void deleteAttachments(int taskId, List<TaskAttachment> attachments) {
+        if (attachments == null || attachments.isEmpty()) {
+            return;
+        }
+        for (TaskAttachment attachment : attachments) {
+            if (attachment == null || isBlank(attachment.getStoredName())) {
+                continue;
+            }
+            try {
+                Path path = Paths.get(System.getProperty("user.dir"), TASK_UPLOAD_DIR,
+                        String.valueOf(taskId), attachment.getStoredName());
+                Files.deleteIfExists(path);
+            } catch (Exception ex) {
+                // best-effort cleanup
+            }
+        }
+    }
+
+    private List<TaskAttachment> storeAttachments(int taskId, MultipartFile[] files, RedirectAttributes redirectAttributes) {
+        List<TaskAttachment> saved = new ArrayList<>();
+        if (files == null || files.length == 0) {
+            return saved;
+        }
+
+        long totalBytes = 0L;
+        int fileCount = 0;
+        for (MultipartFile file : files) {
+            if (file == null || file.isEmpty()) {
+                continue;
+            }
+            fileCount++;
+            totalBytes += file.getSize();
+            if (file.getSize() > MAX_UPLOAD_BYTES) {
+                String displayName = normalizeDisplayPath(file.getOriginalFilename());
+                redirectAttributes.addFlashAttribute("error", "Tep " + displayName + " qua lon.");
+                return null;
+            }
+            String originalName = file.getOriginalFilename();
+            String displayName = normalizeDisplayPath(originalName);
+            if (!isAllowedFile(originalName)) {
+                redirectAttributes.addFlashAttribute("error",
+                        "Tep " + displayName + " khong nam trong danh sach cho phep.");
+                return null;
+            }
+        }
+        if (fileCount == 0) {
+            return saved;
+        }
+        if (fileCount > MAX_UPLOAD_FILES) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Chi duoc tai toi da " + MAX_UPLOAD_FILES + " tep cho moi lan nop.");
+            return null;
+        }
+        if (totalBytes > MAX_UPLOAD_BYTES * 2) {
+            redirectAttributes.addFlashAttribute("error", "Tong dung luong tep qua lon.");
+            return null;
+        }
+
+        for (MultipartFile file : files) {
+            if (file == null || file.isEmpty()) {
+                continue;
+            }
+            String originalName = file.getOriginalFilename();
+            String displayName = normalizeDisplayPath(originalName);
+            String storedName = UUID.randomUUID().toString().replace("-", "") + "_" + normalizeFileName(originalName);
+            try {
+                Path dir = resolveTaskUploadDir(taskId);
+                Path target = dir.resolve(storedName);
+                Files.copy(file.getInputStream(), target);
+                boolean viewable = isViewableCodeFile(originalName);
+                saved.add(new TaskAttachment(displayName, storedName, file.getContentType(), file.getSize(), viewable));
+            } catch (IOException ex) {
+                redirectAttributes.addFlashAttribute("error", "Khong the luu tep " + displayName + ".");
+                return null;
+            }
+        }
+        return saved;
     }
 
     private Student getSessionStudent(HttpSession session) {
@@ -174,7 +478,8 @@ public class StudentProjectController {
             return false;
         }
         if (task.getAssigneeId() == student.getStudentId()) {
-            return false;
+            int memberCount = groupMemberRepository.countMembers(group.getGroupId());
+            return memberCount <= 1;
         }
         if (task.getReviewerId() != null && task.getReviewerId() == student.getStudentId()) {
             return true;
@@ -268,6 +573,18 @@ public class StudentProjectController {
             return null;
         }
     }
+
+    private Integer parseIntegerOrNull(String value) {
+        String normalized = normalize(value);
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(normalized);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
 
     @GetMapping
     public String index(Model model, HttpSession session) {
@@ -289,9 +606,12 @@ public class StudentProjectController {
         List<Student> members = groupMemberRepository.findMemberDetailsOfGroup(group.getGroupId());
         Project project = projectRepository.findByGroupId(group.getGroupId());
 
+        int memberCount = groupMemberRepository.countMembers(group.getGroupId());
         model.addAttribute("group", group);
         model.addAttribute("isLeader", leader);
         model.addAttribute("members", members);
+        model.addAttribute("memberCount", memberCount);
+        model.addAttribute("singleMemberGroup", memberCount <= 1);
         model.addAttribute("studentId", student.getStudentId());
 
         if (project == null) {
@@ -312,6 +632,22 @@ public class StudentProjectController {
         Sprint openSprint = sprintRepository.findOpenByProject(project.getProjectId());
         List<ProjectTask> tasks = projectTaskRepository.findByProject(project.getProjectId());
         List<ProjectTask> failedTasks = projectTaskRepository.findFailedByProject(project.getProjectId());
+        Map<Integer, List<TaskAttachment>> taskFiles = new HashMap<>();
+        Map<Integer, Boolean> taskHasCode = new HashMap<>();
+        for (ProjectTask task : tasks) {
+            List<TaskAttachment> attachments = parseAttachments(task.getSubmissionFiles());
+            taskFiles.put(task.getTaskId(), attachments);
+            boolean hasCode = !isBlank(task.getSubmissionCode());
+            if (!hasCode) {
+                for (TaskAttachment attachment : attachments) {
+                    if (attachment != null && attachment.isViewable()) {
+                        hasCode = true;
+                        break;
+                    }
+                }
+            }
+            taskHasCode.put(task.getTaskId(), hasCode);
+        }
 
         boolean projectNotStarted = isProjectNotStarted(project);
         boolean projectLockedForWork = isProjectLockedForWork(project);
@@ -349,8 +685,119 @@ public class StudentProjectController {
         model.addAttribute("openSprint", openSprint);
         model.addAttribute("tasks", tasks);
         model.addAttribute("failedTasks", failedTasks);
+        model.addAttribute("taskFiles", taskFiles);
+        model.addAttribute("taskHasCode", taskHasCode);
         model.addAttribute("lecturerComments", projectCommentRepository.findByProject(project.getProjectId()));
         return "student/project/home";
+    }
+
+    @GetMapping("/tasks")
+    public String taskBoard(@RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "assigneeId", required = false) String assigneeId,
+            Model model,
+            HttpSession session) {
+        Student student = getSessionStudent(session);
+        if (student == null) {
+            return "redirect:/acc/log";
+        }
+
+        bindLayout(model, session, student);
+        Group group = resolveCurrentGroup(student);
+        if (group == null) {
+            return "redirect:/student/project";
+        }
+
+        boolean leader = isLeader(group, student);
+        List<Student> members = groupMemberRepository.findMemberDetailsOfGroup(group.getGroupId());
+        Project project = projectRepository.findByGroupId(group.getGroupId());
+        if (project == null) {
+            return "redirect:/student/project";
+        }
+
+        Integer statusFilter = parseIntegerOrNull(status);
+        Integer assigneeFilter = parseIntegerOrNull(assigneeId);
+
+        Map<Integer, String> statusOptions = new LinkedHashMap<>();
+        statusOptions.put(ProjectTask.STATUS_TODO, "Chờ xử lý");
+        statusOptions.put(ProjectTask.STATUS_IN_PROGRESS, "Đang xây dựng");
+        statusOptions.put(ProjectTask.STATUS_SUBMITTED, "Chờ kiểm tra");
+        statusOptions.put(ProjectTask.STATUS_DONE, "Hoàn thành");
+        statusOptions.put(ProjectTask.STATUS_REJECTED, "Trả lại");
+        statusOptions.put(ProjectTask.STATUS_FAILED_SPRINT, "Thất bại đợt");
+        statusOptions.put(ProjectTask.STATUS_CANCELLED, "Đã hủy");
+        if (statusFilter != null && !statusOptions.containsKey(statusFilter)) {
+            statusFilter = null;
+        }
+
+        int memberCount = groupMemberRepository.countMembers(group.getGroupId());
+        model.addAttribute("group", group);
+        model.addAttribute("isLeader", leader);
+        model.addAttribute("members", members);
+        model.addAttribute("memberCount", memberCount);
+        model.addAttribute("singleMemberGroup", memberCount <= 1);
+        model.addAttribute("studentId", student.getStudentId());
+        model.addAttribute("project", project);
+        model.addAttribute("statusOptions", statusOptions);
+        model.addAttribute("selectedStatus", statusFilter);
+        model.addAttribute("selectedAssigneeId", assigneeFilter);
+
+        refreshSprintState(project);
+        boolean projectChangeOpen = hasOpenChangeRequest(project);
+        boolean projectNotStarted = isProjectNotStarted(project);
+        boolean projectLockedForWork = isProjectLockedForWork(project);
+        boolean canTaskOps = canOperateTask(project, projectChangeOpen);
+        boolean canManageSprint = leader && isProjectApproved(project) && !projectLockedForWork && !projectChangeOpen;
+        boolean canManageTaskPlan = leader && isProjectApproved(project) && !projectLockedForWork && !projectChangeOpen;
+
+        List<Sprint> sprints = sprintRepository.findByProject(project.getProjectId());
+        Sprint openSprint = sprintRepository.findOpenByProject(project.getProjectId());
+        List<ProjectTask> tasks = projectTaskRepository.findByProject(project.getProjectId());
+        List<ProjectTask> failedTasks = projectTaskRepository.findFailedByProject(project.getProjectId());
+        Map<Integer, List<TaskAttachment>> taskFiles = new HashMap<>();
+        Map<Integer, Boolean> taskHasCode = new HashMap<>();
+        for (ProjectTask task : tasks) {
+            List<TaskAttachment> attachments = parseAttachments(task.getSubmissionFiles());
+            taskFiles.put(task.getTaskId(), attachments);
+            boolean hasCode = !isBlank(task.getSubmissionCode());
+            if (!hasCode) {
+                for (TaskAttachment attachment : attachments) {
+                    if (attachment != null && attachment.isViewable()) {
+                        hasCode = true;
+                        break;
+                    }
+                }
+            }
+            taskHasCode.put(task.getTaskId(), hasCode);
+        }
+
+        List<ProjectTask> filteredTasks = new ArrayList<>();
+        for (ProjectTask task : tasks) {
+            if (statusFilter != null && task.getStatus() != statusFilter) {
+                continue;
+            }
+            if (assigneeFilter != null && task.getAssigneeId() != assigneeFilter) {
+                continue;
+            }
+            filteredTasks.add(task);
+        }
+
+        model.addAttribute("projectNotStarted", projectNotStarted);
+        model.addAttribute("projectLockedForWork", projectLockedForWork);
+        model.addAttribute("projectChangeOpen", projectChangeOpen);
+        model.addAttribute("canCreateSprint", canManageSprint);
+        model.addAttribute("canManageSprint", canManageSprint);
+        model.addAttribute("canCreateTask", canManageTaskPlan && canTaskOps && openSprint != null);
+        model.addAttribute("canManageTaskPlan", canManageTaskPlan);
+        model.addAttribute("canReplanFailed", leader && canTaskOps && openSprint != null && failedTasks != null && !failedTasks.isEmpty());
+        model.addAttribute("sprints", sprints);
+        model.addAttribute("openSprint", openSprint);
+        model.addAttribute("tasks", filteredTasks);
+        model.addAttribute("taskTotalCount", tasks.size());
+        model.addAttribute("taskFilteredCount", filteredTasks.size());
+        model.addAttribute("failedTasks", failedTasks);
+        model.addAttribute("taskFiles", taskFiles);
+        model.addAttribute("taskHasCode", taskHasCode);
+        return "student/project/tasks";
     }
 
     @PostMapping("/request-edit")
@@ -891,8 +1338,10 @@ public class StudentProjectController {
             redirectAttributes.addFlashAttribute("error", "NgÆ°á»i kiá»ƒm tra pháº£i lÃ  thÃ nh viÃªn trong nhÃ³m.");
             return "redirect:/student/project";
         }
-        if (assigneeId == reviewerId) {
-            redirectAttributes.addFlashAttribute("error", "NgÆ°á»i thá»±c hiá»‡n vÃ  ngÆ°á»i kiá»ƒm tra pháº£i lÃ  hai ngÆ°á»i khÃ¡c nhau.");
+        int memberCount = groupMemberRepository.countMembers(group.getGroupId());
+        if (assigneeId == reviewerId && memberCount > 1) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Người thực hiện và người kiểm tra phải là hai người khác nhau (trừ khi nhóm chỉ có 1 thành viên).");
             return "redirect:/student/project";
         }
 
@@ -976,8 +1425,10 @@ public class StudentProjectController {
             redirectAttributes.addFlashAttribute("error", "Người kiểm tra phải là thành viên trong nhóm.");
             return "redirect:/student/project";
         }
-        if (assigneeId == reviewerId) {
-            redirectAttributes.addFlashAttribute("error", "Người thực hiện và người kiểm tra phải là hai người khác nhau.");
+        int memberCount = groupMemberRepository.countMembers(group.getGroupId());
+        if (assigneeId == reviewerId && memberCount > 1) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Người thực hiện và người kiểm tra phải là hai người khác nhau (trừ khi nhóm chỉ có 1 thành viên).");
             return "redirect:/student/project";
         }
 
@@ -1160,6 +1611,10 @@ public class StudentProjectController {
     public String submitTask(@PathVariable("taskId") int taskId,
             @RequestParam(name = "submissionNote", required = false) String submissionNote,
             @RequestParam(name = "submissionUrl", required = false) String submissionUrl,
+            @RequestParam(name = "submissionCode", required = false) String submissionCode,
+            @RequestParam(name = "submissionFiles", required = false) MultipartFile[] submissionFiles,
+            @RequestParam(name = "clearFiles", required = false) String clearFiles,
+            @RequestParam(name = "clearCode", required = false) String clearCode,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         Student student = getSessionStudent(session);
@@ -1168,56 +1623,298 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n chÆ°a cÃ³ nhÃ³m trong há»c ká»³ hiá»‡n táº¡i.");
+            redirectAttributes.addFlashAttribute("error", "B???n ch??a c?? nh??m trong h???c k??? hi???n t???i.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
         if (project == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃ³m cá»§a báº¡n chÆ°a Ä‘Æ°á»£c táº¡o project.");
+            redirectAttributes.addFlashAttribute("error", "Nh??m c???a b???n ch??a ???????c t???o project.");
             return "redirect:/student/project";
         }
         boolean projectChangeOpen = hasOpenChangeRequest(project);
         if (!canOperateTask(project, projectChangeOpen)) {
             redirectAttributes.addFlashAttribute("error",
                     projectChangeOpen
-                            ? "Project đang có yêu cầu đổi đề tài chờ xử lý nên tạm khóa thao tác công việc."
-                            : "Project hiá»‡n khÃ´ng cho phÃ©p thao tÃ¡c cÃ´ng viá»‡c.");
+                            ? "Project ??ang c?? y??u c???u ?????i ????? t??i ch??? x??? l?? n??n t???m kh??a thao t??c c??ng vi???c."
+                            : "Project hi???n kh??ng cho ph??p thao t??c c??ng vi???c.");
             return "redirect:/student/project";
         }
 
         refreshSprintState(project);
         ProjectTask task = findTaskInProject(project, taskId);
         if (task == null) {
-            redirectAttributes.addFlashAttribute("error", "CÃ´ng viá»‡c khÃ´ng tá»“n táº¡i trong project cá»§a nhÃ³m.");
+            redirectAttributes.addFlashAttribute("error", "C??ng vi???c kh??ng t???n t???i trong project c???a nh??m.");
             return "redirect:/student/project";
         }
         if (task.getAssigneeId() != student.getStudentId()) {
-            redirectAttributes.addFlashAttribute("error", "Chá»‰ ngÆ°á»i Ä‘Æ°á»£c giao má»›i Ä‘Æ°á»£c ná»™p cÃ´ng viá»‡c nÃ y.");
+            redirectAttributes.addFlashAttribute("error", "Ch??? ng?????i ???????c giao m???i ???????c n???p c??ng vi???c n??y.");
             return "redirect:/student/project";
         }
         if (task.getStatus() == ProjectTask.STATUS_CANCELLED) {
-            redirectAttributes.addFlashAttribute("error", "Công việc này đã bị hủy nên không thể nộp.");
+            redirectAttributes.addFlashAttribute("error", "C??ng vi???c n??y ???? b??? h???y n??n kh??ng th??? n???p.");
             return "redirect:/student/project";
         }
 
         String note = normalize(submissionNote);
         String url = normalize(submissionUrl);
-        if (note.isEmpty() && url.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Ná»™i dung ná»™p cÃ´ng viá»‡c cáº§n cÃ³ mÃ´ táº£ hoáº·c link minh chá»©ng.");
+        String code = normalize(submissionCode);
+        if (url.length() > 500) {
+            redirectAttributes.addFlashAttribute("error", "Link minh chung qua dai.");
+            return "redirect:/student/project";
+        }
+        if (code.length() > 20000) {
+            redirectAttributes.addFlashAttribute("error", "Code qua dai, vui long rut gon.");
             return "redirect:/student/project";
         }
 
-        int updated = projectTaskRepository.submitTask(taskId, student.getStudentId(), note, url);
+        List<TaskAttachment> existingAttachments = parseAttachments(task.getSubmissionFiles());
+        boolean removeFiles = clearFiles != null;
+        boolean removeCode = clearCode != null;
+
+        List<TaskAttachment> newAttachments = storeAttachments(taskId, submissionFiles, redirectAttributes);
+        if (newAttachments == null) {
+            return "redirect:/student/project";
+        }
+
+        List<TaskAttachment> finalAttachments = existingAttachments;
+        if (removeFiles) {
+            deleteAttachments(taskId, existingAttachments);
+            finalAttachments = new java.util.ArrayList<>();
+        }
+        if (!newAttachments.isEmpty()) {
+            deleteAttachments(taskId, existingAttachments);
+            finalAttachments = newAttachments;
+        }
+
+        String finalCode = task.getSubmissionCode();
+        if (removeCode) {
+            finalCode = "";
+        } else if (!isBlank(code)) {
+            finalCode = code;
+        }
+
+        boolean hasAny = !isBlank(note) || !isBlank(url) || !finalAttachments.isEmpty() || !isBlank(finalCode);
+        if (!hasAny) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Noi dung nop can co mo ta, link, file hoac doan code.");
+            return "redirect:/student/project";
+        }
+
+        int updated = projectTaskRepository.submitTask(
+                taskId,
+                student.getStudentId(),
+                note,
+                url,
+                serializeAttachments(finalAttachments),
+                finalCode);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ ná»™p cÃ´ng viá»‡c. HÃ£y cháº¯c cháº¯n cÃ´ng viá»‡c Ä‘ang á»Ÿ tráº¡ng thÃ¡i Ä‘ang lÃ m.");
+            redirectAttributes.addFlashAttribute("error", "Kh??ng th??? n???p c??ng vi???c. H??y ch???c ch???n c??ng vi???c ??ang ??? tr???ng th??i ??ang l??m.");
             return "redirect:/student/project";
         }
 
-        redirectAttributes.addFlashAttribute("success", "ÄÃ£ ná»™p cÃ´ng viá»‡c Ä‘á»ƒ ngÆ°á»i kiá»ƒm tra hoáº·c trÆ°á»Ÿng nhÃ³m xÃ©t duyá»‡t.");
+        redirectAttributes.addFlashAttribute("success", "???? n???p c??ng vi???c ????? ng?????i ki???m tra ho???c tr?????ng nh??m x??t duy???t.");
         return "redirect:/student/project";
     }
 
-    @PostMapping("/tasks/{taskId}/review")
+    @PostMapping("/tasks/{taskId}/unsubmit")
+    public String unsubmitTask(@PathVariable("taskId") int taskId,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        Student student = getSessionStudent(session);
+        if (student == null) {
+            return "redirect:/acc/log";
+        }
+        Group group = resolveCurrentGroup(student);
+        if (group == null) {
+            redirectAttributes.addFlashAttribute("error", "Ban chua co nhom trong hoc ky hien tai.");
+            return "redirect:/student/project";
+        }
+        Project project = projectRepository.findByGroupId(group.getGroupId());
+        if (project == null) {
+            redirectAttributes.addFlashAttribute("error", "Nhom cua ban chua duoc tao project.");
+            return "redirect:/student/project";
+        }
+        boolean projectChangeOpen = hasOpenChangeRequest(project);
+        if (!canOperateTask(project, projectChangeOpen)) {
+            redirectAttributes.addFlashAttribute("error",
+                    projectChangeOpen
+                            ? "Project dang co yeu cau doi de tai cho xu ly nen tam khoa thao tac cong viec."
+                            : "Project hien khong cho phep thao tac cong viec.");
+            return "redirect:/student/project";
+        }
+
+        refreshSprintState(project);
+        ProjectTask task = findTaskInProject(project, taskId);
+        if (task == null) {
+            redirectAttributes.addFlashAttribute("error", "Cong viec khong ton tai trong project cua nhom.");
+            return "redirect:/student/project";
+        }
+        if (task.getAssigneeId() != student.getStudentId()) {
+            redirectAttributes.addFlashAttribute("error", "Chi nguoi duoc giao moi duoc huy nop cong viec.");
+            return "redirect:/student/project";
+        }
+        if (task.getStatus() != ProjectTask.STATUS_SUBMITTED) {
+            redirectAttributes.addFlashAttribute("error", "Cong viec khong o trang thai cho kiem tra.");
+            return "redirect:/student/project";
+        }
+
+        int updated = projectTaskRepository.unsubmitTask(taskId, student.getStudentId());
+        if (updated <= 0) {
+            redirectAttributes.addFlashAttribute("error", "Khong the huy nop cong viec. Hay thu lai.");
+            return "redirect:/student/project";
+        }
+
+        redirectAttributes.addFlashAttribute("success", "Da huy nop. Cong viec quay ve trang thai dang lam.");
+        return "redirect:/student/project";
+    }
+
+    
+
+    @GetMapping("/tasks/{taskId}/files/{fileId:.+}")
+    public ResponseEntity<Resource> downloadTaskFile(@PathVariable("taskId") int taskId,
+            @PathVariable("fileId") String fileId,
+            HttpSession session) {
+        Student student = getSessionStudent(session);
+        if (student == null) {
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header(HttpHeaders.LOCATION, "/acc/log")
+                    .build();
+        }
+        Group group = resolveCurrentGroup(student);
+        if (group == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Project project = projectRepository.findByGroupId(group.getGroupId());
+        if (project == null) {
+            return ResponseEntity.notFound().build();
+        }
+        ProjectTask task = findTaskInProject(project, taskId);
+        if (task == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<TaskAttachment> attachments = parseAttachments(task.getSubmissionFiles());
+        TaskAttachment target = null;
+        for (TaskAttachment attachment : attachments) {
+            if (attachment != null && attachment.getStoredName().equals(fileId)) {
+                target = attachment;
+                break;
+            }
+        }
+        if (target == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Path filePath = Paths.get(System.getProperty("user.dir"), TASK_UPLOAD_DIR,
+                String.valueOf(taskId), target.getStoredName());
+        if (!Files.exists(filePath)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            Resource resource = new UrlResource(filePath.toUri());
+            String contentType = Files.probeContentType(filePath);
+            if (contentType == null || contentType.isBlank()) {
+                contentType = target.getContentType();
+            }
+            MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+            try {
+                if (contentType != null && !contentType.isBlank()) {
+                    mediaType = MediaType.parseMediaType(contentType);
+                }
+            } catch (Exception ex) {
+                mediaType = MediaType.APPLICATION_OCTET_STREAM;
+            }
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + normalizeFileName(target.getDisplayName()) + "\"")
+                    .contentType(mediaType)
+                    .body(resource);
+        } catch (Exception ex) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/tasks/{taskId}/code")
+    public String viewTaskCode(@PathVariable("taskId") int taskId,
+            @RequestParam(name = "file", required = false) String fileId,
+            Model model,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        Student student = getSessionStudent(session);
+        if (student == null) {
+            return "redirect:/acc/log";
+        }
+        Group group = resolveCurrentGroup(student);
+        if (group == null) {
+            redirectAttributes.addFlashAttribute("error", "B???n ch??a c?? nh??m trong h???c k??? hi???n t???i.");
+            return "redirect:/student/project";
+        }
+        Project project = projectRepository.findByGroupId(group.getGroupId());
+        if (project == null) {
+            redirectAttributes.addFlashAttribute("error", "Nh??m c???a b???n ch??a ???????c t???o project.");
+            return "redirect:/student/project";
+        }
+        ProjectTask task = findTaskInProject(project, taskId);
+        if (task == null) {
+            redirectAttributes.addFlashAttribute("error", "C??ng vi???c kh??ng t???n t???i.");
+            return "redirect:/student/project";
+        }
+
+        String codeContent;
+        String codeTitle;
+        String downloadUrl = null;
+
+        if (isBlank(fileId)) {
+            if (isBlank(task.getSubmissionCode())) {
+                redirectAttributes.addFlashAttribute("error", "Ch??a c?? ??o???n code ???????c n??p.");
+                return "redirect:/student/project";
+            }
+            codeContent = task.getSubmissionCode();
+            codeTitle = "Code nh???p tay";
+        } else {
+            List<TaskAttachment> attachments = parseAttachments(task.getSubmissionFiles());
+            TaskAttachment target = null;
+            for (TaskAttachment attachment : attachments) {
+                if (attachment != null && attachment.getStoredName().equals(fileId)) {
+                    target = attachment;
+                    break;
+                }
+            }
+            if (target == null || !target.isViewable()) {
+                redirectAttributes.addFlashAttribute("error", "Kh??ng th??? xem code t??? file n??y.");
+                return "redirect:/student/project";
+            }
+            Path filePath = Paths.get(System.getProperty("user.dir"), TASK_UPLOAD_DIR,
+                    String.valueOf(taskId), target.getStoredName());
+            if (!Files.exists(filePath)) {
+                redirectAttributes.addFlashAttribute("error", "Kh??ng t??m th???y file.");
+                return "redirect:/student/project";
+            }
+            try {
+                long size = Files.size(filePath);
+                if (size > MAX_CODE_VIEW_BYTES) {
+                    redirectAttributes.addFlashAttribute("error", "File qu?? l???n ????? xem tr???c ti???p.");
+                    return "redirect:/student/project";
+                }
+                codeContent = Files.readString(filePath, StandardCharsets.UTF_8);
+                codeTitle = target.getDisplayName();
+                downloadUrl = "/student/project/tasks/" + taskId + "/files/" + target.getStoredName();
+            } catch (IOException ex) {
+                redirectAttributes.addFlashAttribute("error", "Kh??ng th??? ?????c file.");
+                return "redirect:/student/project";
+            }
+        }
+
+        bindLayout(model, session, student);
+        model.addAttribute("task", task);
+        model.addAttribute("codeTitle", codeTitle);
+        model.addAttribute("downloadUrl", downloadUrl);
+        model.addAttribute("codeLines", java.util.Arrays.asList(codeContent.split("\\r?\\n", -1)));
+        return "student/project/code-view";
+    }
+
+@PostMapping("/tasks/{taskId}/review")
     public String reviewTask(@PathVariable("taskId") int taskId,
             @RequestParam("action") String action,
             @RequestParam(name = "reviewComment", required = false) String reviewComment,
@@ -1345,8 +2042,10 @@ public class StudentProjectController {
             redirectAttributes.addFlashAttribute("error", "NgÆ°á»i kiá»ƒm tra pháº£i lÃ  thÃ nh viÃªn trong nhÃ³m.");
             return "redirect:/student/project";
         }
-        if (assigneeId == reviewerId) {
-            redirectAttributes.addFlashAttribute("error", "NgÆ°á»i thá»±c hiá»‡n vÃ  ngÆ°á»i kiá»ƒm tra pháº£i lÃ  hai ngÆ°á»i khÃ¡c nhau.");
+        int memberCount = groupMemberRepository.countMembers(group.getGroupId());
+        if (assigneeId == reviewerId && memberCount > 1) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Người thực hiện và người kiểm tra phải là hai người khác nhau (trừ khi nhóm chỉ có 1 thành viên).");
             return "redirect:/student/project";
         }
 

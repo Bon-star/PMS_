@@ -24,7 +24,7 @@ public class GroupMemberRepository {
                     "    WHERE GroupID = ? AND StudentID = ? AND IsActive = 1 " +
                     ") " +
                     "AND ( " +
-                    "    SELECT COUNT(*) FROM Group_Members " +
+                    "    SELECT COUNT(DISTINCT StudentID) FROM Group_Members " +
                     "    WHERE GroupID = ? AND IsActive = 1 " +
                     ") < ?";
             return db.update(sql, groupId, studentId, groupId, studentId, groupId, MAX_GROUP_MEMBERS);
@@ -109,7 +109,7 @@ public class GroupMemberRepository {
 
     public int countMembers(int groupId) {
         try {
-            String sql = "SELECT COUNT(*) FROM Group_Members WHERE GroupID = ? AND IsActive = 1";
+            String sql = "SELECT COUNT(DISTINCT StudentID) FROM Group_Members WHERE GroupID = ? AND IsActive = 1";
             Integer count = db.queryForObject(sql, Integer.class, groupId);
             return count != null ? count : 0;
         } catch (Exception ex) {

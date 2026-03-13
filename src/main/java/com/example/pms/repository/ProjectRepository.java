@@ -276,7 +276,7 @@ public class ProjectRepository {
 
     public List<Project> findPendingForLecturer(int lecturerId) {
         ensureSchema();
-        String sql = "SELECT DISTINCT " +
+        String sql = "SELECT " +
                 "p.ProjectID, g.GroupID, g.GroupName, " +
                 "g.ClassID, c.ClassName, " +
                 "g.SemesterID, sem.SemesterName, " +
@@ -289,15 +289,16 @@ public class ProjectRepository {
                 "INNER JOIN Classes c ON c.ClassID = g.ClassID " +
                 "LEFT JOIN Semesters sem ON sem.SemesterID = g.SemesterID " +
                 "LEFT JOIN Students leader ON leader.StudentID = g.LeaderID " +
-                "INNER JOIN Class_Lecturers cl ON cl.ClassID = g.ClassID AND cl.SemesterID = g.SemesterID " +
-                "WHERE cl.LecturerID = ? AND p.ApprovalStatus = ? " +
+                "INNER JOIN (SELECT DISTINCT ClassID, SemesterID FROM Class_Lecturers WHERE LecturerID = ?) cl " +
+                "ON cl.ClassID = g.ClassID AND cl.SemesterID = g.SemesterID " +
+                "WHERE p.ApprovalStatus = ? " +
                 "ORDER BY p.SubmissionDate DESC";
         return db.query(sql, (rs, rn) -> mapProject(rs), lecturerId, Project.STATUS_PENDING_LECTURER);
     }
 
     public List<Project> findApprovedForLecturer(int lecturerId) {
         ensureSchema();
-        String sql = "SELECT DISTINCT " +
+        String sql = "SELECT " +
                 "p.ProjectID, g.GroupID, g.GroupName, " +
                 "g.ClassID, c.ClassName, " +
                 "g.SemesterID, sem.SemesterName, " +
@@ -310,8 +311,9 @@ public class ProjectRepository {
                 "INNER JOIN Classes c ON c.ClassID = g.ClassID " +
                 "LEFT JOIN Semesters sem ON sem.SemesterID = g.SemesterID " +
                 "LEFT JOIN Students leader ON leader.StudentID = g.LeaderID " +
-                "INNER JOIN Class_Lecturers cl ON cl.ClassID = g.ClassID AND cl.SemesterID = g.SemesterID " +
-                "WHERE cl.LecturerID = ? AND p.ApprovalStatus = ? " +
+                "INNER JOIN (SELECT DISTINCT ClassID, SemesterID FROM Class_Lecturers WHERE LecturerID = ?) cl " +
+                "ON cl.ClassID = g.ClassID AND cl.SemesterID = g.SemesterID " +
+                "WHERE p.ApprovalStatus = ? " +
                 "ORDER BY ISNULL(p.EndDate, p.StartDate) DESC, p.ProjectID DESC";
         return db.query(sql, (rs, rn) -> mapProject(rs), lecturerId, Project.STATUS_APPROVED);
     }

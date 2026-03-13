@@ -33,6 +33,8 @@ public class ProjectTask {
     private LocalDateTime expectedEndTime;
     private String submissionNote;
     private String submissionUrl;
+    private String submissionFiles;
+    private String submissionCode;
     private LocalDateTime submittedAt;
     private String reviewComment;
     private LocalDateTime reviewedAt;
@@ -214,6 +216,22 @@ public class ProjectTask {
 
     public void setSubmissionUrl(String submissionUrl) {
         this.submissionUrl = submissionUrl;
+    }
+
+    public String getSubmissionFiles() {
+        return submissionFiles;
+    }
+
+    public void setSubmissionFiles(String submissionFiles) {
+        this.submissionFiles = submissionFiles;
+    }
+
+    public String getSubmissionCode() {
+        return submissionCode;
+    }
+
+    public void setSubmissionCode(String submissionCode) {
+        this.submissionCode = submissionCode;
     }
 
     public LocalDateTime getSubmittedAt() {

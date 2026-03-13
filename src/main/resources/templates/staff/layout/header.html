@@ -15,6 +15,10 @@
                 <span class="sidebar-icon">🏠</span>
                 <span class="sidebar-text">Trang chủ</span>
             </a>
+            <a class="sidebar-link" th:classappend="${activeMenu == 'students'} ? ' active'" href="/staff/students">
+                <span class="sidebar-icon">👥</span>
+                <span class="sidebar-text">Quản lý học viên</span>
+            </a>
             <a class="sidebar-link" th:classappend="${activeMenu == 'projects'} ? ' active'" href="/staff/projects">
                 <span class="sidebar-icon">🗂️</span>
                 <span class="sidebar-text">Quản lý project</span>

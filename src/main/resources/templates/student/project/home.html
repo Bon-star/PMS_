@@ -1,10 +1,13 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Project của nhóm</title>
-    <link rel="stylesheet" href="/student.css" />
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
     <style>
         .student-project-page .panel {
             background: #fff;
@@ -248,6 +251,20 @@
             padding-top: 8px;
         }
 
+        .student-project-page .file-list {
+            margin: 6px 0 0;
+            padding-left: 18px;
+        }
+
+        .student-project-page .file-list li {
+            margin-bottom: 4px;
+        }
+
+        .student-project-page .code-link {
+            margin-left: 8px;
+            font-size: 12px;
+        }
+
         .student-project-page .summary-grid {
             display: grid;
             grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
@@ -477,13 +494,12 @@
     </style>
 </head>
 
-<body class="student-group-page student-project-page">
-    <div th:replace="~{student/home/header :: sidebar('project')}"></div>
-
-    <div class="main-content">
-        <div th:replace="~{student/home/header :: topbar('Project của nhóm')}"></div>
-
-        <div class="content">
+<body class="backoffice-body student-project-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('project')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Project của nhóm')}"></div>
+            <main class="backoffice-content">
             <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
             <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
 
@@ -583,9 +599,7 @@
                         <a class="nav-pill" href="#trung-tam-thao-tac">Thao tác</a>
                         <a class="nav-pill" href="#yeu-cau">Yêu cầu gần nhất</a>
                         <a class="nav-pill" href="#nhan-xet">Nhận xét giảng viên</a>
-                        <a class="nav-pill" href="#dot-lam-viec">Đợt làm việc</a>
-                        <a class="nav-pill" href="#cong-viec">Công việc</a>
-                        <a class="nav-pill" th:if="${failedTasks != null and !#lists.isEmpty(failedTasks)}" href="#that-bai">Việc thất bại</a>
+                        <a class="nav-pill" href="/student/project/tasks">Đợt &amp; công việc</a>
                     </div>
 
                     <div class="section-anchor" id="trang-thai">
@@ -609,6 +623,13 @@
                             </div>
                         </div>
                         <div class="action-hub">
+                            <div class="action-tile">
+                                <div class="section-heading" style="font-size:16px;">Đợt làm việc &amp; công việc</div>
+                                <span class="muted">Chuyển sang trang riêng để tạo đợt, tạo công việc và lọc theo trạng thái/người làm.</span>
+                                <div class="row-actions">
+                                    <a class="btn btn-primary" href="/student/project/tasks">Mở trang công việc</a>
+                                </div>
+                            </div>
                             <details class="action-tile" th:if="${canRequestEdit}">
                                 <summary>Xin cấp quyền cập nhật nội dung</summary>
                                 <span class="muted">Dùng cho project nguồn học viên khi chưa được phép sửa nội dung.</span>
@@ -800,421 +821,11 @@
                         </div>
                     </div>
 
-                    <div class="section-card section-anchor" id="dot-lam-viec">
-                        <div class="section-head">
-                            <div>
-                                <h3 class="section-heading">Đợt làm việc</h3>
-                            </div>
-                        </div>
-                        <div class="muted" th:if="${openSprint != null}"
-                            th:text="${'Đợt làm việc đang mở: ' + (openSprint.sprintName ?: ('Đợt #' + openSprint.sprintId)) + ' (' + #temporals.format(openSprint.startDate, 'dd/MM/yyyy') + ' - ' + #temporals.format(openSprint.endDate, 'dd/MM/yyyy') + ')'}">
-                        </div>
-                        <div class="muted" th:if="${openSprint == null}">
-                            Hiện không có đợt làm việc đang mở.
-                        </div>
-
-                        <details class="action-tile" th:if="${canCreateSprint}" style="margin-top:12px;">
-                            <summary>Tạo đợt làm việc mới</summary>
-                            <span class="muted">Biểu mẫu tạo đợt mới được thu gọn để trang gọn hơn.</span>
-                            <form method="post" action="/student/project/sprints/create">
-                                <div class="form-grid">
-                                    <div>
-                                        <label for="sprintName">Tên đợt làm việc mới (tùy chọn)</label>
-                                        <input id="sprintName" name="sprintName" type="text" placeholder="Để trống sẽ tự tăng Đợt làm việc 1, 2, 3..." />
-                                    </div>
-                                </div>
-                                <div class="row-actions">
-                                    <button type="submit" class="btn btn-primary">Tạo đợt làm việc mới</button>
-                                </div>
-                            </form>
-                        </details>
-
-                        <div class="table-wrap">
-                            <table th:if="${sprints != null and !#lists.isEmpty(sprints)}" style="margin-top:10px;">
-                            <thead>
-                                <tr>
-                                    <th>Đợt làm việc</th>
-                                    <th>Bắt đầu</th>
-                                    <th>Kết thúc</th>
-                                    <th>Trạng thái</th>
-                                    <th th:if="${canManageSprint}">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:each="sp : ${sprints}">
-                                    <td>
-                                        <div th:text="${sp.sprintName ?: ('Đợt #' + sp.sprintId)}">Đợt</div>
-                                        <div class="muted" th:if="${sp.cancelled and !#strings.isEmpty(sp.cancelReason)}"
-                                            th:text="${'Lý do hủy: ' + sp.cancelReason}"></div>
-                                        <div class="muted" th:if="${sp.cancelledAt != null}"
-                                            th:text="${'Hủy lúc: ' + #temporals.format(sp.cancelledAt, 'dd/MM/yyyy HH:mm')}"></div>
-                                    </td>
-                                    <td th:text="${sp.startDate != null ? #temporals.format(sp.startDate, 'dd/MM/yyyy') : '-'}">-</td>
-                                    <td th:text="${sp.endDate != null ? #temporals.format(sp.endDate, 'dd/MM/yyyy') : '-'}">-</td>
-                                    <td>
-                                        <span th:if="${sp.cancelled}" class="badge status-cancelled">Đã hủy</span>
-                                        <span th:if="${!sp.cancelled and sp.closed}" class="badge status-pending">Đã đóng</span>
-                                        <span th:if="${!sp.cancelled and !sp.closed}" class="badge status-progress">Đang mở</span>
-                                    </td>
-                                    <td th:if="${canManageSprint}">
-                                        <div th:if="${!sp.closed and !sp.cancelled}" class="action-grid">
-                                            <details class="action-panel">
-                                                <summary>Sửa tên</summary>
-                                                <form method="post" th:action="@{/student/project/sprints/{id}/update(id=${sp.sprintId})}">
-                                                    <label th:for="${'sprint_name_' + sp.sprintId}">Tên đợt làm việc</label>
-                                                    <input th:id="${'sprint_name_' + sp.sprintId}" type="text"
-                                                        name="sprintName" th:value="${sp.sprintName}" required />
-                                                    <div class="row-actions">
-                                                        <button type="submit" class="btn">Lưu</button>
-                                                    </div>
-                                                </form>
-                                            </details>
-                                            <details class="action-panel">
-                                                <summary>Xóa</summary>
-                                                <form method="post" th:action="@{/student/project/sprints/{id}/delete(id=${sp.sprintId})}">
-                                                    <p class="muted">Chỉ xóa được đợt đang mở và chưa có công việc.</p>
-                                                    <div class="row-actions">
-                                                        <button type="submit" class="btn btn-danger-soft">Xóa đợt</button>
-                                                    </div>
-                                                </form>
-                                            </details>
-                                            <details class="action-panel">
-                                                <summary>Hủy</summary>
-                                                <form method="post" th:action="@{/student/project/sprints/{id}/cancel(id=${sp.sprintId})}">
-                                                    <label th:for="${'sprint_cancel_' + sp.sprintId}">Lý do hủy</label>
-                                                    <textarea th:id="${'sprint_cancel_' + sp.sprintId}" name="cancelReason"
-                                                        placeholder="Đợt làm việc này bị hủy vì..." required></textarea>
-                                                    <div class="row-actions">
-                                                        <button type="submit" class="btn btn-danger-soft">Hủy đợt</button>
-                                                    </div>
-                                                </form>
-                                            </details>
-                                        </div>
-                                        <span th:if="${sp.closed or sp.cancelled}" class="muted">Không còn thao tác được.</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                            </table>
-                        </div>
-                    </div>
-                
-                    <div class="section-card section-anchor" id="cong-viec">
-                        <div class="section-head">
-                            <div>
-                                <h3 class="section-heading">Tạo và phân công công việc</h3>
-                                <div class="section-description">Biểu mẫu tạo mới được tách riêng để không lẫn với khu vực theo dõi danh sách công việc.</div>
-                            </div>
-                        </div>
-                        <p class="muted">1 point = 4 giờ. Mỗi công việc phải có 1 người thực hiện và 1 người kiểm tra khác nhau.</p>
-
-                        <details class="action-tile" th:if="${canCreateTask}" style="margin-top:12px;">
-                            <summary>Tạo công việc mới</summary>
-                            <span class="muted">Biểu mẫu tạo công việc được thu gọn để không che mất danh sách công việc hiện có.</span>
-                            <form method="post" action="/student/project/tasks/create">
-                                <input type="hidden" name="sprintId" th:value="${openSprint.sprintId}" />
-                                <div class="form-grid">
-                                    <div class="full">
-                                        <label>Đợt làm việc nhận công việc</label>
-                                        <input type="text"
-                                            th:value="${openSprint.sprintName ?: ('Đợt #' + openSprint.sprintId)}"
-                                            readonly />
-                                    </div>
-                                    <div>
-                                        <label for="taskName">Tên công việc</label>
-                                        <input id="taskName" name="taskName" type="text" required />
-                                    </div>
-                                    <div>
-                                        <label for="estimatedPoints">Point ước lượng</label>
-                                        <input id="estimatedPoints" name="estimatedPoints" type="number" min="0.1" step="0.1" required />
-                                    </div>
-                                    <div class="full">
-                                        <label for="taskDescription">Mô tả công việc</label>
-                                        <textarea id="taskDescription" name="description"></textarea>
-                                    </div>
-                                    <div>
-                                        <label for="taskImage">Link ảnh đính kèm (nếu có)</label>
-                                        <input id="taskImage" name="taskImage" type="text" />
-                                    </div>
-                                    <div></div>
-                                    <div>
-                                        <label for="assigneeId">Người thực hiện</label>
-                                        <select id="assigneeId" name="assigneeId" required>
-                                            <option value="">-- Chọn thành viên --</option>
-                                            <option th:each="m : ${members}" th:value="${m.studentId}"
-                                                th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label for="reviewerId">Người kiểm tra</label>
-                                        <select id="reviewerId" name="reviewerId" required>
-                                            <option value="">-- Chọn thành viên --</option>
-                                            <option th:each="m : ${members}" th:value="${m.studentId}"
-                                                th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="row-actions">
-                                    <button type="submit" class="btn btn-primary">Tạo công việc</button>
-                                </div>
-                            </form>
-                        </details>
-
-                        <div class="muted" th:if="${!canCreateTask}" style="margin-top:10px;">
-                            Chỉ trưởng nhóm được tạo công việc và phải có đợt làm việc đang mở trong thời gian project cho phép làm việc.
-                        </div>
-                    </div>
-
-                    <div class="section-card section-anchor" id="that-bai" th:if="${failedTasks != null and !#lists.isEmpty(failedTasks)}">
-                        <div class="section-head">
-                            <div>
-                                <h3 class="section-heading">Công việc thất bại cần đưa vào đợt làm việc mới</h3>
-                                <div class="section-description">Những việc chưa hoàn thành ở đợt cũ được gom riêng để trưởng nhóm xử lý lại.</div>
-                            </div>
-                        </div>
-                        <div class="table-wrap">
-                            <table>
-                            <thead>
-                                <tr>
-                                    <th>Công việc</th>
-                                    <th>Đợt cũ</th>
-                                    <th>Người cũ</th>
-                                    <th>Lý do</th>
-                                    <th>Chuyển đợt</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:each="f : ${failedTasks}">
-                                    <td>
-                                        <div th:text="${f.taskName}">Công việc</div>
-                                        <div class="muted" th:text="${f.estimatedPoints + ' point'}">0 point</div>
-                                    </td>
-                                    <td th:text="${f.sprintName ?: ('Đợt #' + f.sprintId)}">Đợt</td>
-                                    <td th:text="${f.assigneeName + ' / ' + (f.reviewerName ?: 'Chưa có reviewer')}">Thành viên</td>
-                                    <td th:text="${!#strings.isEmpty(f.reviewComment) ? f.reviewComment : 'Công việc chưa hoàn thành trước khi đợt làm việc kết thúc.'}">Lý do</td>
-                                    <td>
-                                        <form th:if="${canReplanFailed and openSprint != null}"
-                                            th:action="@{/student/project/sprints/{id}/replan(id=${openSprint.sprintId})}"
-                                            method="post">
-                                            <input type="hidden" name="taskId" th:value="${f.taskId}" />
-                                            <div class="form-grid" style="grid-template-columns: 1fr; gap:6px;">
-                                                <select name="assigneeId" required>
-                                                    <option th:each="m : ${members}" th:value="${m.studentId}"
-                                                        th:selected="${m.studentId == f.assigneeId}"
-                                                        th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
-                                                </select>
-                                                <select name="reviewerId" required>
-                                                    <option th:each="m : ${members}" th:value="${m.studentId}"
-                                                        th:selected="${f.reviewerId != null and m.studentId == f.reviewerId}"
-                                                        th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
-                                                </select>
-                                                <button type="submit" class="btn">Đưa vào đợt đang mở</button>
-                                            </div>
-                                        </form>
-                                        <span th:if="${!canReplanFailed or openSprint == null}" class="muted">
-                                            Cần là trưởng nhóm và có đợt làm việc đang mở.
-                                        </span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="section-card">
-                        <div class="section-head">
-                            <div>
-                                <h3 class="section-heading">Danh sách công việc</h3>
-                                <div class="section-description">Theo dõi trạng thái, nội dung nộp, review và các thao tác chi tiết của từng công việc.</div>
-                            </div>
-                        </div>
-                        <div class="muted" th:if="${tasks == null or #lists.isEmpty(tasks)}">Chưa có công việc nào.</div>
-
-                        <div th:each="t : ${tasks}" class="task-card">
-                            <div class="task-head">
-                                <h4 class="task-title" th:text="${t.taskName}">Công việc</h4>
-                                <div class="row-actions" style="margin-top:0;">
-                                    <span th:if="${t.status == 0}" class="badge status-todo">Chờ xử lý</span>
-                                    <span th:if="${t.status == 1}" class="badge status-progress">Đang xây dựng</span>
-                                    <span th:if="${t.status == 2}" class="badge status-submitted">Chờ kiểm tra</span>
-                                    <span th:if="${t.status == 3}" class="badge status-done">Hoàn thành</span>
-                                    <span th:if="${t.status == 4}" class="badge status-returned">Trả lại</span>
-                                    <span th:if="${t.status == 5}" class="badge status-failed">Thất bại đợt</span>
-                                    <span th:if="${t.status == 6}" class="badge status-cancelled">Đã hủy</span>
-                                </div>
-                            </div>
-
-                            <div class="task-meta">
-                                Đợt làm việc: <strong th:text="${t.sprintName ?: ('Đợt #' + t.sprintId)}">Đợt</strong>
-                                • Point: <strong th:text="${t.estimatedPoints}">0</strong>
-                                (≈ <span th:text="${#numbers.formatDecimal(t.estimatedHours, 1, 1)}">0</span> giờ)
-                            </div>
-                            <div class="task-meta">
-                                Người thực hiện: <strong th:text="${t.assigneeName + ' (' + t.assigneeCode + ')'}">Assignee</strong>
-                                • Reviewer: <strong th:text="${t.reviewerName ?: 'Chưa gán'}">Reviewer</strong>
-                            </div>
-                            <div class="task-meta">
-                                Bắt đầu thực tế:
-                                <span th:text="${t.actualStartTime != null ? #temporals.format(t.actualStartTime, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
-                                • Deadline dự kiến:
-                                <span th:text="${t.expectedEndTime != null ? #temporals.format(t.expectedEndTime, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
-                                • Kết thúc thực tế:
-                                <span th:text="${t.actualEndTime != null ? #temporals.format(t.actualEndTime, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
-                            </div>
-
-                            <div class="task-body" th:if="${!#strings.isEmpty(t.description)}" th:text="${t.description}"></div>
-                            <div class="task-meta" th:if="${!#strings.isEmpty(t.taskImage)}">
-                                Ảnh mô tả: <a th:href="${t.taskImage}" target="_blank">Mở ảnh</a>
-                            </div>
-
-                            <div class="task-proof" th:if="${!#strings.isEmpty(t.submissionNote) or !#strings.isEmpty(t.submissionUrl)}">
-                                <div class="task-meta"><strong>Nội dung nộp:</strong></div>
-                                <div class="task-body" th:if="${!#strings.isEmpty(t.submissionNote)}" th:text="${t.submissionNote}"></div>
-                                <div class="task-meta" th:if="${!#strings.isEmpty(t.submissionUrl)}">
-                                    Link minh chứng: <a th:href="${t.submissionUrl}" target="_blank">Mở link</a>
-                                </div>
-                                <div class="task-meta" th:if="${t.submittedAt != null}">
-                                    Thời điểm nộp: <span th:text="${#temporals.format(t.submittedAt, 'dd/MM/yyyy HH:mm')}"></span>
-                                </div>
-                            </div>
-
-                            <div class="task-proof" th:if="${!#strings.isEmpty(t.reviewComment)}">
-                                <div class="task-meta">
-                                    <strong th:text="${t.status == 4 ? 'Lý do trả lại:' : 'Nhận xét reviewer:'}">Nhận xét:</strong>
-                                </div>
-                                <div class="task-body" th:text="${t.reviewComment}"></div>
-                                <div class="task-meta" th:if="${t.reviewedAt != null}">
-                                    Thời điểm review: <span th:text="${#temporals.format(t.reviewedAt, 'dd/MM/yyyy HH:mm')}"></span>
-                                </div>
-                            </div>
-
-                            <div class="task-proof" th:if="${t.status == 6 or !#strings.isEmpty(t.cancelledReason) or t.cancelledAt != null}">
-                                <div class="task-meta"><strong>Thông tin hủy:</strong></div>
-                                <div class="task-body" th:if="${!#strings.isEmpty(t.cancelledReason)}" th:text="${t.cancelledReason}"></div>
-                                <div class="task-meta" th:if="${t.cancelledAt != null}">
-                                    Hủy lúc: <span th:text="${#temporals.format(t.cancelledAt, 'dd/MM/yyyy HH:mm')}"></span>
-                                </div>
-                            </div>
-
-                            <div class="action-grid"
-                                th:if="${canManageTaskPlan and !projectChangeOpen and t.status != 3 and t.status != 6}">
-                                <details class="action-panel" th:if="${t.status == 0 or t.status == 4}">
-                                    <summary>Sửa công việc</summary>
-                                    <form method="post" th:action="@{/student/project/tasks/{id}/update(id=${t.taskId})}">
-                                        <div class="form-grid">
-                                            <div class="full">
-                                                <label th:for="${'task_name_' + t.taskId}">Tên công việc</label>
-                                                <input th:id="${'task_name_' + t.taskId}" name="taskName" type="text"
-                                                    th:value="${t.taskName}" required />
-                                            </div>
-                                            <div>
-                                                <label th:for="${'task_points_' + t.taskId}">Point ước lượng</label>
-                                                <input th:id="${'task_points_' + t.taskId}" name="estimatedPoints" type="number"
-                                                    min="0.1" step="0.1" th:value="${t.estimatedPoints}" required />
-                                            </div>
-                                            <div>
-                                                <label th:for="${'task_image_' + t.taskId}">Link ảnh đính kèm</label>
-                                                <input th:id="${'task_image_' + t.taskId}" name="taskImage" type="text"
-                                                    th:value="${t.taskImage}" />
-                                            </div>
-                                            <div class="full">
-                                                <label th:for="${'task_desc_' + t.taskId}">Mô tả</label>
-                                                <textarea th:id="${'task_desc_' + t.taskId}" name="description"
-                                                    th:text="${t.description}"></textarea>
-                                            </div>
-                                            <div>
-                                                <label th:for="${'task_assignee_' + t.taskId}">Người thực hiện</label>
-                                                <select th:id="${'task_assignee_' + t.taskId}" name="assigneeId" required>
-                                                    <option th:each="m : ${members}" th:value="${m.studentId}"
-                                                        th:selected="${m.studentId == t.assigneeId}"
-                                                        th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label th:for="${'task_reviewer_' + t.taskId}">Người kiểm tra</label>
-                                                <select th:id="${'task_reviewer_' + t.taskId}" name="reviewerId" required>
-                                                    <option th:each="m : ${members}" th:value="${m.studentId}"
-                                                        th:selected="${t.reviewerId != null and m.studentId == t.reviewerId}"
-                                                        th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="row-actions">
-                                            <button type="submit" class="btn">Lưu thay đổi</button>
-                                        </div>
-                                    </form>
-                                </details>
-
-                                <details class="action-panel" th:if="${t.status == 0}">
-                                    <summary>Xóa công việc</summary>
-                                    <form method="post" th:action="@{/student/project/tasks/{id}/delete(id=${t.taskId})}">
-                                        <p class="muted">Chỉ xóa được công việc còn nguyên ở trạng thái chờ xử lý.</p>
-                                        <div class="row-actions">
-                                            <button type="submit" class="btn btn-danger-soft">Xóa công việc</button>
-                                        </div>
-                                    </form>
-                                </details>
-
-                                <details class="action-panel">
-                                    <summary>Hủy công việc</summary>
-                                    <form method="post" th:action="@{/student/project/tasks/{id}/cancel(id=${t.taskId})}">
-                                        <label th:for="${'task_cancel_' + t.taskId}">Lý do hủy</label>
-                                        <textarea th:id="${'task_cancel_' + t.taskId}" name="cancelReason"
-                                            placeholder="Công việc này bị hủy vì..." required></textarea>
-                                        <div class="row-actions">
-                                            <button type="submit" class="btn btn-danger-soft">Hủy công việc</button>
-                                        </div>
-                                    </form>
-                                </details>
-                            </div>
-
-                            <div class="row-actions"
-                                th:if="${!projectLockedForWork and !projectChangeOpen and t.assigneeId == studentId and (t.status == 0 or t.status == 4)}">
-                                <form method="post" th:action="@{/student/project/tasks/{id}/start(id=${t.taskId})}">
-                                    <button type="submit" class="btn">Bắt đầu làm công việc</button>
-                                </form>
-                            </div>
-
-                            <form th:if="${!projectLockedForWork and !projectChangeOpen and t.assigneeId == studentId and t.status == 1}" method="post"
-                                th:action="@{/student/project/tasks/{id}/submit(id=${t.taskId})}">
-                                <div class="form-grid" style="margin-top:10px;">
-                                    <div class="full">
-                                        <label th:for="${'submissionNote_' + t.taskId}">Nội dung hoàn thành</label>
-                                        <textarea th:id="${'submissionNote_' + t.taskId}" name="submissionNote"
-                                            placeholder="Mô tả bạn đã làm gì, kết quả ra sao..."></textarea>
-                                    </div>
-                                    <div class="full">
-                                        <label th:for="${'submissionUrl_' + t.taskId}">Link minh chứng (repo/PR/tài liệu/demo)</label>
-                                        <input th:id="${'submissionUrl_' + t.taskId}" name="submissionUrl" type="text"
-                                            placeholder="https://..." />
-                                    </div>
-                                </div>
-                                <div class="row-actions">
-                                    <button type="submit" class="btn btn-primary">Nộp công việc để duyệt</button>
-                                </div>
-                            </form>
-
-                            <form th:if="${!projectLockedForWork and !projectChangeOpen and (isLeader or (t.reviewerId != null and t.reviewerId == studentId)) and t.assigneeId != studentId and t.status == 2}"
-                                method="post"
-                                th:action="@{/student/project/tasks/{id}/review(id=${t.taskId})}">
-                                <div class="form-grid" style="margin-top:10px;">
-                                    <div class="full">
-                                        <label th:for="${'reviewComment_' + t.taskId}">Nhận xét review</label>
-                                        <textarea th:id="${'reviewComment_' + t.taskId}" name="reviewComment"
-                                            placeholder="Nếu trả lại công việc thì lý do là bắt buộc."></textarea>
-                                    </div>
-                                </div>
-                                <div class="row-actions">
-                                    <button type="submit" name="action" value="approve" class="btn btn-primary">Duyệt hoàn thành</button>
-                                    <button type="submit" name="action" value="reject" class="btn btn-danger-soft">Trả lại công việc</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
                 </div>
             </div>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
         </div>
-
-        <div th:replace="~{student/home/footer :: pageFooter}"></div>
     </div>
 </body>
 

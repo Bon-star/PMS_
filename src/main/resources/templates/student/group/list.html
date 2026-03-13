@@ -1,63 +1,63 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-
 <head>
     <meta charset="utf-8" />
-    <title>Danh sách nhóm</title>
-    <link rel="stylesheet" href="/student.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Học viên • Danh sách nhóm</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
 </head>
-
-<body class="student-group-page student-group-list-page">
-    <div th:replace="~{student/home/header :: sidebar('group')}"></div>
-
-    <div class="main-content">
-        <div th:replace="~{student/home/header :: topbar('Danh sách nhóm')}"></div>
-
-        <div class="content">
-            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
-            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-            <div th:unless="${invitationFeatureEnabled}" class="alert alert-error">
-                Chức năng thông báo/mời đang tắt vì CSDL chưa có bảng <strong>Group_Invitations</strong>.
-            </div>
-
-            <div class="content-header">
-                <div class="content-title" th:text="${hasActiveGroup} ? 'Nhóm của bạn' : 'Nhóm có thể tham gia'">Danh sách nhóm</div>
-                <div th:if="${canCreateGroup}">
-                    <a href="/student/group/create" class="btn-primary">+ Tạo nhóm mới</a>
+<body class="backoffice-body student-group-page student-group-list-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('group')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Danh sách nhóm')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+                <div th:unless="${invitationFeatureEnabled}" class="alert alert-error">
+                    Chức năng thông báo/mời đang tắt vì CSDL chưa có bảng <strong>Group_Invitations</strong>.
                 </div>
-                <div th:if="${!canCreateGroup}" class="hint">
-                    Bạn đang ở trong một nhóm nên không thể tạo nhóm mới.
-                </div>
-            </div>
 
-            <div th:if="${groups != null && groups.size() > 0}" class="groups-container">
-                <div th:each="group : ${groups}" class="group-card">
-                    <a th:href="@{/student/group/{id}(id=${group.groupId})}">
-                        <div class="group-name" th:text="${group.groupName}">Tên nhóm</div>
-                        <div class="group-info"><strong>Nhóm trưởng:</strong> <span th:text="${group.leaderName} ?: 'Chưa có'">Tên nhóm trưởng</span></div>
-                        <div class="group-info" th:if="${hasActiveGroup}">
-                            <strong>Vai trò:</strong>
-                            <span th:if="${group.leaderId == studentId}" style="color:#27ae60;font-weight:600;">Nhóm trưởng</span>
-                            <span th:unless="${group.leaderId == studentId}" style="color:#3498db;font-weight:600;">Thành viên</span>
-                        </div>
-                        <div class="group-info" th:if="${!hasActiveGroup}">
-                            <strong>Trạng thái:</strong>
-                            <span style="color:#3498db;font-weight:600;">Có thể tham gia</span>
-                        </div>
-                        <div class="group-info"><strong>Ngày tạo:</strong>
-                            <span th:text="${#temporals.format(group.createdDate, 'dd/MM/yyyy HH:mm')}">01/01/2026 00:00</span>
-                        </div>
-                    </a>
-                </div>
-            </div>
+                <section class="page-section panel">
+                    <div class="panel-title" th:text="${hasActiveGroup} ? 'Nhóm của bạn' : 'Nhóm có thể tham gia'">Danh sách nhóm</div>
+                    <div class="button-row" th:if="${canCreateGroup}">
+                        <a href="/student/group/create" class="btn btn-primary">+ Tạo nhóm mới</a>
+                    </div>
+                    <div class="meta" th:if="${!canCreateGroup}">
+                        Bạn đang ở trong một nhóm nên không thể tạo nhóm mới.
+                    </div>
 
-            <div th:if="${groups == null || groups.size() == 0}" class="empty-state">
-                <div class="empty-state-text" th:text="${hasActiveGroup} ? 'Bạn chưa có nhóm nào' : 'Chưa có nhóm nào đang mở trong lớp'">Không có dữ liệu</div>
-            </div>
+                    <div class="request-list" th:if="${groups != null && groups.size() > 0}">
+                        <a th:each="group : ${groups}" class="request-card link-card"
+                           th:href="@{/student/group/{id}(id=${group.groupId})}">
+                            <div class="request-title" th:text="${group.groupName}">Tên nhóm</div>
+                            <div class="request-meta">
+                                <div><strong>Nhóm trưởng:</strong> <span th:text="${group.leaderName} ?: 'Chưa có'">Tên nhóm trưởng</span></div>
+                                <div th:if="${hasActiveGroup}">
+                                    <strong>Vai trò:</strong>
+                                    <span th:if="${group.leaderId == studentId}" class="badge badge-approved">Nhóm trưởng</span>
+                                    <span th:unless="${group.leaderId == studentId}" class="badge badge-waiting">Thành viên</span>
+                                </div>
+                                <div th:if="${!hasActiveGroup}">
+                                    <strong>Trạng thái:</strong>
+                                    <span class="badge badge-waiting">Có thể tham gia</span>
+                                </div>
+                                <div><strong>Ngày tạo:</strong>
+                                    <span th:text="${#temporals.format(group.createdDate, 'dd/MM/yyyy HH:mm')}">01/01/2026 00:00</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="empty-state" th:if="${groups == null || groups.size() == 0}">
+                        <div class="empty-state-text" th:text="${hasActiveGroup} ? 'Bạn chưa có nhóm nào' : 'Chưa có nhóm nào đang mở trong lớp'">Không có dữ liệu</div>
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
         </div>
-        <div th:replace="~{student/home/footer :: pageFooter}"></div>
     </div>
 </body>
-
 </html>
-

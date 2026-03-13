@@ -1,131 +1,133 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-
 <head>
     <meta charset="utf-8" />
-    <title>Thông báo nhóm</title>
-    <link rel="stylesheet" href="/student.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Học viên • Thông báo nhóm</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
 </head>
-
-<body class="student-group-page student-group-notifications-page">
-    <div th:replace="~{student/home/header :: sidebar('group')}"></div>
-
-    <div class="main-content">
-        <div th:replace="~{student/home/header :: topbar('Thông báo nhóm')}"></div>
-
-        <div class="content">
-            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
-            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-            <div th:unless="${invitationFeatureEnabled}" class="alert alert-error">
-                CSDL chưa có bảng <strong>Group_Invitations</strong>, hiện chưa xử lý được thông báo mời nhóm.
-            </div>
-
-            <div class="section" th:if="${invitationFeatureEnabled}">
-                <div class="section-title">Tất cả thông báo</div>
-                <ul class="request-list" th:if="${notifications != null and notifications.size() > 0}">
-                    <li class="request-item" th:each="item : ${notifications}">
-                        <div class="request-text">
-                            <span class="notice-type notice-type-received" th:if="${item.notificationType == 'RECEIVED_INVITE'}">Lời mời nhận được</span>
-                            <span class="notice-type notice-type-review" th:if="${item.notificationType == 'LEADER_REVIEW'}">Cần duyệt</span>
-                            <span class="notice-type notice-type-sent" th:if="${item.notificationType == 'SENT_REQUEST'}">Đã gửi</span>
-
-                            <span th:if="${item.notificationType == 'RECEIVED_INVITE'}">
-                                Bạn được <strong th:text="${item.invitation.invitedByName}">Người mời</strong>
-                                (<span th:text="${item.invitation.invitedByCode}">HE000000</span>)
-                                mời vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>.
-                            </span>
-
-                            <span th:if="${item.notificationType == 'LEADER_REVIEW' and item.invitation.studentId == item.invitation.invitedByStudentId}">
-                                Yêu cầu tham gia nhóm từ <strong th:text="${item.invitation.studentName}">Sinh viên</strong>
-                                (<span th:text="${item.invitation.studentCode}">HE000000</span>)
-                                vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>.
-                            </span>
-                            <span th:if="${item.notificationType == 'LEADER_REVIEW' and item.invitation.studentId != item.invitation.invitedByStudentId}">
-                                Đề xuất mời <strong th:text="${item.invitation.studentName}">Sinh viên</strong>
-                                (<span th:text="${item.invitation.studentCode}">HE000000</span>)
-                                vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>;
-                                gửi bởi <strong th:text="${item.invitation.invitedByName}">Người gửi</strong>
-                                (<span th:text="${item.invitation.invitedByCode}">HE000000</span>).
-                            </span>
-
-                            <span th:if="${item.notificationType == 'SENT_REQUEST' and item.invitation.studentId == item.invitation.invitedByStudentId}">
-                                Bạn đã gửi yêu cầu vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>.
-                            </span>
-                            <span th:if="${item.notificationType == 'SENT_REQUEST' and item.invitation.studentId != item.invitation.invitedByStudentId}">
-                                Bạn đã gửi yêu cầu mời <strong th:text="${item.invitation.studentName}">Sinh viên</strong>
-                                (<span th:text="${item.invitation.studentCode}">HE000000</span>)
-                                vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>.
-                            </span>
-
-                            <span class="status-badge status-pending" th:if="${item.invitation.status == 'PENDING'}">Đang chờ</span>
-                            <span class="status-badge status-accepted" th:if="${item.invitation.status == 'ACCEPTED'}">Đã chấp nhận</span>
-                            <span class="status-badge status-rejected" th:if="${item.invitation.status == 'REJECTED'}">Đã từ chối</span>
-
-                            <span class="request-sub">
-                                Gửi lúc:
-                                <span th:text="${item.invitation.invitedDate != null ? #temporals.format(item.invitation.invitedDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
-                                <span th:if="${item.invitation.respondedDate != null}">
-                                    | Xử lý lúc:
-                                    <span th:text="${#temporals.format(item.invitation.respondedDate, 'dd/MM/yyyy HH:mm')}">-</span>
-                                </span>
-                            </span>
-                        </div>
-
-                        <div class="request-actions"
-                            th:if="${item.notificationType == 'RECEIVED_INVITE' and item.invitation.status == 'PENDING'}">
-                            <form method="post"
-                                th:action="@{/student/group/{id}/invite/{invId}/respond(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
-                                <input type="hidden" name="action" value="accept" />
-                                <button class="btn btn-approve" type="submit">Đồng ý</button>
-                            </form>
-                            <form method="post"
-                                th:action="@{/student/group/{id}/invite/{invId}/respond(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
-                                <input type="hidden" name="action" value="reject" />
-                                <button class="btn btn-reject" type="submit">Từ chối</button>
-                            </form>
-                        </div>
-
-                        <div class="request-actions"
-                            th:if="${item.notificationType == 'LEADER_REVIEW' and item.invitation.status == 'PENDING'}">
-                            <form method="post"
-                                th:action="@{/student/group/{id}/invite/{invId}/review(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
-                                <input type="hidden" name="action" value="approve" />
-                                <button class="btn btn-approve" type="submit">Đồng ý</button>
-                            </form>
-                            <form method="post"
-                                th:action="@{/student/group/{id}/invite/{invId}/review(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
-                                <input type="hidden" name="action" value="reject" />
-                                <button class="btn btn-reject" type="submit">Từ chối</button>
-                            </form>
-                        </div>
-
-                        <div class="request-actions" th:if="${item.notificationType == 'SENT_REQUEST'}">
-                            <button class="btn btn-disabled" type="button" disabled th:if="${item.invitation.status == 'PENDING'}">Đang chờ</button>
-                            <button class="btn btn-disabled" type="button" disabled th:if="${item.invitation.status != 'PENDING'}">Đã xử lý</button>
-                        </div>
-
-                        <div class="request-actions"
-                            th:if="${(item.notificationType == 'RECEIVED_INVITE' or item.notificationType == 'LEADER_REVIEW') and item.invitation.status != 'PENDING'}">
-                            <button class="btn btn-disabled" type="button" disabled>Đã xử lý</button>
-                        </div>
-                    </li>
-                </ul>
-                <div class="hint" th:if="${notifications == null or notifications.size() == 0}">
-                    Chưa có thông báo nào.
+<body class="backoffice-body student-group-page student-group-notifications-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('notifications')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Thông báo nhóm')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+                <div th:unless="${invitationFeatureEnabled}" class="alert alert-error">
+                    CSDL chưa có bảng <strong>Group_Invitations</strong>, hiện chưa xử lý được thông báo mời nhóm.
                 </div>
 
-                <div class="pagination" th:if="${totalPages > 1}">
-                    <a class="page-btn" th:if="${hasPrev}" th:href="@{/student/group/notifications(page=${prevPage})}">Trang trước</a>
-                    <span class="page-btn disabled" th:unless="${hasPrev}">Trang trước</span>
-                    <span class="page-info">Trang <span th:text="${currentPage}">1</span> / <span th:text="${totalPages}">1</span></span>
-                    <a class="page-btn" th:if="${hasNext}" th:href="@{/student/group/notifications(page=${nextPage})}">Trang sau</a>
-                    <span class="page-btn disabled" th:unless="${hasNext}">Trang sau</span>
-                </div>
-            </div>
+                <section class="page-section panel" th:if="${invitationFeatureEnabled}">
+                    <h2 class="panel-title">Tất cả thông báo</h2>
+                    <ul class="request-list" th:if="${notifications != null and notifications.size() > 0}">
+                        <li class="request-card" th:each="item : ${notifications}">
+                            <div>
+                                <div class="request-title">
+                                    <span class="badge badge-waiting" th:if="${item.notificationType == 'RECEIVED_INVITE'}">Lời mời nhận được</span>
+                                    <span class="badge badge-pending" th:if="${item.notificationType == 'LEADER_REVIEW'}">Cần duyệt</span>
+                                    <span class="badge badge-waiting" th:if="${item.notificationType == 'SENT_REQUEST'}">Đã gửi</span>
+                                </div>
+                                <div class="request-body">
+                                    <span th:if="${item.notificationType == 'RECEIVED_INVITE'}">
+                                        Bạn được <strong th:text="${item.invitation.invitedByName}">Người mời</strong>
+                                        (<span th:text="${item.invitation.invitedByCode}">HE000000</span>)
+                                        mời vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>.
+                                    </span>
+
+                                    <span th:if="${item.notificationType == 'LEADER_REVIEW' and item.invitation.studentId == item.invitation.invitedByStudentId}">
+                                        Yêu cầu tham gia nhóm từ <strong th:text="${item.invitation.studentName}">Sinh viên</strong>
+                                        (<span th:text="${item.invitation.studentCode}">HE000000</span>)
+                                        vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>.
+                                    </span>
+                                    <span th:if="${item.notificationType == 'LEADER_REVIEW' and item.invitation.studentId != item.invitation.invitedByStudentId}">
+                                        Đề xuất mời <strong th:text="${item.invitation.studentName}">Sinh viên</strong>
+                                        (<span th:text="${item.invitation.studentCode}">HE000000</span>)
+                                        vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>;
+                                        gửi bởi <strong th:text="${item.invitation.invitedByName}">Người gửi</strong>
+                                        (<span th:text="${item.invitation.invitedByCode}">HE000000</span>).
+                                    </span>
+
+                                    <span th:if="${item.notificationType == 'SENT_REQUEST' and item.invitation.studentId == item.invitation.invitedByStudentId}">
+                                        Bạn đã gửi yêu cầu vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>.
+                                    </span>
+                                    <span th:if="${item.notificationType == 'SENT_REQUEST' and item.invitation.studentId != item.invitation.invitedByStudentId}">
+                                        Bạn đã gửi yêu cầu mời <strong th:text="${item.invitation.studentName}">Sinh viên</strong>
+                                        (<span th:text="${item.invitation.studentCode}">HE000000</span>)
+                                        vào nhóm <strong th:text="${item.invitation.groupName}">Tên nhóm</strong>.
+                                    </span>
+                                </div>
+                                <div class="request-meta">
+                                    <span class="badge badge-pending" th:if="${item.invitation.status == 'PENDING'}">Đang chờ</span>
+                                    <span class="badge badge-approved" th:if="${item.invitation.status == 'ACCEPTED'}">Đã chấp nhận</span>
+                                    <span class="badge badge-rejected" th:if="${item.invitation.status == 'REJECTED'}">Đã từ chối</span>
+                                    <div>
+                                        Gửi lúc:
+                                        <span th:text="${item.invitation.invitedDate != null ? #temporals.format(item.invitation.invitedDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                        <span th:if="${item.invitation.respondedDate != null}">
+                                            | Xử lý lúc:
+                                            <span th:text="${#temporals.format(item.invitation.respondedDate, 'dd/MM/yyyy HH:mm')}">-</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="inline-actions"
+                                th:if="${item.notificationType == 'RECEIVED_INVITE' and item.invitation.status == 'PENDING'}">
+                                <form method="post"
+                                    th:action="@{/student/group/{id}/invite/{invId}/respond(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
+                                    <input type="hidden" name="action" value="accept" />
+                                    <button class="btn btn-primary btn-small" type="submit">Đồng ý</button>
+                                </form>
+                                <form method="post"
+                                    th:action="@{/student/group/{id}/invite/{invId}/respond(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
+                                    <input type="hidden" name="action" value="reject" />
+                                    <button class="btn btn-soft-danger btn-small" type="submit">Từ chối</button>
+                                </form>
+                            </div>
+
+                            <div class="inline-actions"
+                                th:if="${item.notificationType == 'LEADER_REVIEW' and item.invitation.status == 'PENDING'}">
+                                <form method="post"
+                                    th:action="@{/student/group/{id}/invite/{invId}/review(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
+                                    <input type="hidden" name="action" value="approve" />
+                                    <button class="btn btn-primary btn-small" type="submit">Đồng ý</button>
+                                </form>
+                                <form method="post"
+                                    th:action="@{/student/group/{id}/invite/{invId}/review(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
+                                    <input type="hidden" name="action" value="reject" />
+                                    <button class="btn btn-soft-danger btn-small" type="submit">Từ chối</button>
+                                </form>
+                            </div>
+
+                            <div class="inline-actions" th:if="${item.notificationType == 'SENT_REQUEST'}">
+                                <button class="btn btn-secondary btn-small" type="button" disabled th:if="${item.invitation.status == 'PENDING'}">Đang chờ</button>
+                                <button class="btn btn-secondary btn-small" type="button" disabled th:if="${item.invitation.status != 'PENDING'}">Đã xử lý</button>
+                            </div>
+
+                            <div class="inline-actions"
+                                th:if="${(item.notificationType == 'RECEIVED_INVITE' or item.notificationType == 'LEADER_REVIEW') and item.invitation.status != 'PENDING'}">
+                                <button class="btn btn-secondary btn-small" type="button" disabled>Đã xử lý</button>
+                            </div>
+                        </li>
+                    </ul>
+                    <div class="meta" th:if="${notifications == null or notifications.size() == 0}">
+                        Chưa có thông báo nào.
+                    </div>
+
+                    <div class="pagination" th:if="${totalPages > 1}">
+                        <a class="page-btn" th:if="${hasPrev}" th:href="@{/student/group/notifications(page=${prevPage})}">Trang trước</a>
+                        <span class="page-btn disabled" th:unless="${hasPrev}">Trang trước</span>
+                        <span class="page-info">Trang <span th:text="${currentPage}">1</span> / <span th:text="${totalPages}">1</span></span>
+                        <a class="page-btn" th:if="${hasNext}" th:href="@{/student/group/notifications(page=${nextPage})}">Trang sau</a>
+                        <span class="page-btn disabled" th:unless="${hasNext}">Trang sau</span>
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
         </div>
-        <div th:replace="~{student/home/footer :: pageFooter}"></div>
     </div>
 </body>
-
 </html>
-

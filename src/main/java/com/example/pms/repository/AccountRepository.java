@@ -71,4 +71,13 @@ public class AccountRepository {
         String sql = "UPDATE Accounts SET PasswordHash = ?, IsActive = 1 WHERE AccountID = ?";
         db.update(sql, newPasswordHash, accountId);
     }
+
+    public int updateUsernameById(int accountId, String newUsername) {
+        try {
+            String sql = "UPDATE Accounts SET Username = ? WHERE AccountID = ?";
+            return db.update(sql, newUsername, accountId);
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
 }

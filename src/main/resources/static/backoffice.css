@@ -228,6 +228,27 @@ body.backoffice-body {
     padding: 16px 18px;
 }
 
+.accent-card {
+    border-color: transparent;
+    background: #fff;
+}
+
+.accent-blue {
+    background: linear-gradient(135deg, #dbeafe, #f8fafc);
+}
+
+.accent-amber {
+    background: linear-gradient(135deg, #fef3c7, #fffbeb);
+}
+
+.accent-emerald {
+    background: linear-gradient(135deg, #dcfce7, #f0fdf4);
+}
+
+.accent-rose {
+    background: linear-gradient(135deg, #ffe4e6, #fff1f2);
+}
+
 .summary-label {
     color: var(--bo-subtext);
     font-size: 13px;

@@ -1,0 +1,165 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nhan vien • Quan ly hoc vien</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body staff-students-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{staff/layout/header :: sidebar('students')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{staff/layout/header :: topbar('Quan ly hoc vien')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+                <section class="page-section summary-grid">
+                    <div class="summary-card accent-card accent-blue">
+                        <div class="summary-label">Tra cuu ho so</div>
+                        <div class="summary-value">Nhanh</div>
+                        <div class="summary-note">Tim theo ma hoc vien hoac email.</div>
+                    </div>
+                    <div class="summary-card accent-card accent-emerald">
+                        <div class="summary-label">Cap nhat thong tin</div>
+                        <div class="summary-value">Chu dong</div>
+                        <div class="summary-note">Doi email, so dien thoai, lop khi can.</div>
+                    </div>
+                    <div class="summary-card accent-card accent-amber">
+                        <div class="summary-label">Tao tai khoan</div>
+                        <div class="summary-value">Mot lan</div>
+                        <div class="summary-note">Tao moi va kich hoat theo email truong.</div>
+                    </div>
+                    <div class="summary-card accent-card accent-rose">
+                        <div class="summary-label">Dieu huong nhanh</div>
+                        <div class="button-row" style="margin-top:10px;">
+                            <a class="btn btn-primary btn-small" href="/staff/projects">Quan ly project</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section metrics-grid">
+                    <div class="card">
+                        <h2 class="card-title">Tra cuu nhanh</h2>
+                        <p class="meta">Nhap ma hoc vien hoac email truong de mo ho so cap nhat.</p>
+                        <form method="get" action="/staff/students/lookup">
+                            <div class="form-grid">
+                                <div class="full">
+                                    <label for="studentRef">Ma hoc vien hoac email</label>
+                                    <input id="studentRef" name="studentRef" type="text" maxlength="100"
+                                        th:value="${studentRef}" placeholder="Vi du: HE123456 hoac he123456@fpt.edu.vn" required />
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-secondary">Tra cuu</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card">
+                        <h2 class="card-title">Huong dan xu ly</h2>
+                        <ul class="meta" style="padding-left:18px;">
+                            <li>Khi doi email, he thong se cap nhat luon email dang nhap.</li>
+                            <li>Khi doi so dien thoai, dam bao khong trung voi hoc vien khac.</li>
+                            <li>Khi doi lop, chon dung lop trong danh sach hien co.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Cap nhat thong tin</h2>
+                    <div th:if="${editStudentId == null}" class="empty-state">
+                        Chua chon hoc vien. Vui long tra cuu truoc khi cap nhat.
+                    </div>
+                    <div th:if="${editStudentId != null}">
+                        <form method="post" action="/staff/students/update">
+                            <input type="hidden" name="studentId" th:value="${editStudentId}" />
+                            <div class="form-grid">
+                                <div>
+                                    <label for="editStudentCode">Ma hoc vien</label>
+                                    <input id="editStudentCode" name="studentCode" type="text"
+                                        th:value="${editStudentCode}" readonly />
+                                </div>
+                                <div>
+                                    <label for="editFullName">Ho va ten</label>
+                                    <input id="editFullName" name="fullName" type="text" maxlength="100"
+                                        th:value="${editFullName}" placeholder="Vi du: Nguyen Van A" required />
+                                </div>
+                                <div>
+                                    <label for="editSchoolEmail">Email hoc vien</label>
+                                    <input id="editSchoolEmail" name="schoolEmail" type="email" maxlength="100"
+                                        th:value="${editSchoolEmail}" placeholder="Vi du: he123456@fpt.edu.vn" required />
+                                </div>
+                                <div>
+                                    <label for="editPhoneNumber">So dien thoai</label>
+                                    <input id="editPhoneNumber" name="phoneNumber" type="text" maxlength="15"
+                                        th:value="${editPhoneNumber}" placeholder="Vi du: 0912345678" required />
+                                </div>
+                                <div class="full">
+                                    <label for="editClassId">Lop</label>
+                                    <select id="editClassId" name="classId" required>
+                                        <option value="" disabled th:selected="${editSelectedClassId == null}">-- Chon lop --</option>
+                                        <option th:each="c : ${classes}"
+                                            th:value="${c.classId}"
+                                            th:text="${(c.courseYear != null and !#strings.isEmpty(c.courseYear)) ? c.className + ' - ' + c.courseYear : c.className}"
+                                            th:selected="${editSelectedClassId != null and editSelectedClassId == c.classId}">
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Cap nhat thong tin</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Tao hoc vien moi</h2>
+                    <p class="meta">Nhap thong tin day du de tao ho so va tai khoan khoi tao.</p>
+                    <form method="post" action="/staff/students/create">
+                        <div class="form-grid">
+                            <div>
+                                <label for="studentCode">Ma hoc vien</label>
+                                <input id="studentCode" name="studentCode" type="text" maxlength="20"
+                                    th:value="${studentCode}" placeholder="Vi du: HE123456" required />
+                            </div>
+                            <div>
+                                <label for="fullName">Ho va ten</label>
+                                <input id="fullName" name="fullName" type="text" maxlength="100"
+                                    th:value="${fullNameInput}" placeholder="Vi du: Nguyen Van A" required />
+                            </div>
+                            <div>
+                                <label for="schoolEmail">Email hoc vien</label>
+                                <input id="schoolEmail" name="schoolEmail" type="email" maxlength="100"
+                                    th:value="${schoolEmail}" placeholder="Vi du: he123456@fpt.edu.vn" required />
+                            </div>
+                            <div>
+                                <label for="phoneNumber">So dien thoai</label>
+                                <input id="phoneNumber" name="phoneNumber" type="text" maxlength="15"
+                                    th:value="${phoneNumber}" placeholder="Vi du: 0912345678" required />
+                            </div>
+                            <div class="full">
+                                <label for="classId">Lop</label>
+                                <select id="classId" name="classId" required>
+                                    <option value="" disabled th:selected="${selectedClassId == null}">-- Chon lop --</option>
+                                    <option th:each="c : ${classes}"
+                                        th:value="${c.classId}"
+                                        th:text="${(c.courseYear != null and !#strings.isEmpty(c.courseYear)) ? c.className + ' - ' + c.courseYear : c.className}"
+                                        th:selected="${selectedClassId != null and selectedClassId == c.classId}">
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Tao hoc vien va tai khoan</button>
+                        </div>
+                    </form>
+                </section>
+            </main>
+            <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>
