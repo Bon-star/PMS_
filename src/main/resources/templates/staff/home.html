@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Nhan vien • Tong quan</title>
+    <title>Staff Home</title>
     <link rel="stylesheet" href="/backoffice.css" />
     <script src="/js/backoffice-layout.js" defer></script>
 </head>
@@ -11,7 +11,7 @@
     <div class="backoffice-shell">
         <div th:replace="~{staff/layout/header :: sidebar('home')}"></div>
         <div class="backoffice-main">
-            <div th:replace="~{staff/layout/header :: topbar('Tong quan nhan vien')}"></div>
+            <div th:replace="~{staff/layout/header :: topbar('Staff Dashboard')}"></div>
             <main class="backoffice-content">
                 <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
                 <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
