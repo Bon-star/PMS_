@@ -1,0 +1,266 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nhân viên • Quản lý project</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body staff-projects-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{staff/layout/header :: sidebar('projects')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{staff/layout/header :: topbar('Quản lý project theo học kỳ')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+                <section class="page-section summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-label">Số nhóm trong học kỳ</div>
+                        <div class="summary-value" th:text="${projectOverview != null ? #lists.size(projectOverview) : 0}">0</div>
+                        <div class="summary-note">Danh sách nhóm đang được staff theo dõi.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Yêu cầu cấp quyền</div>
+                        <div class="summary-value" th:text="${pendingEditRequests != null ? #lists.size(pendingEditRequests) : 0}">0</div>
+                        <div class="summary-note">Yêu cầu học viên xin mở quyền cập nhật đề tài.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Yêu cầu đổi project</div>
+                        <div class="summary-value" th:text="${pendingChangeRequests != null ? #lists.size(pendingChangeRequests) : 0}">0</div>
+                        <div class="summary-note">Các yêu cầu đổi đề tài đang chờ bước staff.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Điều hướng nhanh</div>
+                        <div class="button-row" style="margin-top:10px;">
+                            <a class="btn btn-secondary btn-small" href="/staff/students">Quản lý học viên</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Bộ lọc học kỳ</h2>
+                    <form method="get" action="/staff/projects" class="form-grid form-grid-3">
+                        <div>
+                            <label for="semesterId">Học kỳ</label>
+                            <select id="semesterId" name="semesterId">
+                                <option th:each="sem : ${semesters}"
+                                    th:value="${sem.semesterId}"
+                                    th:text="${sem.semesterName}"
+                                    th:selected="${selectedSemesterId == sem.semesterId}">
+                                </option>
+                            </select>
+                        </div>
+                        <div class="full form-actions" style="justify-content:flex-start;">
+                            <button type="submit" class="btn btn-primary">Xem danh sách</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Tạo project cho nhóm</h2>
+                    <p class="meta">
+                        Nguồn <strong>Ấn Độ</strong> hoặc <strong>Giảng viên</strong> sẽ được tạo với trạng thái đã duyệt.
+                        Nguồn <strong>Học viên</strong> sẽ chờ học viên cập nhật nội dung rồi gửi giảng viên duyệt.
+                    </p>
+                    <form method="post" action="/staff/projects/create">
+                        <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                        <div class="form-grid form-grid-3">
+                            <div>
+                                <label for="classId">Lớp</label>
+                                <select id="classId" name="classId" required>
+                                    <option value="">-- Chọn lớp --</option>
+                                    <option th:each="entry : ${classOptions}"
+                                        th:value="${entry.key}"
+                                        th:text="${entry.value}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="full">
+                                <label for="groupId">Nhóm chưa có project</label>
+                                <select id="groupId" name="groupId" required disabled>
+                                    <option value="">-- Chọn nhóm --</option>
+                                    <option th:each="item : ${projectOverview}"
+                                        th:if="${item.projectId == 0}"
+                                        th:value="${item.groupId}"
+                                        th:attr="data-class-id=${item.classId}"
+                                        th:text="${item.groupName + ' | ' + (item.className ?: '') + ' | Trưởng nhóm: ' + (item.leaderName ?: 'Chưa có')}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="topicSource">Nguồn nội dung project</label>
+                                <select id="topicSource" name="topicSource" required>
+                                    <option value="INDIA">Ấn Độ</option>
+                                    <option value="LECTURER">Giảng viên</option>
+                                    <option value="STUDENT">Học viên tự đề xuất</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="projectName">Tên project</label>
+                                <input id="projectName" name="projectName" type="text"
+                                    placeholder="Bắt buộc nếu nguồn là Ấn Độ/Giảng viên" />
+                            </div>
+                            <div class="full">
+                                <label for="description">Nội dung yêu cầu project</label>
+                                <textarea id="description" name="description"
+                                    placeholder="Nhập yêu cầu project, phạm vi và mục tiêu chính"></textarea>
+                            </div>
+                            <div>
+                                <label for="startDate">Thời gian bắt đầu xây dựng</label>
+                                <input id="startDate" name="startDate" type="datetime-local" />
+                            </div>
+                            <div>
+                                <label for="endDate">Thời gian kết thúc</label>
+                                <input id="endDate" name="endDate" type="datetime-local" />
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Tạo project</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Danh sách project trong học kỳ</h2>
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nhóm</th>
+                                    <th>Lớp</th>
+                                    <th>Trưởng nhóm</th>
+                                    <th>Project</th>
+                                    <th>Nguồn</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thời gian</th>
+                                    <th>Theo dõi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${projectOverview == null or #lists.isEmpty(projectOverview)}">
+                                    <td colspan="8">Không có dữ liệu nhóm trong học kỳ này.</td>
+                                </tr>
+                                <tr th:each="p : ${projectOverview}">
+                                    <td th:text="${p.groupName}">Nhóm</td>
+                                    <td th:text="${p.className}">Lớp</td>
+                                    <td th:text="${p.leaderName ?: 'Chưa có'}">Trưởng nhóm</td>
+                                    <td>
+                                        <div th:text="${p.projectId > 0 ? (p.projectName ?: 'Chưa có tên') : 'Chưa tạo'}">Project</div>
+                                        <div class="muted" th:if="${p.projectId > 0 and p.description != null and !#strings.isEmpty(p.description)}"
+                                            th:text="${p.description}"></div>
+                                    </td>
+                                    <td th:text="${p.projectId > 0 ? p.topicSource : '-'}">Nguồn</td>
+                                    <td>
+                                        <span th:if="${p.projectId <= 0}" class="badge badge-empty">Chưa tạo</span>
+                                        <span th:if="${p.projectId > 0 and p.approvalStatus == 1}" class="badge badge-approved">Đã duyệt</span>
+                                        <span th:if="${p.projectId > 0 and p.approvalStatus == 2}" class="badge badge-pending">Chờ giảng viên duyệt</span>
+                                        <span th:if="${p.projectId > 0 and p.approvalStatus == 3}" class="badge badge-rejected">Bị từ chối</span>
+                                        <span th:if="${p.projectId > 0 and p.approvalStatus == 4}" class="badge badge-waiting">Chờ học viên cập nhật</span>
+                                    </td>
+                                    <td>
+                                        <span th:text="${p.startDate != null ? #temporals.format(p.startDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                        <span> → </span>
+                                        <span th:text="${p.endDate != null ? #temporals.format(p.endDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                    </td>
+                                    <td>
+                                        <a th:if="${p.projectId > 0}"
+                                            th:href="@{/staff/projects/{id}/performance(id=${p.projectId}, semesterId=${selectedSemesterId})}"
+                                            class="btn btn-small">Hiệu suất</a>
+                                        <span th:if="${p.projectId <= 0}" class="muted">-</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Yêu cầu cấp quyền cập nhật project</h2>
+                    <div th:if="${pendingEditRequests == null or #lists.isEmpty(pendingEditRequests)}" class="empty-state">
+                        Hiện không có yêu cầu chờ xử lý.
+                    </div>
+                    <div th:if="${pendingEditRequests != null and !#lists.isEmpty(pendingEditRequests)}" class="request-list">
+                        <article th:each="req : ${pendingEditRequests}" class="request-card">
+                            <h3 class="request-title" th:text="${'Nhóm ' + req.groupName + ' • Project ID: ' + req.projectId}">Nhóm</h3>
+                            <div class="request-meta"
+                                th:text="${'Học viên: ' + req.requestedByName + ' (' + req.requestedByCode + ') • Gửi lúc: ' + #temporals.format(req.requestedDate, 'dd/MM/yyyy HH:mm')}">
+                            </div>
+                            <div class="request-body" th:text="${#strings.isEmpty(req.requestNote) ? 'Không có ghi chú.' : req.requestNote}"></div>
+                            <div class="inline-actions" style="margin-top:12px;">
+                                <form method="post" th:action="@{/staff/projects/requests/{id}/approve(id=${req.requestId})}">
+                                    <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                                    <button type="submit" class="btn btn-primary">Duyệt cấp quyền</button>
+                                </form>
+                                <form method="post" th:action="@{/staff/projects/requests/{id}/reject(id=${req.requestId})}">
+                                    <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                                    <input class="inline-input" type="text" name="reason" placeholder="Lý do từ chối" required />
+                                    <button type="submit" class="btn btn-secondary">Từ chối</button>
+                                </form>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Yêu cầu đổi project chờ staff xử lý</h2>
+                    <div th:if="${pendingChangeRequests == null or #lists.isEmpty(pendingChangeRequests)}" class="empty-state">
+                        Hiện không có yêu cầu đổi project nào đang chờ staff xử lý.
+                    </div>
+                    <div th:if="${pendingChangeRequests != null and !#lists.isEmpty(pendingChangeRequests)}" class="request-list">
+                        <article th:each="req : ${pendingChangeRequests}" class="request-card">
+                            <h3 class="request-title" th:text="${req.groupName + ' • ' + (req.className ?: 'Chưa có lớp')}">Nhóm</h3>
+                            <div class="request-meta"
+                                th:text="${'Người gửi: ' + req.requestedByName + ' (' + req.requestedByCode + ') • Gửi lúc: ' + #temporals.format(req.requestedDate, 'dd/MM/yyyy HH:mm')}">
+                            </div>
+                            <div class="request-body" th:text="${'Đề tài hiện tại: ' + (req.currentProjectName ?: 'Chưa có tên')}"></div>
+                            <div class="request-body" th:text="${'Đề tài đề xuất: ' + req.proposedProjectName}"></div>
+                            <div class="request-body" th:if="${!#strings.isEmpty(req.proposedDescription)}" th:text="${'Mô tả đề xuất: ' + req.proposedDescription}"></div>
+                            <div class="request-body" th:text="${'Lý do đổi: ' + req.changeReason}"></div>
+                            <div class="inline-actions" style="margin-top:12px;">
+                                <form method="post" th:action="@{/staff/projects/change-requests/{id}/approve(id=${req.requestId})}">
+                                    <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                                    <button type="submit" class="btn btn-primary">Chuyển giảng viên duyệt</button>
+                                </form>
+                                <form method="post" th:action="@{/staff/projects/change-requests/{id}/reject(id=${req.requestId})}">
+                                    <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                                    <input class="inline-input" type="text" name="reason" placeholder="Lý do từ chối" required />
+                                    <button type="submit" class="btn btn-secondary">Từ chối</button>
+                                </form>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            const classSelect = document.getElementById('classId');
+            const groupSelect = document.getElementById('groupId');
+            if (!classSelect || !groupSelect) {
+                return;
+            }
+            const options = Array.from(groupSelect.querySelectorAll('option[data-class-id]'));
+            const updateGroups = () => {
+                const classId = classSelect.value;
+                let hasAny = false;
+                options.forEach(option => {
+                    const match = option.dataset.classId === classId;
+                    option.hidden = !match;
+                    if (match) {
+                        hasAny = true;
+                    }
+                });
+                groupSelect.value = '';
+                groupSelect.disabled = !classId || !hasAny;
+            };
+            classSelect.addEventListener('change', updateGroups);
+            updateGroups();
+        })();
+    </script>
+</body>
+</html>

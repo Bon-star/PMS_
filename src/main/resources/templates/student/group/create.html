@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Học viên • Tạo nhóm mới</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body student-group-page student-group-create-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('group')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Tạo nhóm mới')}"></div>
+            <main class="backoffice-content">
+                <section class="page-section panel">
+                    <h2 class="panel-title">Tạo nhóm mới</h2>
+                    <div th:if="${error}" class="alert alert-error" th:text="${error}">Lỗi</div>
+
+                    <form method="post" th:action="@{/student/group/create}">
+                        <div class="form-grid">
+                            <div class="full">
+                                <label for="groupName">Tên nhóm <span style="color:#dc2626;">*</span></label>
+                                <input type="text" id="groupName" name="groupName"
+                                    placeholder="Nhập tên nhóm (VD: DX-TD-HH)" required />
+                                <div class="hint">Mỗi học kỳ, mỗi sinh viên chỉ được tạo/tham gia tối đa 1 nhóm.</div>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Tạo nhóm</button>
+                            <a href="/student/group/list" class="btn btn-secondary">Hủy</a>
+                        </div>
+                    </form>
+                </section>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

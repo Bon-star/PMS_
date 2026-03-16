@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Học viên • Chi tiết nhóm</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body student-group-detail-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('group')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar(${group.groupName})}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+                <div th:unless="${invitationFeatureEnabled}" class="alert alert-error">
+                    Chức năng mời/xác nhận đang tắt vì CSDL chưa có bảng <strong>Group_Invitations</strong>.
+                </div>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Thành viên (<span th:text="${memberCount}">0</span>)</h2>
+                    <div class="request-list">
+                        <div class="request-card" th:each="m : ${members}">
+                            <div>
+                                <div class="request-title">
+                                    <span th:text="${m.fullName}">Tên thành viên</span>
+                                    <span class="meta">(<span th:text="${m.studentCode}">HE000000</span>)</span>
+                                    <span class="badge badge-approved"
+                                          th:if="${group.leaderId != null and group.leaderId == m.studentId}">Nhóm trưởng</span>
+                                </div>
+                            </div>
+                            <div class="inline-actions"
+                                th:if="${isLeader and m.studentId != studentId and !membershipLockedByProjectStart}">
+                                <form method="post" th:action="@{/student/group/{id}/kick(id=${group.groupId})}">
+                                    <input type="hidden" name="studentId" th:value="${m.studentId}" />
+                                    <button class="btn btn-soft-danger btn-small" type="submit">Mời ra khỏi nhóm</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="meta" th:if="${membershipLockedByProjectStart}">
+                        Project đã bắt đầu nên không thể mời thành viên ra khỏi nhóm hoặc rời nhóm.
+                    </div>
+                </section>
+
+                <section class="page-section panel" th:if="${isMember and invitationFeatureEnabled and !groupHasProject}">
+                    <h2 class="panel-title">Mời thành viên</h2>
+                    <form class="inline-actions" method="post" th:action="@{/student/group/{id}/invite(id=${group.groupId})}">
+                        <input class="inline-input" type="text" name="studentRef" placeholder="Nhập MSSV hoặc mã sinh viên" required />
+                        <button class="btn btn-primary btn-small" type="submit">Gửi yêu cầu</button>
+                    </form>
+                    <div class="table-wrap" th:if="${availableStudents != null and availableStudents.size() > 0}">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>MSSV</th>
+                                    <th>Họ tên</th>
+                                    <th>Email</th>
+                                    <th>Mời</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="s : ${availableStudents}">
+                                    <td th:text="${s.studentCode}">HE000000</td>
+                                    <td th:text="${s.fullName}">Nguyễn Văn A</td>
+                                    <td th:text="${s.schoolEmail}">a@fpt.edu.vn</td>
+                                    <td>
+                                        <form method="post" th:action="@{/student/group/{id}/invite(id=${group.groupId})}">
+                                            <input type="hidden" name="studentRef" th:value="${s.studentCode}" />
+                                            <button class="btn btn-secondary btn-small" type="submit">Mời</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="meta" th:if="${availableStudents == null || availableStudents.size() == 0}">
+                        Không còn sinh viên nào trong lớp có thể mời vào nhóm.
+                    </div>
+                </section>
+
+                <section class="page-section panel" th:if="${isMember and groupHasProject}">
+                    <h2 class="panel-title">Mời thành viên</h2>
+                    <div class="meta">Nhóm đã có project nên không thể nhận thêm thành viên mới.</div>
+                </section>
+
+                <section class="page-section panel" th:if="${!isMember}">
+                    <h2 class="panel-title">Yêu cầu tham gia nhóm</h2>
+                    <div class="meta" th:if="${!invitationFeatureEnabled}">Chức năng thông báo chưa bật nên không gửi yêu cầu được.</div>
+                    <div class="meta" th:if="${invitationFeatureEnabled and groupHasProject}">Nhóm này đã có project nên không nhận thêm yêu cầu tham gia.</div>
+                    <div class="meta" th:if="${invitationFeatureEnabled and hasActiveGroup}">Bạn đang ở trong một nhóm khác nên không thể gửi yêu cầu.</div>
+                    <div class="meta" th:if="${invitationFeatureEnabled and !hasActiveGroup and hasPendingJoinRequest}">Bạn đã gửi yêu cầu vào nhóm này và đang chờ nhóm trưởng duyệt.</div>
+                    <form th:if="${canRequestJoin}" method="post" th:action="@{/student/group/{id}/join-request(id=${group.groupId})}">
+                        <button class="btn btn-primary btn-small" type="submit">Gửi yêu cầu tham gia</button>
+                    </form>
+                </section>
+
+                <section class="page-section panel" th:if="${isMember}">
+                    <h2 class="panel-title">Thao tác</h2>
+                    <div class="inline-actions" th:if="${!isLeader and !membershipLockedByProjectStart}">
+                        <form method="post" th:action="@{/student/group/{id}/leave(id=${group.groupId})}">
+                            <button class="btn btn-soft-danger btn-small" type="submit">Rời nhóm</button>
+                        </form>
+                    </div>
+                    <div class="inline-actions" th:if="${isLeader and canDeleteGroup}">
+                        <form method="post" th:action="@{/student/group/{id}/delete(id=${group.groupId})}">
+                            <button class="btn btn-soft-danger btn-small" type="submit"
+                                onclick="return confirm('Bạn chắc chắn muốn xóa nhóm?');">Xóa nhóm</button>
+                        </form>
+                        <div class="meta">Nhóm chỉ còn nhóm trưởng nên có thể xóa.</div>
+                    </div>
+                    <div class="meta" th:if="${membershipLockedByProjectStart}">
+                        Project đã bắt đầu nên thành viên không thể rời nhóm, bị kick hoặc xóa nhóm.
+                    </div>
+                    <div class="meta" th:if="${isLeader and !canDeleteGroup and !membershipLockedByProjectStart}">
+                        Nhóm trưởng không thể rời nhóm. Hãy mời thành viên ra khỏi nhóm, sau đó xóa nhóm khi chỉ còn một mình.
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

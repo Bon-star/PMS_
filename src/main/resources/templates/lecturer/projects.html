@@ -1,0 +1,172 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Giảng viên • Quản lý project</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body lecturer-projects-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{lecturer/layout/header :: sidebar('projects')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{lecturer/layout/header :: topbar('Duyệt project và theo dõi tiến độ')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+                <section class="page-section summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-label">Project chờ duyệt</div>
+                        <div class="summary-value" th:text="${pendingProjects != null ? #lists.size(pendingProjects) : 0}">0</div>
+                        <div class="summary-note">Các project học viên vừa gửi giảng viên xét duyệt.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Yêu cầu đổi project</div>
+                        <div class="summary-value" th:text="${pendingChangeRequests != null ? #lists.size(pendingChangeRequests) : 0}">0</div>
+                        <div class="summary-note">Các yêu cầu đổi đề tài đã qua bước staff.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Project đang theo dõi</div>
+                        <div class="summary-value" th:text="${trackedProjects != null ? #lists.size(trackedProjects) : 0}">0</div>
+                        <div class="summary-note">Project đã duyệt có thể mở trang tiến độ chi tiết.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Luồng công việc</div>
+                        <div class="summary-note" style="margin-top:8px;">
+                            Duyệt đề tài mới, xử lý đổi đề tài và bình luận vào tiến độ project đã duyệt.
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Project chờ giảng viên duyệt</h2>
+                    <div th:if="${pendingProjects == null or #lists.isEmpty(pendingProjects)}" class="empty-state">
+                        Hiện không có project nào đang chờ giảng viên duyệt.
+                    </div>
+                    <div th:if="${pendingProjects != null and !#lists.isEmpty(pendingProjects)}" class="request-list">
+                        <article th:each="project : ${pendingProjects}" class="request-card">
+                            <h3 class="request-title" th:text="${project.projectName ?: 'Project chưa có tên'}">Project</h3>
+                            <div class="request-meta"
+                                th:text="${'Nhóm: ' + project.groupName + ' • Lớp: ' + (project.className ?: 'Chưa có lớp') + ' • Trưởng nhóm: ' + (project.leaderName ?: 'Chưa có')}">
+                                Meta
+                            </div>
+                            <div class="request-meta"
+                                th:text="${'Nguồn: ' + project.topicSource + ' • Gửi lúc: ' + (project.submissionDate != null ? #temporals.format(project.submissionDate, 'dd/MM/yyyy HH:mm') : '-')}">
+                                Nguồn
+                            </div>
+                            <div class="request-body" th:if="${project.description != null and !#strings.isEmpty(project.description)}" th:text="${project.description}"></div>
+                            <div class="inline-actions" style="margin-top:12px; align-items:flex-end;">
+                                <form method="post" th:action="@{/lecturer/projects/{id}/approve(id=${project.projectId})}" style="flex:1 1 420px;">
+                                    <div class="form-grid form-grid-3">
+                                        <div>
+                                            <label>Ngày bắt đầu</label>
+                                            <input type="date" name="startDate" required />
+                                        </div>
+                                        <div>
+                                            <label>Ngày kết thúc</label>
+                                            <input type="date" name="endDate" required />
+                                        </div>
+                                        <div class="form-actions" style="justify-content:flex-start; align-self:end;">
+                                            <button type="submit" class="btn btn-primary">Duyệt project</button>
+                                        </div>
+                                    </div>
+                                </form>
+                                <form method="post" th:action="@{/lecturer/projects/{id}/reject(id=${project.projectId})}" style="flex:1 1 320px;">
+                                    <label>Lý do từ chối</label>
+                                    <div class="inline-actions">
+                                        <input class="inline-input" type="text" name="reason" placeholder="Nhập lý do từ chối" required />
+                                        <button type="submit" class="btn btn-secondary">Từ chối</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Yêu cầu đổi project chờ giảng viên quyết định</h2>
+                    <div th:if="${pendingChangeRequests == null or #lists.isEmpty(pendingChangeRequests)}" class="empty-state">
+                        Hiện không có yêu cầu đổi project nào chờ xử lý.
+                    </div>
+                    <div th:if="${pendingChangeRequests != null and !#lists.isEmpty(pendingChangeRequests)}" class="request-list">
+                        <article th:each="req : ${pendingChangeRequests}" class="request-card">
+                            <h3 class="request-title" th:text="${req.proposedProjectName}">Đề tài đề xuất</h3>
+                            <div class="request-meta"
+                                th:text="${'Nhóm: ' + req.groupName + ' • Lớp: ' + (req.className ?: 'Chưa có lớp') + ' • Người gửi: ' + req.requestedByName + ' (' + req.requestedByCode + ')'}">
+                                Meta
+                            </div>
+                            <div class="request-body" th:text="${'Đề tài hiện tại: ' + (req.currentProjectName ?: 'Chưa có tên')}">Hiện tại</div>
+                            <div class="request-body" th:if="${req.proposedDescription != null and !#strings.isEmpty(req.proposedDescription)}" th:text="${'Mô tả đề xuất: ' + req.proposedDescription}"></div>
+                            <div class="request-body" th:text="${'Lý do đổi: ' + req.changeReason}">Lý do</div>
+                            <div class="inline-actions" style="margin-top:12px; align-items:flex-end;">
+                                <form method="post" th:action="@{/lecturer/projects/change-requests/{id}/approve(id=${req.requestId})}" style="flex:1 1 420px;">
+                                    <div class="form-grid form-grid-3">
+                                        <div>
+                                            <label>Ngày bắt đầu mới</label>
+                                            <input type="date" name="startDate" required />
+                                        </div>
+                                        <div>
+                                            <label>Ngày kết thúc mới</label>
+                                            <input type="date" name="endDate" required />
+                                        </div>
+                                        <div class="form-actions" style="justify-content:flex-start; align-self:end;">
+                                            <button type="submit" class="btn btn-primary">Duyệt đổi project</button>
+                                        </div>
+                                    </div>
+                                </form>
+                                <form method="post" th:action="@{/lecturer/projects/change-requests/{id}/reject(id=${req.requestId})}" style="flex:1 1 320px;">
+                                    <label>Lý do từ chối</label>
+                                    <div class="inline-actions">
+                                        <input class="inline-input" type="text" name="reason" placeholder="Nhập lý do từ chối yêu cầu đổi" required />
+                                        <button type="submit" class="btn btn-secondary">Từ chối</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Project đã duyệt và đang theo dõi</h2>
+                    <div th:if="${trackedProjects == null or #lists.isEmpty(trackedProjects)}" class="empty-state">
+                        Chưa có project đã duyệt nào để theo dõi tiến độ.
+                    </div>
+                    <div th:if="${trackedProjects != null and !#lists.isEmpty(trackedProjects)}" class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nhóm</th>
+                                    <th>Lớp</th>
+                                    <th>Project</th>
+                                    <th>Thời gian</th>
+                                    <th>Tiến độ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="project : ${trackedProjects}">
+                                    <td th:text="${project.groupName}">Nhóm</td>
+                                    <td th:text="${project.className} ?: 'Chưa có lớp'">Lớp</td>
+                                    <td>
+                                        <div th:text="${project.projectName} ?: 'Chưa đặt tên'">Project</div>
+                                        <div class="muted" th:if="${project.description != null and !#strings.isEmpty(project.description)}" th:text="${project.description}"></div>
+                                    </td>
+                                    <td>
+                                        <div th:text="${project.startDate != null ? #temporals.format(project.startDate, 'dd/MM/yyyy HH:mm') : '-'}">-</div>
+                                        <div class="muted" th:text="${project.endDate != null ? #temporals.format(project.endDate, 'dd/MM/yyyy HH:mm') : '-'}">-</div>
+                                    </td>
+                                    <td>
+                                        <a class="btn btn-small" th:href="@{/lecturer/projects/{id}/progress(id=${project.projectId})}">Xem tiến độ</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{lecturer/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

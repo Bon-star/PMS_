@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="sidebar(activeMenu)" class="backoffice-sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-copy">
+                <div class="sidebar-brand-title" th:text="${className} ?: 'PMS'">PMS</div>
+                <div class="sidebar-brand-subtitle">Khu vực học viên</div>
+            </div>
+            <button type="button" class="sidebar-toggle" onclick="toggleBackofficeSidebar()" aria-label="Thu gọn thanh bên">☰</button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a class="sidebar-link" th:classappend="${activeMenu == 'home'} ? ' active'" href="/student/home">
+                <span class="sidebar-icon">🏠</span>
+                <span class="sidebar-text">Trang chủ</span>
+            </a>
+            <a class="sidebar-link" th:classappend="${activeMenu == 'group'} ? ' active'" href="/student/group/list">
+                <span class="sidebar-icon">👥</span>
+                <span class="sidebar-text">Nhóm của tôi</span>
+            </a>
+            <a class="sidebar-link" th:classappend="${activeMenu == 'project'} ? ' active'" href="/student/project">
+                <span class="sidebar-icon">🗂️</span>
+                <span class="sidebar-text">Project của nhóm</span>
+            </a>
+            <a class="sidebar-link" th:classappend="${activeMenu == 'notifications'} ? ' active'" href="/student/group/notifications">
+                <span class="sidebar-icon">🔔</span>
+                <span class="sidebar-text">Thông báo nhóm</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            Học viên theo dõi nhóm, cập nhật tiến độ project và nhận thông báo trong lớp.
+        </div>
+    </div>
+
+    <header th:fragment="topbar(pageTitle)" class="backoffice-topbar">
+        <div>
+            <h1 class="topbar-title" th:text="${pageTitle}">Trang</h1>
+            <div class="topbar-subtitle">Theo dõi nhóm, project và lịch làm việc của bạn.</div>
+        </div>
+        <div class="topbar-user">
+            <a th:if="${invitationFeatureEnabled == null or invitationFeatureEnabled}" class="btn btn-secondary btn-small" href="/student/group/notifications">
+                Thông báo
+                <span th:if="${notificationCount != null and notificationCount > 0}" th:text="'(' + ${notificationCount} + ')'">(0)</span>
+            </a>
+            <span th:unless="${invitationFeatureEnabled == null or invitationFeatureEnabled}" class="btn btn-secondary btn-small disabled">
+                Thông báo (chưa bật)
+            </span>
+            <div class="topbar-avatar"><a href="/student/profile"><img src="/img/user.png" alt="Avatar" /></a></div>
+            <div>
+                <div class="topbar-user-name" th:text="${studentName} ?: 'Học viên'">Học viên</div>
+                <div class="topbar-user-role" th:text="${userRole} ?: 'Học viên'">Học viên</div>
+            </div>
+            <form action="/acc/logout" method="get">
+                <button type="submit" class="btn btn-danger">Đăng xuất</button>
+            </form>
+        </div>
+    </header>
+</body>
+</html>

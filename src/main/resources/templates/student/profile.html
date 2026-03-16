@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Học viên • Hồ sơ cá nhân</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+    <style>
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .profile-info div {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .profile-info label {
+            font-weight: 600;
+            min-width: 120px;
+            color: #666;
+        }
+        .profile-info span {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .alert-success {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+        .alert-error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body class="backoffice-body student-home-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('profile')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Hồ sơ cá nhân')}"></div>
+            <main class="backoffice-content">
+                <section class="page-section panel">
+                    <h2 class="panel-title">Thông tin cá nhân</h2>
+                    <div class="meta">
+                        <div class="profile-info">
+                            <div>
+                                <label>Mã học viên:</label>
+                                <span th:text="${student.studentCode}">SV001</span>
+                            </div>
+                            <div>
+                                <label>Họ và tên:</label>
+                                <span th:text="${student.fullName}">Nguyễn Văn A</span>
+                            </div>
+                            <div>
+                                <label>Email trường:</label>
+                                <span th:text="${student.schoolEmail}">student@university.edu.vn</span>
+                            </div>
+                            <div>
+                                <label>Số điện thoại:</label>
+                                <span th:text="${student.phoneNumber ?: 'Chưa cập nhật'}">0123456789</span>
+                            </div>
+                            <div>
+                                <label>Lớp:</label>
+                                <span th:text="${className}">CNTT01</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Đổi mật khẩu</h2>
+                    <div class="meta">
+                        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+                        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+                        <div th:if="${showPasswordForm}">
+                            <p>Mã OTP đã được xác thực. Vui lòng nhập mật khẩu mới:</p>
+                            <form action="/student/profile/update-password" method="post" style="margin-top: 20px;">
+                                <div class="form-group">
+                                    <label for="newPassword">Mật khẩu mới:</label>
+                                    <input type="password" id="newPassword" name="newPassword" required minlength="6" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirmPassword">Xác nhận mật khẩu:</label>
+                                    <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6" />
+                                </div>
+                                <button type="submit" class="btn btn-primary">Cập nhật mật khẩu</button>
+                            </form>
+                        </div>
+
+                        <div th:unless="${showPasswordForm}">
+                            <p>Để đổi mật khẩu, bạn cần xác thực email của mình. Hệ thống sẽ gửi mã OTP đến email trường của bạn.</p>
+                            <form action="/student/profile/change-password" method="post" style="margin-top: 20px;">
+                                <button type="submit" class="btn btn-primary">Gửi mã OTP để đổi mật khẩu</button>
+                            </form>
+
+                            <div th:if="${param.otpRequired}" style="margin-top: 20px;">
+                                <p>Vui lòng nhập mã OTP đã được gửi đến email của bạn:</p>
+                                <form action="/student/profile/verify-otp" method="post" style="margin-top: 10px;">
+                                    <div class="form-group">
+                                        <label for="otp">Mã OTP:</label>
+                                        <input type="text" id="otp" name="otp" required maxlength="6" />
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Xác thực OTP</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
