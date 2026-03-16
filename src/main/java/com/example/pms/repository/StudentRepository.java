@@ -97,6 +97,7 @@ public class StudentRepository {
                 if (rs.wasNull()) s.setClassId(null); else s.setClassId(cid);
                 int accId = rs.getInt("AccountID");
                 if (rs.wasNull()) s.setAccountId(null); else s.setAccountId(accId);
+                s.setAvatar(rs.getString("Avatar"));
                 return s;
             }, params);
         } catch (Exception ex) {
@@ -134,6 +135,7 @@ public class StudentRepository {
                 if (rs.wasNull()) s.setClassId(null); else s.setClassId(cid);
                 int accId = rs.getInt("AccountID");
                 if (rs.wasNull()) s.setAccountId(null); else s.setAccountId(accId);
+                s.setAvatar(rs.getString("Avatar"));
                 return s;
             }, studentCode);
         } catch (EmptyResultDataAccessException ex) {
@@ -155,6 +157,7 @@ public class StudentRepository {
                 if (rs.wasNull()) s.setClassId(null); else s.setClassId(cid);
                 int accId = rs.getInt("AccountID");
                 if (rs.wasNull()) s.setAccountId(null); else s.setAccountId(accId);
+                s.setAvatar(rs.getString("Avatar"));
                 return s;
             }, studentId);
         } catch (EmptyResultDataAccessException ex) {
@@ -174,6 +177,7 @@ public class StudentRepository {
                 s.setPhoneNumber(rs.getString("PhoneNumber"));
                 int cid = rs.getInt("ClassID"); if(rs.wasNull()) s.setClassId(null); else s.setClassId(cid);
                 int accId = rs.getInt("AccountID"); if(rs.wasNull()) s.setAccountId(null); else s.setAccountId(accId);
+                s.setAvatar(rs.getString("Avatar"));
                 return s;
             }, email);
         }catch(EmptyResultDataAccessException ex){
@@ -195,6 +199,7 @@ public class StudentRepository {
                 if (rs.wasNull()) s.setClassId(null); else s.setClassId(cid);
                 int accId = rs.getInt("AccountID");
                 if (rs.wasNull()) s.setAccountId(null); else s.setAccountId(accId);
+                s.setAvatar(rs.getString("Avatar"));
                 return s;
             }, phoneNumber);
         } catch (EmptyResultDataAccessException ex) {
@@ -218,6 +223,15 @@ public class StudentRepository {
         try {
             String sql = "UPDATE Students SET FullName = ?, SchoolEmail = ?, PhoneNumber = ?, ClassID = ? WHERE StudentID = ?";
             return db.update(sql, fullName, schoolEmail, phoneNumber, classId, studentId);
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+
+    public int updateAvatar(int studentId, String avatar) {
+        try {
+            String sql = "UPDATE Students SET Avatar = ? WHERE StudentID = ?";
+            return db.update(sql, avatar, studentId);
         } catch (Exception ex) {
             return 0;
         }

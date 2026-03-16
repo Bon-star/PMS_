@@ -70,6 +70,7 @@ public class GroupMemberRepository {
                 if (!rs.wasNull()) s.setClassId(cid);
                 int aid = rs.getInt("AccountID");
                 if (!rs.wasNull()) s.setAccountId(aid);
+                s.setAvatar(rs.getString("Avatar"));
                 return s;
             }, groupId);
         } catch (Exception ex) {

@@ -11,6 +11,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 @Controller
 @RequestMapping("/student")
@@ -21,6 +27,9 @@ public class StudentHomeController {
 
     @Autowired
     private AccountRepository accountRepository;
+
+    @Autowired
+    private StudentRepository studentRepository;
 
     @Autowired
     private OtpService otpService;
@@ -54,6 +63,7 @@ public class StudentHomeController {
         }
 
         model.addAttribute("userRole", RoleDisplayUtil.toDisplayRole(role != null ? role : "Student"));
+        model.addAttribute("student", student);
 
         return "student/home/index";
     }
@@ -169,6 +179,72 @@ public class StudentHomeController {
         session.removeAttribute("changePasswordAccountId");
 
         redirectAttributes.addFlashAttribute("success", "Mật khẩu đã được thay đổi thành công!");
+        return "redirect:/student/profile";
+    }
+
+    @PostMapping("/profile/change-avatar")
+    public String changeAvatar(@RequestParam("avatarFile") MultipartFile file,
+                              HttpSession session,
+                              RedirectAttributes redirectAttributes) {
+        Account account = (Account) session.getAttribute("account");
+        Object profile = session.getAttribute("userProfile");
+        if (account == null || !(profile instanceof Student) || !"Student".equalsIgnoreCase(account.getRole())) {
+            return "redirect:/acc/log";
+        }
+
+        Student student = (Student) profile;
+
+        // Validate file
+        if (file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("avatarError", "Vui lòng chọn một tệp ảnh!");
+            return "redirect:/student/profile";
+        }
+
+        // Check file type
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            redirectAttributes.addFlashAttribute("avatarError", "Chỉ chấp nhận tệp ảnh!");
+            return "redirect:/student/profile";
+        }
+
+        // Check file size (max 5MB)
+        if (file.getSize() > 5 * 1024 * 1024) {
+            redirectAttributes.addFlashAttribute("avatarError", "Kích thước tệp không được vượt quá 5MB!");
+            return "redirect:/student/profile";
+        }
+
+        try {
+            // Create resources/img/avatar directory if it doesn't exist
+            Path uploadDir = Paths.get(System.getProperty("user.dir"), "src", "main", "resources", "static", "img", "avatar");
+            if (!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+            }
+
+            // Generate unique filename
+            String originalFilename = file.getOriginalFilename();
+            String fileExtension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String newFilename = "student_" + student.getStudentId() + "_" + System.currentTimeMillis() + fileExtension;
+
+            // Save file
+            Path filePath = uploadDir.resolve(newFilename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            // Update student avatar in database
+            studentRepository.updateAvatar(student.getStudentId(), newFilename);
+
+            // Update session
+            student.setAvatar(newFilename);
+            session.setAttribute("userProfile", student);
+
+            redirectAttributes.addFlashAttribute("avatarSuccess", "Ảnh đại diện đã được cập nhật thành công!");
+
+        } catch (IOException e) {
+            redirectAttributes.addFlashAttribute("avatarError", "Lỗi khi tải lên ảnh. Vui lòng thử lại!");
+        }
+
         return "redirect:/student/profile";
     }
 }

@@ -8,6 +8,7 @@ public class Student {
     private String phoneNumber;
     private Integer classId;
     private Integer accountId;
+    private String avatar;
 
     public int getStudentId() { return studentId; }
     public void setStudentId(int studentId) { this.studentId = studentId; }
@@ -23,4 +24,6 @@ public class Student {
     public void setClassId(Integer classId) { this.classId = classId; }
     public Integer getAccountId() { return accountId; }
     public void setAccountId(Integer accountId) { this.accountId = accountId; }
+    public String getAvatar() { return avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
 }

@@ -40,6 +40,7 @@ CREATE TABLE Students (
     PhoneNumber VARCHAR(15) UNIQUE NOT NULL,
     ClassID INT NULL,
     AccountID INT NULL,
+    Avatar VARCHAR(255) NOT NULL DEFAULT 'user.png',
     CONSTRAINT FK_Students_Classes FOREIGN KEY (ClassID) REFERENCES Classes(ClassID),
     CONSTRAINT FK_Students_Accounts FOREIGN KEY (AccountID) REFERENCES Accounts(AccountID)
 );
@@ -324,7 +325,7 @@ VALUES ('LEC001', N'Giang Vien 1', 'dxuan191205@gmail.com', '0812559433', NULL);
 
 INSERT INTO Students (StudentCode, FullName, SchoolEmail, PhoneNumber, ClassID, AccountID)
 VALUES ('HE123456', N'Duc Xuan', 'dic47xuan@gmail.com', '0812559433', @ClassA, NULL),
-       ('HE123457', N'Tri Dung', 'cunhocit05@gmail.com', '0123456789', @ClassA, NULL);
+       ('HE123457', N'Tri Dung', 'zooxoox3@gmail.com', '0123456789', @ClassA, NULL);
 GO
 
 INSERT INTO Accounts (Username, PasswordHash, Role, IsActive, AuthProvider)
