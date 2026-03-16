@@ -28,7 +28,8 @@ GO
 CREATE TABLE Classes (
     ClassID INT PRIMARY KEY IDENTITY(1,1),
     ClassName VARCHAR(50) NOT NULL,
-    CourseYear VARCHAR(20) NULL
+    StartDate DATE NULL,
+    EndDate DATE NULL,
 );
 GO
 
@@ -307,10 +308,10 @@ INSERT INTO Semesters (SemesterName, StartDate, EndDate)
 VALUES (N'Spring 2026', '2026-01-01', '2026-04-30');
 GO
 
-INSERT INTO Classes (ClassName, CourseYear)
-VALUES ('SE1701', '2023-2027'),
-       ('SE1702', '2023-2027'),
-       ('AI1801', '2024-2028');
+INSERT INTO Classes (ClassName, StartDate, EndDate)
+VALUES ('SE1701', '2023-01-01', '2027-12-31'),
+       ('SE1702', '2023-01-01', '2027-12-31'),
+       ('AI1801', '2024-01-01', '2028-12-31');
 GO
 
 DECLARE @ClassA INT = (SELECT TOP 1 ClassID FROM Classes WHERE ClassName = 'SE1701');
@@ -360,3 +361,24 @@ BEGIN
            (@ClassForLecturer, @LecturerA, 2, @SemesterForLecturer);
 END
 GO
+
+DECLARE @i INT = 1;
+DECLARE @ClassA INT = (SELECT TOP 1 ClassID FROM Classes WHERE ClassName='SE1701');
+
+WHILE @i <= 50
+BEGIN
+    DECLARE @StudentCode VARCHAR(20) = 'HE12' + RIGHT('0000' + CAST(@i AS VARCHAR),4);
+    DECLARE @FullName NVARCHAR(100) = N'Student ' + CAST(@i AS NVARCHAR);
+    DECLARE @Email VARCHAR(100) = 'student' + CAST(@i AS VARCHAR) + '@gmail.com';
+    DECLARE @Phone VARCHAR(20) = '090000' + RIGHT('0000' + CAST(@i AS VARCHAR),4);
+
+    -- Insert Student
+    INSERT INTO Students (StudentCode, FullName, SchoolEmail, PhoneNumber, ClassID, AccountID)
+    VALUES (@StudentCode, @FullName, @Email, @Phone, @ClassA, NULL);
+
+    -- Insert Account
+    INSERT INTO Accounts (Username, PasswordHash, Role, IsActive, AuthProvider)
+    VALUES (@Email, NULL, 'Student', 0, 'LOCAL');
+
+    SET @i = @i + 1;
+END
