@@ -98,6 +98,7 @@ public class StudentHomeController {
         model.addAttribute("student", student);
         model.addAttribute("account", account);
         model.addAttribute("otpRequired", otpRequired != null && otpRequired);
+        model.addAttribute("pendingPhoneNumber", session.getAttribute("changePhoneNumber"));
 
         return "student/profile";
     }
@@ -112,15 +113,50 @@ public class StudentHomeController {
 
         Student student = (Student) profile;
 
+        // Clear any pending phone change so we don't mix operations
+        session.removeAttribute("changePhoneEmail");
+        session.removeAttribute("changePhoneNumber");
+        session.removeAttribute("changePhoneVerified");
+        session.removeAttribute("changePhoneAccountId");
+
         String otp = otpService.generateOtp(student.getSchoolEmail());
         try {
             mailService.sendOtp(student.getSchoolEmail(), otp);
             session.setAttribute("changePasswordEmail", student.getSchoolEmail());
             session.setAttribute("changePasswordAccountId", account.getId());
             redirectAttributes.addFlashAttribute("success", "Mã OTP đã được gửi đến email của bạn!");
-            return "redirect:/student/profile?otpRequired=true";
+            return "redirect:/student/profile?otpType=password#password-section";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Lỗi gửi email. Vui lòng thử lại!");
+        }
+
+        return "redirect:/student/profile";
+    }
+
+    @PostMapping("/profile/change-phone")
+    public String requestChangePhone(HttpSession session, RedirectAttributes redirectAttributes) {
+        Account account = (Account) session.getAttribute("account");
+        Object profile = session.getAttribute("userProfile");
+        if (account == null || !(profile instanceof Student) || !"Student".equalsIgnoreCase(account.getRole())) {
+            return "redirect:/acc/log";
+        }
+
+        Student student = (Student) profile;
+
+        // Clear any pending password change to avoid conflicts
+        session.removeAttribute("changePasswordEmail");
+        session.removeAttribute("changePasswordVerified");
+        session.removeAttribute("changePasswordAccountId");
+
+        String otp = otpService.generateOtp(student.getSchoolEmail());
+        try {
+            mailService.sendOtp(student.getSchoolEmail(), otp);
+            session.setAttribute("changePhoneEmail", student.getSchoolEmail());
+            session.setAttribute("changePhoneAccountId", account.getId());
+            redirectAttributes.addFlashAttribute("phoneSuccess", "Mã OTP đã được gửi đến email của bạn!");
+            return "redirect:/student/profile?otpType=phone#phone-section";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("phoneError", "Lỗi gửi email. Vui lòng thử lại!");
         }
 
         return "redirect:/student/profile";
@@ -130,18 +166,32 @@ public class StudentHomeController {
     public String verifyChangePasswordOtp(@RequestParam("otp") String otp,
                                          HttpSession session,
                                          RedirectAttributes redirectAttributes) {
-        String email = (String) session.getAttribute("changePasswordEmail");
-        if (email == null) {
-            return "redirect:/student/profile";
+        // Determine which operation is pending (phone or password)
+        String phoneEmail = (String) session.getAttribute("changePhoneEmail");
+        String passwordEmail = (String) session.getAttribute("changePasswordEmail");
+
+        if (phoneEmail != null) {
+            if (otpService.verify(phoneEmail, otp)) {
+                session.setAttribute("changePhoneVerified", true);
+                redirectAttributes.addFlashAttribute("showPhoneForm", true);
+                return "redirect:/student/profile#phone-section";
+            }
+
+            redirectAttributes.addFlashAttribute("phoneError", "Mã OTP không đúng!");
+            return "redirect:/student/profile?otpType=phone#phone-section";
         }
 
-        if (otpService.verify(email, otp)) {
-            session.setAttribute("changePasswordVerified", true);
-            redirectAttributes.addFlashAttribute("showPasswordForm", true);
-            return "redirect:/student/profile";
+        if (passwordEmail != null) {
+            if (otpService.verify(passwordEmail, otp)) {
+                session.setAttribute("changePasswordVerified", true);
+                redirectAttributes.addFlashAttribute("showPasswordForm", true);
+                return "redirect:/student/profile#password-section";
+            }
+
+            redirectAttributes.addFlashAttribute("error", "Mã OTP không đúng!");
+            return "redirect:/student/profile?otpType=password#password-section";
         }
 
-        redirectAttributes.addFlashAttribute("error", "Mã OTP không đúng!");
         return "redirect:/student/profile";
     }
 
@@ -179,7 +229,47 @@ public class StudentHomeController {
         session.removeAttribute("changePasswordAccountId");
 
         redirectAttributes.addFlashAttribute("success", "Mật khẩu đã được thay đổi thành công!");
-        return "redirect:/student/profile";
+        return "redirect:/student/profile#password-section";
+    }
+
+    @PostMapping("/profile/update-phone")
+    public String updatePhone(@RequestParam("newPhone") String newPhone,
+                              HttpSession session,
+                              RedirectAttributes redirectAttributes) {
+        Account account = (Account) session.getAttribute("account");
+        if (account == null || session.getAttribute("changePhoneVerified") == null) {
+            return "redirect:/student/profile#phone-section";
+        }
+
+        Student student = (Student) session.getAttribute("userProfile");
+        if (student == null) {
+            return "redirect:/student/profile";
+        }
+
+        if (newPhone == null || newPhone.trim().isEmpty()) {
+            redirectAttributes.addFlashAttribute("phoneError", "Vui lòng nhập số điện thoại mới!");
+            redirectAttributes.addFlashAttribute("showPhoneForm", true);
+            return "redirect:/student/profile";
+        }
+
+        String desiredPhone = newPhone.trim();
+        Student existing = studentRepository.findByPhoneNumber(desiredPhone);
+        if (existing != null && existing.getStudentId() != student.getStudentId()) {
+            redirectAttributes.addFlashAttribute("phoneError", "Số điện thoại này đã có người sử dụng. Vui lòng chọn số khác!");
+            redirectAttributes.addFlashAttribute("showPhoneForm", true);
+            return "redirect:/student/profile";
+        }
+
+        studentRepository.updatePhoneNumber(student.getStudentId(), desiredPhone);
+        student.setPhoneNumber(desiredPhone);
+        session.setAttribute("userProfile", student);
+
+        session.removeAttribute("changePhoneVerified");
+        session.removeAttribute("changePhoneEmail");
+        session.removeAttribute("changePhoneAccountId");
+
+        redirectAttributes.addFlashAttribute("phoneSuccess", "Số điện thoại đã được cập nhật thành công!");
+        return "redirect:/student/profile#phone-section";
     }
 
     @PostMapping("/profile/change-avatar")

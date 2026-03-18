@@ -756,6 +756,7 @@ public class GroupController {
     private void addCommonPageAttributes(Model model, HttpSession session, Student student) {
         Object fullName = session.getAttribute("fullName");
         Object role = session.getAttribute("role");
+        model.addAttribute("student", student);
         model.addAttribute("studentName",
                 fullName != null ? fullName : (student != null ? student.getFullName() : "H\u1ecdc vi\u00ean"));
         model.addAttribute("userRole", RoleDisplayUtil.toDisplayRole(role != null ? role : "Student"));

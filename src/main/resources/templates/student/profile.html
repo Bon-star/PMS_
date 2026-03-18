@@ -67,6 +67,17 @@
         <div class="backoffice-main">
             <div th:replace="~{student/layout/header :: topbar('Hồ sơ cá nhân')}"></div>
             <main class="backoffice-content">
+                <div class="alert-container" style="margin-bottom: 20px;">
+                    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+                    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                    
+                    <div th:if="${phoneSuccess}" class="alert alert-success" th:text="${phoneSuccess}"></div>
+                    <div th:if="${phoneError}" class="alert alert-error" th:text="${phoneError}"></div>
+                    
+                    <div th:if="${avatarSuccess}" class="alert alert-success" th:text="${avatarSuccess}"></div>
+                    <div th:if="${avatarError}" class="alert alert-error" th:text="${avatarError}"></div>
+                </div>
+
                 <section class="page-section panel">
                     <h2 class="panel-title">Thông tin cá nhân</h2>
                     <div class="meta">
@@ -100,7 +111,7 @@
                     <div class="meta">
                         <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
                             <div>
-                                <img th:src="${student.avatar != null and !student.avatar.isEmpty() ? '/static/img/avatar/' + student.avatar : '/static/img/user.png'}" 
+                                <img th:src="${student.avatar != null and !student.avatar.isEmpty()} ? @{'/img/avatar/' + ${student.avatar}} : @{/img/avatar/user.png}" 
                                      alt="Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;" />
                             </div>
                             <div>
@@ -114,17 +125,12 @@
                                 </form>
                             </div>
                         </div>
-                        <div th:if="${avatarSuccess}" class="alert alert-success" th:text="${avatarSuccess}"></div>
-                        <div th:if="${avatarError}" class="alert alert-error" th:text="${avatarError}"></div>
                     </div>
                 </section>
 
                 <section class="page-section panel">
                     <h2 class="panel-title">Đổi mật khẩu</h2>
                     <div class="meta">
-                        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-                        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
-
                         <div th:if="${showPasswordForm}">
                             <p>Mã OTP đã được xác thực. Vui lòng nhập mật khẩu mới:</p>
                             <form action="/student/profile/update-password" method="post" style="margin-top: 20px;">
@@ -146,7 +152,41 @@
                                 <button type="submit" class="btn btn-primary">Gửi mã OTP để đổi mật khẩu</button>
                             </form>
 
-                            <div th:if="${param.otpRequired}" style="margin-top: 20px;">
+                            <div th:if="${param.otpType != null and param.otpType[0] == 'password'}" style="margin-top: 20px;">
+                                <p>Vui lòng nhập mã OTP đã được gửi đến email của bạn:</p>
+                                <form action="/student/profile/verify-otp" method="post" style="margin-top: 10px;">
+                                    <div class="form-group">
+                                        <label for="otp">Mã OTP:</label>
+                                        <input type="text" id="otp" name="otp" required maxlength="6" />
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Xác thực OTP</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Đổi số điện thoại</h2>
+                    <div class="meta">
+                        <div th:if="${showPhoneForm}">
+                            <p>Mã OTP đã được xác thực. Vui lòng nhập số điện thoại mới:</p>
+                            <form action="/student/profile/update-phone" method="post" style="margin-top: 20px;">
+                                <div class="form-group">
+                                    <label for="newPhone">Số điện thoại mới:</label>
+                                    <input type="text" id="newPhone" name="newPhone" required maxlength="15" />
+                                </div>
+                                <button type="submit" class="btn btn-primary">Cập nhật số điện thoại</button>
+                            </form>
+                        </div>
+
+                        <div th:unless="${showPhoneForm}">
+                            <p>Để đổi số điện thoại, bạn cần xác thực email của mình. Hệ thống sẽ gửi mã OTP đến email trường của bạn.</p>
+                            <form action="/student/profile/change-phone" method="post" style="margin-top: 20px;">
+                                <button type="submit" class="btn btn-primary">Gửi mã OTP để đổi số điện thoại</button>
+                            </form>
+
+                            <div th:if="${param.otpType != null and param.otpType[0] == 'phone'}" style="margin-top: 20px;">
                                 <p>Vui lòng nhập mã OTP đã được gửi đến email của bạn:</p>
                                 <form action="/student/profile/verify-otp" method="post" style="margin-top: 10px;">
                                     <div class="form-group">
@@ -164,3 +204,19 @@
     </div>
 </body>
 </html>
+
+<script>
+    // Trước khi trang load lại (submit form), lưu vị trí cuộn
+    window.addEventListener('beforeunload', () => {
+        sessionStorage.setItem('scrollPos', window.scrollY);
+    });
+
+    // Khi trang đã load xong, nếu có vị trí đã lưu thì cuộn tới đó
+    window.addEventListener('load', () => {
+        const scrollPos = sessionStorage.getItem('scrollPos');
+        if (scrollPos) {
+            window.scrollTo(0, parseInt(scrollPos));
+            sessionStorage.removeItem('scrollPos'); // Xóa đi để lần sau không bị nhảy linh tinh
+        }
+    });
+</script>

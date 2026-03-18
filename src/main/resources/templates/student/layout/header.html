@@ -47,7 +47,7 @@
             <span th:unless="${invitationFeatureEnabled == null or invitationFeatureEnabled}" class="btn btn-secondary btn-small disabled">
                 Thông báo (chưa bật)
             </span>
-            <div class="topbar-avatar"><a href="/student/profile"><img th:src="${student != null and student.avatar != null and !student.avatar.isEmpty() ? '/img/avatar/' + student.avatar : '/img/user.png'}" alt="Avatar" /></a></div>
+            <div class="topbar-avatar"><a href="/student/profile"><img th:src="${student != null and student.avatar != null and !student.avatar.isEmpty()} ? @{'/img/avatar/' + ${student.avatar}} : @{/img/avatar/user.png}" alt="Avatar" /></a></div>
             <div>
                 <div class="topbar-user-name" th:text="${studentName} ?: 'Học viên'">Học viên</div>
                 <div class="topbar-user-role" th:text="${userRole} ?: 'Học viên'">Học viên</div>

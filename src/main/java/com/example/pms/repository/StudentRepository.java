@@ -228,6 +228,15 @@ public class StudentRepository {
         }
     }
 
+    public int updatePhoneNumber(int studentId, String phoneNumber) {
+        try {
+            String sql = "UPDATE Students SET PhoneNumber = ? WHERE StudentID = ?";
+            return db.update(sql, phoneNumber, studentId);
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+
     public int updateAvatar(int studentId, String avatar) {
         try {
             String sql = "UPDATE Students SET Avatar = ? WHERE StudentID = ?";
