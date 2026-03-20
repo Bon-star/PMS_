@@ -181,7 +181,7 @@
                                         <option value="" disabled th:selected="${selectedClassId == null}">-- Select class --</option>
                                         <option th:each="c : ${classes}"
                                             th:value="${c.classId}"
-                                            th:text="${(c.courseYear != null and !#strings.isEmpty(c.courseYear)) ? c.className + ' - ' + c.courseYear : c.className}"
+                                            th:text="${(c.courseLabel != null and !#strings.isEmpty(c.courseLabel)) ? c.className + ' - ' + c.courseLabel : c.className}"
                                             th:selected="${selectedClassId != null and selectedClassId == c.classId}">
                                         </option>
                                     </select>
@@ -208,7 +208,7 @@
                                         <option value="" disabled th:selected="${bulkSelectedClassId == null}">-- Select class --</option>
                                         <option th:each="c : ${classes}"
                                             th:value="${c.classId}"
-                                            th:text="${(c.courseYear != null and !#strings.isEmpty(c.courseYear)) ? c.className + ' - ' + c.courseYear : c.className}"
+                                            th:text="${(c.courseLabel != null and !#strings.isEmpty(c.courseLabel)) ? c.className + ' - ' + c.courseLabel : c.className}"
                                             th:selected="${bulkSelectedClassId != null and bulkSelectedClassId == c.classId}">
                                         </option>
                                     </select>

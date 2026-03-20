@@ -269,7 +269,7 @@ public class StaffStudentService {
                 }
 
                 if (!rowErrors.isEmpty()) {
-                    errors.add("Dong " + (i + 1) + ": " + String.join("; ", rowErrors));
+                    errors.add("Line " + (i + 1) + ": " + String.join("; ", rowErrors));
                     continue;
                 }
 
