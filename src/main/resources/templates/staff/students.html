@@ -124,7 +124,7 @@
                                         <option value="" disabled th:selected="${editSelectedClassId == null}">-- Select class --</option>
                                         <option th:each="c : ${classes}"
                                             th:value="${c.classId}"
-                                            th:text="${(c.courseYear != null and !#strings.isEmpty(c.courseYear)) ? c.className + ' - ' + c.courseYear : c.className}"
+                                            th:text="${(c.courseLabel != null and !#strings.isEmpty(c.courseLabel)) ? c.className + ' - ' + c.courseLabel : c.className}"
                                             th:selected="${editSelectedClassId != null and editSelectedClassId == c.classId}">
                                         </option>
                                     </select>

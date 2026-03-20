@@ -361,27 +361,3 @@ BEGIN
            (@ClassForLecturer, @LecturerA, 2, @SemesterForLecturer);
 END
 GO
-
-DECLARE @i INT = 1;
-DECLARE @ClassA INT = (SELECT TOP 1 ClassID FROM Classes WHERE ClassName = 'SE1701');
-DECLARE @PasswordHash NVARCHAR(100) = '$2a$10$sKM3Hd278.FYjQDltD8veOEObwJ/ibsA/g0x2YIoVSmSFERI4Y.va';
-
-WHILE @i <= 50
-BEGIN
-    DECLARE @StudentCode VARCHAR(20) = 'HE12' + RIGHT('0000' + CAST(@i AS VARCHAR(10)), 4);
-    DECLARE @FullName NVARCHAR(100) = N'Student ' + CAST(@i AS NVARCHAR(10));
-    DECLARE @Email VARCHAR(100) = 'student' + CAST(@i AS VARCHAR(10)) + '@gmail.com';
-    DECLARE @Phone VARCHAR(20) = '090000' + RIGHT('0000' + CAST(@i AS VARCHAR(10)), 4);
-    DECLARE @AccountID INT;
-
-    INSERT INTO Accounts (Username, PasswordHash, Role, IsActive, AuthProvider)
-    VALUES (@Email, @PasswordHash, 'Student', 1, 'LOCAL');
-
-    SET @AccountID = SCOPE_IDENTITY();
-
-    INSERT INTO Students (StudentCode, FullName, SchoolEmail, PhoneNumber, ClassID, AccountID)
-    VALUES (@StudentCode, @FullName, @Email, @Phone, @ClassA, @AccountID);
-
-    SET @i = @i + 1;
-END
-

@@ -144,7 +144,7 @@ public class StaffStudentService {
                 classId,
                 accountId);
         if (studentId <= 0) {
-            throw new IllegalStateException("Unable to create student profile.");
+            throw new IllegalStateException("Không thể tạo hồ sơ học viên.");
         }
     }
 
@@ -152,7 +152,7 @@ public class StaffStudentService {
     public ImportResult importStudentsFromExcel(InputStream inputStream, Integer classId) throws IOException {
         List<String> errors = new ArrayList<>();
         if (classId == null || classRepository.findById(classId) == null) {
-            errors.add("Class does not exist.");
+            errors.add("Lop khong ton tai.");
             return new ImportResult(0, errors);
         }
 
@@ -164,14 +164,14 @@ public class StaffStudentService {
         try (Workbook workbook = WorkbookFactory.create(inputStream)) {
             Sheet sheet = workbook.getNumberOfSheets() > 0 ? workbook.getSheetAt(0) : null;
             if (sheet == null) {
-                errors.add("No sheet found in the file.");
+                errors.add("Khong tim thay sheet trong file.");
                 return new ImportResult(0, errors);
             }
 
             int headerRowIndex = sheet.getFirstRowNum();
             Row headerRow = sheet.getRow(headerRowIndex);
             if (headerRow == null) {
-                errors.add("Header row not found.");
+                errors.add("Khong tim thay dong tieu de.");
                 return new ImportResult(0, errors);
             }
 
@@ -187,7 +187,7 @@ public class StaffStudentService {
             String[] requiredHeaders = new String[] { "studentcode", "fullname", "schoolemail", "phonenumber" };
             for (String required : requiredHeaders) {
                 if (!headerIndex.containsKey(required)) {
-                    errors.add("Missing required column: " + required);
+                    errors.add("Thieu cot bat buoc: " + required);
                 }
             }
             if (!errors.isEmpty()) {
@@ -213,70 +213,70 @@ public class StaffStudentService {
 
                 List<String> rowErrors = new ArrayList<>();
                 if (studentCode.isEmpty()) {
-                    rowErrors.add("Missing StudentCode");
+                    rowErrors.add("Thieu StudentCode");
                 }
                 if (fullName.isEmpty()) {
-                    rowErrors.add("Missing FullName");
+                    rowErrors.add("Thieu FullName");
                 }
                 if (schoolEmail.isEmpty()) {
-                    rowErrors.add("Missing SchoolEmail");
+                    rowErrors.add("Thieu SchoolEmail");
                 }
                 if (phoneNumber.isEmpty()) {
-                    rowErrors.add("Missing PhoneNumber");
+                    rowErrors.add("Thieu PhoneNumber");
                 }
 
                 if (!studentCode.isEmpty() && studentCode.length() > 20) {
-                    rowErrors.add("StudentCode too long");
+                    rowErrors.add("StudentCode qua dai");
                 }
                 if (!fullName.isEmpty() && fullName.length() > 100) {
-                    rowErrors.add("FullName too long");
+                    rowErrors.add("FullName qua dai");
                 }
                 if (!schoolEmail.isEmpty() && schoolEmail.length() > 100) {
-                    rowErrors.add("SchoolEmail too long");
+                    rowErrors.add("SchoolEmail qua dai");
                 }
                 if (!phoneNumber.isEmpty() && phoneNumber.length() > 15) {
-                    rowErrors.add("PhoneNumber too long");
+                    rowErrors.add("PhoneNumber qua dai");
                 }
                 if (!schoolEmail.isEmpty() && !isEmailValid(schoolEmail)) {
-                    rowErrors.add("SchoolEmail invalid format");
+                    rowErrors.add("SchoolEmail sai dinh dang");
                 }
 
                 String codeKey = studentCode.toUpperCase(Locale.ROOT);
                 if (!studentCode.isEmpty() && !seenCodes.add(codeKey)) {
-                    rowErrors.add("Duplicate StudentCode in file");
+                    rowErrors.add("StudentCode trung trong file");
                 }
                 if (!schoolEmail.isEmpty() && !seenEmails.add(schoolEmail)) {
-                    rowErrors.add("Duplicate SchoolEmail in file");
+                    rowErrors.add("SchoolEmail trung trong file");
                 }
                 if (!phoneNumber.isEmpty() && !seenPhones.add(phoneNumber)) {
-                    rowErrors.add("Duplicate PhoneNumber in file");
+                    rowErrors.add("PhoneNumber trung trong file");
                 }
 
                 if (rowErrors.isEmpty()) {
                     if (studentRepository.findByStudentCode(studentCode) != null) {
-                        rowErrors.add("StudentCode already exists");
+                        rowErrors.add("StudentCode da ton tai");
                     }
                     if (studentRepository.findBySchoolEmail(schoolEmail) != null) {
-                        rowErrors.add("SchoolEmail already exists");
+                        rowErrors.add("SchoolEmail da ton tai");
                     }
                     if (studentRepository.findByPhoneNumber(phoneNumber) != null) {
-                        rowErrors.add("PhoneNumber already exists");
+                        rowErrors.add("PhoneNumber da ton tai");
                     }
                     Account existing = accountRepository.findByUsername(schoolEmail);
                     if (existing != null) {
-                        rowErrors.add("Email already has an account");
+                        rowErrors.add("Email da co tai khoan");
                     }
                 }
 
                 if (!rowErrors.isEmpty()) {
-                    errors.add("Row " + (i + 1) + ": " + String.join("; ", rowErrors));
+                    errors.add("Dong " + (i + 1) + ": " + String.join("; ", rowErrors));
                     continue;
                 }
 
                 rows.add(new ImportRow(studentCode, fullName, schoolEmail, phoneNumber));
             }
         } catch (Exception ex) {
-            errors.add("Unable to read Excel file.");
+            errors.add("Khong the doc file Excel.");
             return new ImportResult(0, errors);
         }
 
@@ -284,14 +284,14 @@ public class StaffStudentService {
             return new ImportResult(0, errors);
         }
         if (rows.isEmpty()) {
-            errors.add("No valid data rows.");
+            errors.add("Khong co dong du lieu hop le.");
             return new ImportResult(0, errors);
         }
 
         for (ImportRow row : rows) {
             int accountId = accountRepository.createLocalAccount(row.schoolEmail, "Student");
             if (accountId <= 0) {
-                throw new IllegalStateException("Unable to create student account.");
+                throw new IllegalStateException("Khong the tao tai khoan hoc vien.");
             }
             int studentId = studentRepository.createStudent(
                     row.studentCode,
@@ -301,7 +301,7 @@ public class StaffStudentService {
                     classId,
                     accountId);
             if (studentId <= 0) {
-                throw new IllegalStateException("Unable to create student profile.");
+                throw new IllegalStateException("Khong the tao ho so hoc vien.");
             }
         }
 
