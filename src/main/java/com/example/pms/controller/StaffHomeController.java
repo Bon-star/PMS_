@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 @RequestMapping("/staff")
@@ -206,5 +207,42 @@ public class StaffHomeController {
         }
 
         return "staff/students";
+    }
+
+    @PostMapping("/students/update-ajax")
+    @ResponseBody
+    public java.util.Map<String, Object> updateStudentAjax(@RequestParam("studentId") Integer studentId,
+                                                           @RequestParam("fullName") String fullName,
+                                                           @RequestParam("schoolEmail") String schoolEmail,
+                                                           @RequestParam("phoneNumber") String phoneNumber,
+                                                           @RequestParam("classId") Integer classId,
+                                                           HttpSession session) {
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        if (!isStaffSession(session)) {
+            result.put("success", false);
+            result.put("error", "Unauthorized");
+            return result;
+        }
+
+        try {
+            Student updated = staffStudentService.updateStudentInfo(studentId, fullName, schoolEmail, phoneNumber, classId);
+            java.util.Map<String, Object> s = new java.util.HashMap<>();
+            s.put("studentId", updated.getStudentId());
+            s.put("studentCode", updated.getStudentCode());
+            s.put("fullName", updated.getFullName());
+            s.put("schoolEmail", updated.getSchoolEmail());
+            s.put("phoneNumber", updated.getPhoneNumber());
+            s.put("classId", updated.getClassId());
+            result.put("success", true);
+            result.put("student", s);
+        } catch (IllegalArgumentException ex) {
+            result.put("success", false);
+            result.put("error", ex.getMessage());
+        } catch (Exception ex) {
+            result.put("success", false);
+            result.put("error", "Unable to update student.");
+        }
+
+        return result;
     }
 }

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Staff • Class Management</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body staff-classroom-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{staff/layout/header :: sidebar('classrooms')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{staff/layout/header :: topbar('Class Management')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+                <!--
+               <section class="page-section panel">
+                    <h2 class="panel-title">Create New Class</h2>
+                    <p class="meta">Add a new academic class for students and projects.</p>
+                    <form method="post" action="/staff/classrooms/create">
+                        <div class="form-grid">
+                            <div>
+                                <label for="className">Class Name</label>
+                                <input id="className" name="className" type="text" maxlength="50" th:value="${inputClassName}" placeholder="e.g. SE1701" required />
+                            </div>
+                            <div>
+                                    <label for="courseStart">Course Start</label>
+                                    <input id="courseStart" name="courseStart" type="date" th:value="${inputCourseStart}" required />
+                                </div>
+                                <div>
+                                    <label for="courseEnd">Course End</label>
+                                    <input id="courseEnd" name="courseEnd" type="date" th:value="${inputCourseEnd}" />
+                                </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Create Class</button>
+                        </div>
+                    </form>
+                    <script>
+                        // set min for date inputs to today (applies to all courseStart/courseEnd inputs)
+                        (function(){
+                            var d = new Date();
+                            var yyyy = d.getFullYear();
+                            var mm = String(d.getMonth()+1).padStart(2,'0');
+                            var dd = String(d.getDate()).padStart(2,'0');
+                            var today = yyyy+'-'+mm+'-'+dd;
+                            document.querySelectorAll('input[name="courseStart"]').forEach(function(i){ i.setAttribute('min', today); });
+                            document.querySelectorAll('input[name="courseEnd"]').forEach(function(i){ i.setAttribute('min', today); });
+                        })();
+                    </script>
+                </section>
+                -->
+                
+                <section class="page-section panel">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                        <div>
+                            <h2 class="panel-title">Classes</h2>
+                            <p class="meta">Manage academic classes used across the system.</p>
+                        </div>
+                        <div class="inline-actions">
+                            <form method="post" action="/staff/classrooms/create" style="display:flex;gap:10px;align-items:center;">
+                                <input name="className" placeholder="New class e.g. SE1701" class="inline-input" required maxlength="50" />
+                                <input name="courseStart" type="date" style="min-width:140px;" th:value="${inputCourseStart}" />
+                                <input name="courseEnd" type="date" style="min-width:140px;" th:value="${inputCourseEnd}" />
+                                <button type="submit" class="btn btn-primary">Create</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap" style="margin-top:14px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:6%">#</th>
+                                    <th style="width:40%">Class Name</th>
+                                    <th style="width:28%">Course Dates</th>
+                                    <th style="width:26%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="c,iterStat : ${classes}" class="clickable-row" th:onclick="|window.location='@{/staff/classrooms/{id}(id=${c.classId})}'|">
+                                    <td th:text="${iterStat.count}"></td>
+                                    <td>
+                                        <a th:href="@{/staff/classrooms/{id}(id=${c.classId})}" style="text-decoration:none;color:inherit;"><strong th:text="${c.className}"></strong></a>
+                                        <div class="meta" style="margin-top:6px;color:var(--bo-subtext);font-size:13px;" th:if="${c.courseLabel != null and !#strings.isEmpty(c.courseLabel)}">Course: <span th:text="${c.courseLabel}"></span></div>
+                                    </td>
+                                    <td th:text="${(c.courseLabel != null and !#strings.isEmpty(c.courseLabel)) ? c.courseLabel : '-'}" class="muted"></td>
+                                    <td>
+                                        <div class="inline-actions" onclick="event.stopPropagation();">
+                                            <form method="post" th:action="@{/staff/classrooms/update}" style="display:flex;gap:8px;align-items:center;">
+                                                <input type="hidden" name="classId" th:value="${c.classId}" />
+                                                <input type="text" name="className" th:value="${c.className}" required style="min-width:160px;" />
+                                                <input type="date" name="courseStart" th:value="${c.startDate}" style="min-width:140px;" />
+                                                <input type="date" name="courseEnd" th:value="${c.endDate}" style="min-width:140px;" />
+                                                <button type="submit" class="btn btn-small">Save</button>
+                                            </form>
+                                            <form method="post" th:action="@{/staff/classrooms/delete}" style="display:inline-block;margin-left:6px;">
+                                                <input type="hidden" name="classId" th:value="${c.classId}" />
+                                                <button type="submit" class="btn btn-soft-danger btn-small" onclick="return confirm('Delete this class?');">Delete</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(classes)}">
+                                    <td colspan="4" class="empty-state">No classes available.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+
+            </main>
+            <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

@@ -422,8 +422,30 @@ textarea:focus {
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
 }
 
-.table-wrap {
-    overflow-x: auto;
+.table-scroll {
+    max-height: 560px; /* show about 10 rows */
+    overflow-y: auto;
+}
+.table-scroll table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+/* keep native table layout so columns align; make header sticky */
+.table-scroll thead th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    z-index: 3;
+}
+.table-scroll tbody tr {
+    display: table-row;
+}
+}
+.table-scroll thead th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    z-index: 3;
 }
 
 table.data-table {
@@ -448,6 +470,19 @@ table.data-table th {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     background: #f8fafc;
+}
+
+/* Clickable row for class list: hover highlight and pointer */
+table.data-table tbody tr.clickable-row {
+    transition: background-color 0.12s ease, transform 0.06s ease;
+}
+table.data-table tbody tr.clickable-row:hover {
+    background: linear-gradient(90deg, rgba(59,130,246,0.04), rgba(99,102,241,0.02));
+    cursor: pointer;
+    transform: translateY(-2px);
+}
+table.data-table tbody tr.clickable-row:active {
+    transform: translateY(0);
 }
 
 .badge {

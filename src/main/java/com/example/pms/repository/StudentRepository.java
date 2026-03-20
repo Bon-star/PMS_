@@ -231,4 +231,25 @@ public class StudentRepository {
             return 0;
         }
     }
+
+    public java.util.List<Student> findByClassId(int classId) {
+        try {
+            String sql = "SELECT * FROM Students WHERE ClassID = ? ORDER BY FullName ASC";
+            return db.query(sql, (rs, rn) -> {
+                Student s = new Student();
+                s.setStudentId(rs.getInt("StudentID"));
+                s.setStudentCode(rs.getString("StudentCode"));
+                s.setFullName(rs.getString("FullName"));
+                s.setSchoolEmail(rs.getString("SchoolEmail"));
+                s.setPhoneNumber(rs.getString("PhoneNumber"));
+                int cid = rs.getInt("ClassID");
+                if (rs.wasNull()) s.setClassId(null); else s.setClassId(cid);
+                int accId = rs.getInt("AccountID");
+                if (rs.wasNull()) s.setAccountId(null); else s.setAccountId(accId);
+                return s;
+            }, classId);
+        } catch (Exception ex) {
+            return java.util.List.of();
+        }
+    }
 }
