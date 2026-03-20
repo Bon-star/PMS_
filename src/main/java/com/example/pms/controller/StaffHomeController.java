@@ -160,6 +160,52 @@ public class StaffHomeController {
         return "staff/students";
     }
 
+    @PostMapping("/students/import")
+    public String importStudents(@RequestParam("excelFile") MultipartFile excelFile,
+            @RequestParam("classId") Integer classId,
+            Model model,
+            HttpSession session) {
+
+        if (!isStaffSession(session)) {
+            return "redirect:/acc/log";
+        }
+
+        bindCommon(model, session);
+        model.addAttribute("addMode", "bulk");
+        model.addAttribute("bulkSelectedClassId", classId);
+
+        if (excelFile == null || excelFile.isEmpty()) {
+            model.addAttribute("error", "Vui long chon file Excel.");
+            return "staff/students";
+        }
+
+        String fileName = excelFile.getOriginalFilename();
+        if (fileName == null || !fileName.toLowerCase().endsWith(".xlsx")) {
+            model.addAttribute("error", "Chi ho tro file .xlsx.");
+            return "staff/students";
+        }
+
+        if (excelFile.getSize() > MAX_EXCEL_BYTES) {
+            model.addAttribute("error", "File Excel qua lon (toi da 10MB).");
+            return "staff/students";
+        }
+
+        try (InputStream inputStream = excelFile.getInputStream()) {
+            StaffStudentService.ImportResult result = staffStudentService.importStudentsFromExcel(inputStream, classId);
+            if (result.hasErrors()) {
+                model.addAttribute("error", "Import that bai. Vui long kiem tra file.");
+                model.addAttribute("importErrors", result.getErrors());
+                return "staff/students";
+            }
+            model.addAttribute("importSuccessCount", result.getSuccessCount());
+            model.addAttribute("success", "Da import " + result.getSuccessCount() + " hoc vien.");
+        } catch (Exception ex) {
+            model.addAttribute("error", "Khong the import hoc vien. Vui long thu lai.");
+        }
+
+        return "staff/students";
+    }
+
     private String handleLookup(String studentRef, Model model, HttpSession session) {
         bindCommon(model, session);
         model.addAttribute("studentRef", studentRef);
@@ -257,5 +303,42 @@ public class StaffHomeController {
         }
 
         return "staff/students";
+    }
+
+    @PostMapping("/students/update-ajax")
+    @ResponseBody
+    public java.util.Map<String, Object> updateStudentAjax(@RequestParam("studentId") Integer studentId,
+                                                           @RequestParam("fullName") String fullName,
+                                                           @RequestParam("schoolEmail") String schoolEmail,
+                                                           @RequestParam("phoneNumber") String phoneNumber,
+                                                           @RequestParam("classId") Integer classId,
+                                                           HttpSession session) {
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        if (!isStaffSession(session)) {
+            result.put("success", false);
+            result.put("error", "Unauthorized");
+            return result;
+        }
+
+        try {
+            Student updated = staffStudentService.updateStudentInfo(studentId, fullName, schoolEmail, phoneNumber, classId);
+            java.util.Map<String, Object> s = new java.util.HashMap<>();
+            s.put("studentId", updated.getStudentId());
+            s.put("studentCode", updated.getStudentCode());
+            s.put("fullName", updated.getFullName());
+            s.put("schoolEmail", updated.getSchoolEmail());
+            s.put("phoneNumber", updated.getPhoneNumber());
+            s.put("classId", updated.getClassId());
+            result.put("success", true);
+            result.put("student", s);
+        } catch (IllegalArgumentException ex) {
+            result.put("success", false);
+            result.put("error", ex.getMessage());
+        } catch (Exception ex) {
+            result.put("success", false);
+            result.put("error", "Unable to update student.");
+        }
+
+        return result;
     }
 }
