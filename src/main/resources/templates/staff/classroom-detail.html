@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Staff • Class Details</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body staff-classroom-detail-page">
+<div class="backoffice-shell">
+    <div th:replace="~{staff/layout/header :: sidebar('classrooms')}"></div>
+    <div class="backoffice-main">
+        <div th:replace="~{staff/layout/header :: topbar('Class Details')}"></div>
+        <main class="backoffice-content">
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+            <section class="page-section panel">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <h2 class="panel-title" th:text="${classInfo.className}">Class Name</h2>
+                        <p class="meta">Course Dates: <span th:text="${(classInfo.courseLabel != null and !#strings.isEmpty(classInfo.courseLabel)) ? classInfo.courseLabel : '-'}">-</span></p>
+                    </div>
+                    <div>
+                        <a class="btn" href="/staff/classrooms">Back to classes</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page-section panel">
+                <h3 class="panel-title">Students</h3>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:8px;">
+                    <div class="meta">Showing students for this class</div>
+                    <input id="studentSearch" placeholder="Search students by code, name or email" style="min-width:260px;padding:8px;border-radius:8px;border:1px solid var(--bo-border);" />
+                </div>
+                <div class="table-wrap" style="margin-top:12px;">
+                           <div class="table-wrap table-scroll" style="margin-top:12px;">
+                               <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th style="width:6%">#</th>
+                            <th style="width:28%">Student Code</th>
+                            <th style="width:40%">Full Name</th>
+                            <th style="width:26%">Email / Phone</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="s,iterStat : ${students}" class="clickable-row student-row"
+                            th:attr="data-student-id=${s.studentId},data-student-code=${s.studentCode},data-full-name=${s.fullName},data-email=${s.schoolEmail},data-phone=${s.phoneNumber},data-class-id=${s.classId}">
+                            <td th:text="${iterStat.count}"></td>
+                            <td th:text="${s.studentCode}"></td>
+                            <td th:text="${s.fullName}"></td>
+                            <td>
+                                <div th:text="${s.schoolEmail}"></div>
+                                <div th:text="${s.phoneNumber}" class="meta"></div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(students)}">
+                            <td colspan="4" class="empty-state">No students in this class.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="page-section panel">
+                <h3 class="panel-title">Lecturers</h3>
+                <div class="table-wrap" style="margin-top:12px;">
+                           <div class="table-wrap table-scroll" style="margin-top:12px;">
+                               <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th style="width:6%">#</th>
+                            <th style="width:36%">Lecturer</th>
+                            <th style="width:32%">Email</th>
+                            <th style="width:26%">Phone</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="l,iterStat : ${lecturers}" class="clickable-row lecturer-row"
+                            th:attr="data-lecturer-id=${l.lecturerId},data-full-name=${l.fullName},data-email=${l.schoolEmail},data-phone=${l.phoneNumber}"
+                            onclick="openLecturerModal(this)">
+                               <td th:text="${iterStat.count}"></td>
+                            <td th:text="${l.fullName}"></td>
+                            <td th:text="${l.schoolEmail}"></td>
+                            <td th:text="${l.phoneNumber}"></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(lecturers)}">
+                            <td colspan="4" class="empty-state">No lecturers assigned to this class.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Student edit modal -->
+            <div id="studentModal" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.6);z-index:60;align-items:center;justify-content:center;">
+                <div style="background:var(--bo-surface);border-radius:12px;padding:18px;max-width:720px;width:94%;box-shadow:var(--bo-shadow);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <h3 style="margin:0;">Edit Student</h3>
+                        <button id="closeStudentModal" class="btn">Close</button>
+                    </div>
+                    <form id="studentEditForm" method="post" action="/staff/students/update" style="margin-top:12px;">
+                        <input type="hidden" name="studentId" id="modalStudentId" />
+                        <div class="form-grid">
+                            <div>
+                                <label for="modalStudentCode">Student Code</label>
+                                <input id="modalStudentCode" name="studentCode" type="text" readonly />
+                            </div>
+                            <div>
+                                <label for="modalFullName">Full Name</label>
+                                <input id="modalFullName" name="fullName" type="text" maxlength="100" required />
+                            </div>
+                            <div>
+                                <label for="modalEmail">School Email</label>
+                                <input id="modalEmail" name="schoolEmail" type="email" maxlength="100" required />
+                            </div>
+                            <div>
+                                <label for="modalPhone">Phone Number</label>
+                                <input id="modalPhone" name="phoneNumber" type="text" maxlength="15" required />
+                            </div>
+                            <div class="full">
+                                <label for="modalClassId">Class</label>
+                                <select id="modalClassId" name="classId" required>
+                                    <option value="" disabled th:selected="${null == null}">-- Select class --</option>
+                                    <option th:each="c : ${classes}" th:value="${c.classId}" th:text="${(c.courseLabel != null and !#strings.isEmpty(c.courseLabel)) ? c.className + ' - ' + c.courseLabel : c.className}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lecturer view modal (read-only) -->
+            <div id="lecturerModal" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.6);z-index:60;align-items:center;justify-content:center;">
+                <div style="background:var(--bo-surface);border-radius:12px;padding:18px;max-width:520px;width:94%;box-shadow:var(--bo-shadow);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <h3 style="margin:0;">Lecturer Details</h3>
+                        <button id="closeLecturerModal" class="btn">Close</button>
+                    </div>
+                    <div style="margin-top:12px;">
+                        <p><strong>Name:</strong> <span id="lecName"></span></p>
+                        <p><strong>Email:</strong> <span id="lecEmail"></span></p>
+                        <p><strong>Phone:</strong> <span id="lecPhone"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                (function(){
+                    const modal = document.getElementById('studentModal');
+                    const closeBtn = document.getElementById('closeStudentModal');
+                    const form = document.getElementById('studentEditForm');
+
+                    function openModal(data){
+                        document.getElementById('modalStudentId').value = data.studentId || '';
+                        document.getElementById('modalStudentCode').value = data.studentCode || '';
+                        document.getElementById('modalFullName').value = data.fullName || '';
+                        document.getElementById('modalEmail').value = data.email || '';
+                        document.getElementById('modalPhone').value = data.phone || '';
+                        if(data.classId){ document.getElementById('modalClassId').value = data.classId; }
+                        modal.style.display = 'flex';
+                    }
+
+                    function closeModal(){ modal.style.display = 'none'; }
+
+                    closeBtn.addEventListener('click', function(e){ e.preventDefault(); closeModal(); });
+
+                    document.querySelectorAll('.student-row').forEach(function(row){
+                        row.addEventListener('click', function(){
+                            const data = {
+                                studentId: row.getAttribute('data-student-id'),
+                                studentCode: row.getAttribute('data-student-code'),
+                                fullName: row.getAttribute('data-full-name'),
+                                email: row.getAttribute('data-email'),
+                                phone: row.getAttribute('data-phone'),
+                                classId: row.getAttribute('data-class-id')
+                            };
+                            openModal(data);
+                        });
+                    });
+
+                    // close when clicking outside modal content
+                    modal.addEventListener('click', function(e){ if(e.target === modal) closeModal(); });
+
+                    // Lecturer modal handlers
+                    var lecturerModal = document.getElementById('lecturerModal');
+                    var closeLecBtn = document.getElementById('closeLecturerModal');
+                    function openLecturerModal(row){
+                        var id = row.getAttribute('data-lecturer-id') || '';
+                        document.getElementById('lecName').textContent = row.getAttribute('data-full-name') || '';
+                        document.getElementById('lecEmail').textContent = row.getAttribute('data-email') || '';
+                        document.getElementById('lecPhone').textContent = row.getAttribute('data-phone') || '';
+                        lecturerModal.style.display = 'flex';
+                    }
+                    function closeLecturerModal(){ lecturerModal.style.display = 'none'; }
+                    closeLecBtn.addEventListener('click', function(e){ e.preventDefault(); closeLecturerModal(); });
+                    lecturerModal.addEventListener('click', function(e){ if(e.target === lecturerModal) closeLecturerModal(); });
+
+                    // attach click handlers to lecturer rows
+                    document.querySelectorAll('.lecturer-row').forEach(function(row){
+                        row.addEventListener('click', function(){ openLecturerModal(row); });
+                    });
+
+                    // submit via AJAX to stay on same page, but require confirmation first
+                    (function(){
+                        // create confirmation modal
+                        var confirmModal = document.createElement('div');
+                        confirmModal.id = 'confirmModal';
+                        confirmModal.style.display = 'none';
+                        confirmModal.style.position = 'fixed';
+                        confirmModal.style.inset = '0';
+                        confirmModal.style.background = 'rgba(2,6,23,0.6)';
+                        confirmModal.style.zIndex = 70;
+                        confirmModal.style.alignItems = 'center';
+                        confirmModal.style.justifyContent = 'center';
+                        confirmModal.innerHTML = '<div style="background:var(--bo-surface);border-radius:12px;padding:18px;max-width:520px;width:94%;box-shadow:var(--bo-shadow);">' +
+                            '<div style="margin-bottom:8px;font-weight:700;font-size:16px;">Confirm changes</div>' +
+                            '<div id="confirmDetails" style="color:var(--bo-subtext);margin-bottom:14px;font-size:14px;white-space:pre-wrap;">Are you sure you want to save these changes?</div>' +
+                            '<div style="display:flex;justify-content:flex-end;gap:8px;">' +
+                                '<button id="confirmCancel" class="btn">Cancel</button>' +
+                                '<button id="confirmOk" class="btn btn-primary">Confirm</button>' +
+                            '</div>' +
+                        '</div>';
+                        document.body.appendChild(confirmModal);
+
+                        var pending = null;
+                        document.getElementById('confirmCancel').addEventListener('click', function(){ confirmModal.style.display='none'; pending = null; });
+
+                        document.getElementById('confirmOk').addEventListener('click', function(){
+                            if(!pending) return; confirmModal.style.display='none';
+                            fetch('/staff/students/update-ajax', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                                body: pending.toString()
+                            }).then(function(r){ return r.json(); }).then(function(resp){
+                                if(resp.success){
+                                    var rows = document.querySelectorAll('.student-row');
+                                    for(var i=0;i<rows.length;i++){
+                                        var row = rows[i];
+                                        if(row.getAttribute('data-student-id') == resp.student.studentId){
+                                            row.setAttribute('data-full-name', resp.student.fullName || '');
+                                            row.setAttribute('data-email', resp.student.schoolEmail || '');
+                                            row.setAttribute('data-phone', resp.student.phoneNumber || '');
+                                            row.setAttribute('data-class-id', resp.student.classId || '');
+                                            if(row.children[2]) row.children[2].textContent = resp.student.fullName || '';
+                                            if(row.children[3]){
+                                                if(row.children[3].children[0]) row.children[3].children[0].textContent = resp.student.schoolEmail || '';
+                                                if(row.children[3].children[1]) row.children[3].children[1].textContent = resp.student.phoneNumber || '';
+                                            }
+                                        }
+                                    }
+                                    var tmp = document.createElement('div'); tmp.className='alert alert-success'; tmp.style.marginTop='8px'; tmp.textContent='Student updated.';
+                                    var main = document.querySelector('.backoffice-content'); main.insertBefore(tmp, main.firstChild);
+                                    setTimeout(function(){ tmp.remove(); }, 2200);
+                                    closeModal();
+                                } else {
+                                    alert(resp.error || 'Update failed');
+                                }
+                            }).catch(function(){ alert('Unable to update student.'); });
+                            pending = null;
+                        });
+
+                        form.addEventListener('submit', function(e){
+                            e.preventDefault();
+                            var fd = new FormData(form);
+                            var params = new URLSearchParams();
+                            var summary = [];
+                            for(var pair of fd.entries()){ params.append(pair[0], pair[1]); if(pair[0] !== 'studentId' && pair[0] !== 'studentCode') summary.push(pair[0]+': '+(pair[1]||'')); }
+                            pending = params;
+                            document.getElementById('confirmDetails').textContent = 'You are about to save changes:\n' + summary.join('\n');
+                            confirmModal.style.display = 'flex';
+                        });
+                    })();
+
+                    // Lecturer modal (read-only)
+                    var lecturerModal = null;
+                    function openLecturerModal(row){
+                        if(!lecturerModal){
+                            lecturerModal = document.createElement('div');
+                            lecturerModal.id = 'lecturerModal';
+                            lecturerModal.style.display = 'none';
+                            lecturerModal.style.position = 'fixed';
+                            lecturerModal.style.inset = '0';
+                            lecturerModal.style.background = 'rgba(2,6,23,0.6)';
+                            lecturerModal.style.zIndex = 65;
+                            lecturerModal.style.alignItems = 'center';
+                            lecturerModal.style.justifyContent = 'center';
+                            lecturerModal.innerHTML = `
+                                <div style="background:var(--bo-surface);border-radius:12px;padding:18px;max-width:520px;width:94%;box-shadow:var(--bo-shadow);">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <h3 style="margin:0;">Lecturer</h3>
+                                        <button id="closeLecturerModal" class="btn">Close</button>
+                                    </div>
+                                    <div style="margin-top:12px;">
+                                        <div style="font-weight:700;font-size:16px;" id="lecturerName">Name</div>
+                                        <div class="meta" id="lecturerEmail">email@example.com</div>
+                                        <div class="meta" id="lecturerPhone">0123456789</div>
+                                    </div>
+                                </div>
+                            `;
+                            document.body.appendChild(lecturerModal);
+                            lecturerModal.addEventListener('click', function(e){ if(e.target===lecturerModal) lecturerModal.style.display='none'; });
+                        }
+                        document.getElementById('lecturerName').textContent = row.getAttribute('data-full-name') || '';
+                        document.getElementById('lecturerEmail').textContent = row.getAttribute('data-email') || '';
+                        document.getElementById('lecturerPhone').textContent = row.getAttribute('data-phone') || '';
+                        lecturerModal.style.display = 'flex';
+                        document.getElementById('closeLecturerModal').addEventListener('click', function(e){ e.preventDefault(); lecturerModal.style.display='none'; });
+                    }
+
+                    // attach click handlers for lecturer rows
+                    document.querySelectorAll('.lecturer-row').forEach(function(r){ r.addEventListener('click', function(){ openLecturerModal(r); }); });
+
+                    // student table search
+                    var searchInput = document.getElementById('studentSearch');
+                    if(searchInput){
+                        searchInput.addEventListener('input', function(e){
+                            var q = (e.target.value || '').trim().toLowerCase();
+                            document.querySelectorAll('.student-row').forEach(function(row){
+                                if(!q){ row.style.display = 'table-row'; return; }
+                                var code = (row.getAttribute('data-student-code')||'').toLowerCase();
+                                var name = (row.getAttribute('data-full-name')||'').toLowerCase();
+                                var email = (row.getAttribute('data-email')||'').toLowerCase();
+                                if(code.indexOf(q) !== -1 || name.indexOf(q) !== -1 || email.indexOf(q) !== -1){
+                                    row.style.display = 'table-row';
+                                } else {
+                                    row.style.display = 'none';
+                                }
+                            });
+                        });
+                    }
+                })();
+            </script>
+
+        </main>
+        <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
+    </div>
+</div>
+</body>
+</html>
