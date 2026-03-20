@@ -16,6 +16,44 @@
                 <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
                 <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
 
+                <!--
+               <section class="page-section panel">
+                    <h2 class="panel-title">Create New Class</h2>
+                    <p class="meta">Add a new academic class for students and projects.</p>
+                    <form method="post" action="/staff/classrooms/create">
+                        <div class="form-grid">
+                            <div>
+                                <label for="className">Class Name</label>
+                                <input id="className" name="className" type="text" maxlength="50" th:value="${inputClassName}" placeholder="e.g. SE1701" required />
+                            </div>
+                            <div>
+                                    <label for="courseStart">Course Start</label>
+                                    <input id="courseStart" name="courseStart" type="date" th:value="${inputCourseStart}" required />
+                                </div>
+                                <div>
+                                    <label for="courseEnd">Course End</label>
+                                    <input id="courseEnd" name="courseEnd" type="date" th:value="${inputCourseEnd}" />
+                                </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Create Class</button>
+                        </div>
+                    </form>
+                    <script>
+                        // set min for date inputs to today (applies to all courseStart/courseEnd inputs)
+                        (function(){
+                            var d = new Date();
+                            var yyyy = d.getFullYear();
+                            var mm = String(d.getMonth()+1).padStart(2,'0');
+                            var dd = String(d.getDate()).padStart(2,'0');
+                            var today = yyyy+'-'+mm+'-'+dd;
+                            document.querySelectorAll('input[name="courseStart"]').forEach(function(i){ i.setAttribute('min', today); });
+                            document.querySelectorAll('input[name="courseEnd"]').forEach(function(i){ i.setAttribute('min', today); });
+                        })();
+                    </script>
+                </section>
+                -->
+                
                 <section class="page-section panel">
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
                         <div>
@@ -24,8 +62,9 @@
                         </div>
                         <div class="inline-actions">
                             <form method="post" action="/staff/classrooms/create" style="display:flex;gap:10px;align-items:center;">
-                                <input name="className" placeholder="New class e.g. SE1701" class="inline-input" required />
-                                <input name="courseYear" placeholder="e.g. 2023-2027" style="min-width:130px;" />
+                                <input name="className" placeholder="New class e.g. SE1701" class="inline-input" required maxlength="50" />
+                                <input name="courseStart" type="date" style="min-width:140px;" th:value="${inputCourseStart}" />
+                                <input name="courseEnd" type="date" style="min-width:140px;" th:value="${inputCourseEnd}" />
                                 <button type="submit" class="btn btn-primary">Create</button>
                             </form>
                         </div>
@@ -37,7 +76,7 @@
                                 <tr>
                                     <th style="width:6%">#</th>
                                     <th style="width:40%">Class Name</th>
-                                    <th style="width:28%">Course Year</th>
+                                    <th style="width:28%">Course Dates</th>
                                     <th style="width:26%">Actions</th>
                                 </tr>
                             </thead>
@@ -46,15 +85,16 @@
                                     <td th:text="${iterStat.count}"></td>
                                     <td>
                                         <a th:href="@{/staff/classrooms/{id}(id=${c.classId})}" style="text-decoration:none;color:inherit;"><strong th:text="${c.className}"></strong></a>
-                                        <div class="meta" style="margin-top:6px;color:var(--bo-subtext);font-size:13px;" th:if="${c.courseYear != null and !#strings.isEmpty(c.courseYear)}">Course: <span th:text="${c.courseYear}"></span></div>
+                                        <div class="meta" style="margin-top:6px;color:var(--bo-subtext);font-size:13px;" th:if="${c.courseLabel != null and !#strings.isEmpty(c.courseLabel)}">Course: <span th:text="${c.courseLabel}"></span></div>
                                     </td>
-                                    <td th:text="${c.courseYear} ?: '-'" class="muted"></td>
+                                    <td th:text="${(c.courseLabel != null and !#strings.isEmpty(c.courseLabel)) ? c.courseLabel : '-'}" class="muted"></td>
                                     <td>
-                                        <div class="inline-actions">
+                                        <div class="inline-actions" onclick="event.stopPropagation();">
                                             <form method="post" th:action="@{/staff/classrooms/update}" style="display:flex;gap:8px;align-items:center;">
                                                 <input type="hidden" name="classId" th:value="${c.classId}" />
                                                 <input type="text" name="className" th:value="${c.className}" required style="min-width:160px;" />
-                                                <input type="text" name="courseYear" th:value="${c.courseYear}" style="min-width:120px;" />
+                                                <input type="date" name="courseStart" th:value="${c.startDate}" style="min-width:140px;" />
+                                                <input type="date" name="courseEnd" th:value="${c.endDate}" style="min-width:140px;" />
                                                 <button type="submit" class="btn btn-small">Save</button>
                                             </form>
                                             <form method="post" th:action="@{/staff/classrooms/delete}" style="display:inline-block;margin-left:6px;">
@@ -72,25 +112,7 @@
                     </div>
                 </section>
 
-                <section class="page-section panel">
-                    <h2 class="panel-title">Create New Class</h2>
-                    <p class="meta">Add a new academic class for students and projects.</p>
-                    <form method="post" action="/staff/classrooms/create">
-                        <div class="form-grid">
-                            <div>
-                                <label for="className">Class Name</label>
-                                <input id="className" name="className" type="text" maxlength="50" th:value="${inputClassName}" placeholder="e.g. SE1701" required />
-                            </div>
-                            <div>
-                                <label for="courseYear">Course Year</label>
-                                <input id="courseYear" name="courseYear" type="text" maxlength="20" th:value="${inputCourseYear}" placeholder="e.g. 2023-2027" />
-                            </div>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Create Class</button>
-                        </div>
-                    </form>
-                </section>
+
             </main>
             <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
         </div>

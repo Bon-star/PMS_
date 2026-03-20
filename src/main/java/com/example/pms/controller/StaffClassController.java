@@ -7,6 +7,7 @@ import com.example.pms.service.StaffStudentService;
 import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.List;
 
 @Controller
 @RequestMapping("/staff")
@@ -78,7 +78,10 @@ public class StaffClassController {
 
     @PostMapping("/classrooms/create")
     public String createClass(@RequestParam("className") String className,
-                              @RequestParam(name = "courseYear", required = false) String courseYear,
+                              @RequestParam(name = "courseStart", required = false)
+                              @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate courseStart,
+                              @RequestParam(name = "courseEnd", required = false)
+                              @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate courseEnd,
                               Model model,
                               HttpSession session) {
         if (!isStaffSession(session)) {
@@ -87,21 +90,30 @@ public class StaffClassController {
 
         bindCommon(model, session);
         model.addAttribute("inputClassName", className);
-        model.addAttribute("inputCourseYear", courseYear);
+        model.addAttribute("inputCourseStart", courseStart);
+        model.addAttribute("inputCourseEnd", courseEnd);
 
         try {
             String name = className == null ? "" : className.trim();
             if (name.isEmpty() || name.length() > 50) {
                 throw new IllegalArgumentException("Please provide a valid class name (max 50 chars).");
             }
-            String year = courseYear == null ? null : courseYear.trim();
-            int id = classRepository.createClass(name, year);
+
+            if (courseEnd != null && courseStart == null) {
+                throw new IllegalArgumentException("Course start date is required when providing an end date.");
+            }
+            if (courseStart != null && courseEnd != null && courseEnd.isBefore(courseStart)) {
+                throw new IllegalArgumentException("Course end date cannot be before start date.");
+            }
+
+            int id = classRepository.createClass(name, courseStart, courseEnd);
             if (id <= 0) {
                 throw new IllegalStateException("Unable to create class.");
             }
             model.addAttribute("success", "Class created successfully.");
             model.addAttribute("inputClassName", "");
-            model.addAttribute("inputCourseYear", "");
+            model.addAttribute("inputCourseStart", null);
+            model.addAttribute("inputCourseEnd", null);
         } catch (IllegalArgumentException ex) {
             model.addAttribute("error", ex.getMessage());
         } catch (Exception ex) {
@@ -114,7 +126,10 @@ public class StaffClassController {
     @PostMapping("/classrooms/update")
     public String updateClass(@RequestParam("classId") Integer classId,
                               @RequestParam("className") String className,
-                              @RequestParam(name = "courseYear", required = false) String courseYear,
+                              @RequestParam(name = "courseStart", required = false)
+                              @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate courseStart,
+                              @RequestParam(name = "courseEnd", required = false)
+                              @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate courseEnd,
                               Model model,
                               HttpSession session) {
         if (!isStaffSession(session)) {
@@ -139,8 +154,13 @@ public class StaffClassController {
             if (name.isEmpty() || name.length() > 50) {
                 throw new IllegalArgumentException("Please provide a valid class name (max 50 chars).");
             }
-            String year = courseYear == null ? null : courseYear.trim();
-            int updated = classRepository.updateClass(classId, name, year);
+            if (courseEnd != null && courseStart == null) {
+                throw new IllegalArgumentException("Course start date is required when providing an end date.");
+            }
+            if (courseStart != null && courseEnd != null && courseEnd.isBefore(courseStart)) {
+                throw new IllegalArgumentException("Course end date cannot be before start date.");
+            }
+            int updated = classRepository.updateClass(classId, name, courseStart, courseEnd);
             if (updated <= 0) {
                 throw new IllegalStateException("Unable to update class.");
             }

@@ -29,7 +29,7 @@ CREATE TABLE Classes (
     ClassID INT PRIMARY KEY IDENTITY(1,1),
     ClassName VARCHAR(50) NOT NULL,
     StartDate DATE NULL,
-    EndDate DATE NULL,
+    EndDate DATE NULL
 );
 GO
 

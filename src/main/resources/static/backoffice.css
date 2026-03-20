@@ -422,8 +422,30 @@ textarea:focus {
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
 }
 
-.table-wrap {
-    overflow-x: auto;
+.table-scroll {
+    max-height: 560px; /* show about 10 rows */
+    overflow-y: auto;
+}
+.table-scroll table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+/* keep native table layout so columns align; make header sticky */
+.table-scroll thead th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    z-index: 3;
+}
+.table-scroll tbody tr {
+    display: table-row;
+}
+}
+.table-scroll thead th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    z-index: 3;
 }
 
 table.data-table {
