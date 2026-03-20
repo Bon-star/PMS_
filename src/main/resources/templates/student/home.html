@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="utf-8" />
-    <title>Trang chủ học sinh</title>
+    <title>Student home</title>
     <style>
         * {
             margin: 0;
@@ -209,8 +209,8 @@
         <ul class="nav-menu">
             <li class="nav-item">
                 <a href="/student/group/list" class="nav-link active">
-                    <span class="nav-icon">📚</span>
-                    <span>Nhóm</span>
+                    <span class="nav-icon">G</span>
+                    <span>Groups</span>
                 </a>
             </li>
         </ul>
@@ -224,20 +224,20 @@
                     <img src="/img/user.png" alt="Avatar" />
                 </div>
                 <div class="user-text">
-                    <div class="user-name" th:text="${studentName} ?: 'Học sinh'">Học sinh</div>
-                    <div class="user-role" th:text="${userRole} ?: 'Học sinh'">Học sinh</div>
+                    <div class="user-name" th:text="${studentName} ?: 'Student'">Student</div>
+                    <div class="user-role" th:text="${userRole} ?: 'Student'">Student</div>
                 </div>
             </div>
             <form action="/acc/logout" method="get" style="margin-left: auto;">
-                <button type="submit" class="logout-btn">Đăng xuất</button>
+                <button type="submit" class="logout-btn">Log out</button>
             </form>
         </div>
 
         <div class="content">
             <div class="welcome-section">
-                <div class="welcome-title">Chào mừng bạn!</div>
+                <div class="welcome-title">Welcome!</div>
                 <div class="welcome-text">
-                    Chào mừng bạn đến với Hệ thống Quản lý Lớp (PMS). Sử dụng menu bên trái để truy cập các tính năng khác nhau.
+                    Welcome to the Class Management System (PMS). Use the left menu to access different features.
                 </div>
             </div>
         </div>

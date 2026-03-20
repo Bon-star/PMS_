@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Học viên • Trang chủ</title>
+    <title>Student • Home</title>
     <link rel="stylesheet" href="/backoffice.css" />
     <link rel="stylesheet" href="/student-backoffice.css" />
     <script src="/js/backoffice-layout.js" defer></script>
@@ -12,47 +12,47 @@
     <div class="backoffice-shell">
         <div th:replace="~{student/layout/header :: sidebar('home')}"></div>
         <div class="backoffice-main">
-            <div th:replace="~{student/layout/header :: topbar('Trang chủ')}"></div>
+            <div th:replace="~{student/layout/header :: topbar('Home')}"></div>
             <main class="backoffice-content">
                 <section class="page-section summary-grid">
                     <div class="summary-card">
-                        <div class="summary-label">Nhóm của tôi</div>
-                        <div class="summary-value">1 nhóm</div>
-                        <div class="summary-note">Theo dõi thành viên và hoạt động nhóm.</div>
+                        <div class="summary-label">My group</div>
+                        <div class="summary-value">1 group</div>
+                        <div class="summary-note">Track members and group activity.</div>
                     </div>
                     <div class="summary-card">
                         <div class="summary-label">Project</div>
-                        <div class="summary-value">Theo dõi</div>
-                        <div class="summary-note">Cập nhật nội dung project và task.</div>
+                        <div class="summary-value">Tracking</div>
+                        <div class="summary-note">Update project content and tasks.</div>
                     </div>
                     <div class="summary-card">
-                        <div class="summary-label">Thông báo</div>
-                        <div class="summary-value" th:text="${notificationCount} ?: 0">0</div>
-                        <div class="summary-note">Lời mời và yêu cầu đang chờ xử lý.</div>
+                        <div class="summary-label">Notifications</div>
+                        <div class="summary-value js-student-notification-summary" th:text="${notificationCount} ?: 0">0</div>
+                        <div class="summary-note">Project, task, and group activity in one place.</div>
                     </div>
                     <div class="summary-card">
-                        <div class="summary-label">Điều hướng nhanh</div>
+                        <div class="summary-label">Quick navigation</div>
                         <div class="button-row" style="margin-top:10px;">
-                            <a class="btn btn-primary btn-small" href="/student/group/list">Mở danh sách nhóm</a>
+                            <a class="btn btn-primary btn-small" href="/student/group/list">Open group list</a>
                         </div>
                     </div>
                 </section>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Chào mừng bạn!</h2>
+                    <h2 class="panel-title">Welcome!</h2>
                     <div class="meta">
-                        Đây là khu vực tổng quan của học viên. Bạn có thể quản lý nhóm, theo dõi project, cập nhật công việc
-                        và nhận thông báo về lời mời hoặc yêu cầu tham gia nhóm.
+                        This is the student overview area. You can manage your group, track your project, update tasks,
+                        and receive notifications about project progress, tasks, and group requests.
                     </div>
                 </section>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Điều hướng nhanh</h2>
+                    <h2 class="panel-title">Quick links</h2>
                     <ul class="quick-links">
-                        <li><a href="/student/group/list">Nhóm của tôi</a></li>
-                        <li><a href="/student/project">Project của nhóm</a></li>
-                        <li><a href="/student/group/notifications">Thông báo nhóm</a></li>
-                        <li><a href="/student/group/create">Tạo nhóm mới</a></li>
+                        <li><a href="/student/group/list">My group</a></li>
+                        <li><a href="/student/project">Group project</a></li>
+                        <li><a href="/student/group/notifications">Notifications</a></li>
+                        <li><a href="/student/group/create">Create new group</a></li>
                     </ul>
                 </section>
             </main>

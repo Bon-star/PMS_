@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Project của nhóm</title>
+    <title>Group project</title>
     <link rel="stylesheet" href="/backoffice.css" />
     <link rel="stylesheet" href="/student-backoffice.css" />
     <script src="/js/backoffice-layout.js" defer></script>
@@ -412,7 +412,7 @@
         }
 
         .student-project-page .action-tile summary::after {
-            content: "Mở";
+            content: "Open";
             float: right;
             color: #2563eb;
             font-size: 12px;
@@ -420,7 +420,7 @@
         }
 
         .student-project-page .action-tile[open] summary::after {
-            content: "Thu gọn";
+            content: "Collapse";
         }
 
         .student-project-page .action-tile .muted {
@@ -498,95 +498,95 @@
     <div class="backoffice-shell">
         <div th:replace="~{student/layout/header :: sidebar('project')}"></div>
         <div class="backoffice-main">
-            <div th:replace="~{student/layout/header :: topbar('Project của nhóm')}"></div>
+            <div th:replace="~{student/layout/header :: topbar('Group project')}"></div>
             <main class="backoffice-content">
             <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
             <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
 
             <div class="panel" th:if="${noGroup}">
-                <h2 class="panel-title">Bạn chưa có nhóm</h2>
-                <p class="muted">Hãy vào khu vực nhóm để tham gia hoặc tạo nhóm trước khi quản lý project.</p>
-                <a href="/student/group/list" class="btn">Đến trang nhóm</a>
+                <h2 class="panel-title">You don't have a group yet</h2>
+                <p class="muted">Go to the group area to join or create a group before managing the project.</p>
+                <a href="/student/group/list" class="btn">Go to groups</a>
             </div>
 
             <div th:if="${!noGroup}">
                 <div class="panel">
-                    <h2 class="panel-title" th:text="${'Nhóm: ' + group.groupName}">Nhóm</h2>
+                    <h2 class="panel-title" th:text="${'Group: ' + group.groupName}">Group</h2>
                     <div class="muted"
-                        th:text="${'Trưởng nhóm: ' + (group.leaderName ?: 'Chưa có') + ' • Số thành viên: ' + members.size()}">
+                                th:text="${'Leader: ' + (group.leaderName ?: 'Not assigned') + ' - Members: ' + members.size()}">
                     </div>
                 </div>
 
                 <div class="panel" th:if="${noProject}">
-                    <h2 class="panel-title">Chưa có project</h2>
-                    <p class="muted">Nhân viên đào tạo chưa tạo project cho nhóm của bạn trong học kỳ này.</p>
+                    <h2 class="panel-title">No project yet</h2>
+                    <p class="muted">The training staff hasn't created a project for your group this semester.</p>
                 </div>
 
                 <div th:if="${!noProject}">
-                    <div class="summary-grid section-anchor" id="tong-quan">
+                    <div class="summary-grid section-anchor" id="overview">
                         <div class="summary-card">
-                            <h2 class="summary-title" th:text="${#strings.isEmpty(project.projectName) ? 'Project chưa có tên' : project.projectName}">
-                                Tên project
+                            <h2 class="summary-title" th:text="${#strings.isEmpty(project.projectName) ? 'Untitled project' : project.projectName}">
+                                Project name
                             </h2>
                             <div class="summary-subtitle"
-                                th:text="${'Nhóm: ' + group.groupName + ' • Trưởng nhóm: ' + (group.leaderName ?: 'Chưa có')}">
+                                th:text="${'Group: ' + group.groupName + ' - Leader: ' + (group.leaderName ?: 'Not assigned')}">
                             </div>
                             <div class="meta-grid" style="margin-top:12px;">
-                                <div><strong>Nguồn:</strong> <span th:text="${project.topicSource}">STUDENT</span></div>
+                                <div><strong>Source:</strong> <span th:text="${project.topicSource}">STUDENT</span></div>
                                 <div>
-                                    <strong>Trạng thái:</strong>
-                                    <span th:if="${project.approvalStatus == 1}" class="badge status-approved">Đã duyệt</span>
-                                    <span th:if="${project.approvalStatus == 2}" class="badge status-pending">Chờ giảng viên duyệt</span>
-                                    <span th:if="${project.approvalStatus == 3}" class="badge status-rejected">Bị từ chối</span>
-                                    <span th:if="${project.approvalStatus == 4}" class="badge status-waiting">Chờ học viên cập nhật</span>
+                                    <strong>Status:</strong>
+                                    <span th:if="${project.approvalStatus == 1}" class="badge status-approved">Approved</span>
+                                    <span th:if="${project.approvalStatus == 2}" class="badge status-pending">Pending lecturer approval</span>
+                                    <span th:if="${project.approvalStatus == 3}" class="badge status-rejected">Rejected</span>
+                                    <span th:if="${project.approvalStatus == 4}" class="badge status-waiting">Waiting for student updates</span>
                                 </div>
-                                <div><strong>Bắt đầu:</strong> <span th:text="${project.startDate != null ? #temporals.format(project.startDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span></div>
-                                <div><strong>Kết thúc:</strong> <span th:text="${project.endDate != null ? #temporals.format(project.endDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span></div>
+                                <div><strong>Start:</strong> <span th:text="${project.startDate != null ? #temporals.format(project.startDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span></div>
+                                <div><strong>End:</strong> <span th:text="${project.endDate != null ? #temporals.format(project.endDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span></div>
                             </div>
                             <p class="muted" style="margin-top:10px; white-space: pre-wrap;"
-                                th:text="${#strings.isEmpty(project.description) ? 'Chưa có mô tả project.' : project.description}">
+                                th:text="${#strings.isEmpty(project.description) ? 'No project description yet.' : project.description}">
                             </p>
                             <div class="row-actions">
                                 <span class="inline-chip" th:if="${openSprint != null}"
-                                    th:text="${'Đợt đang mở: ' + (openSprint.sprintName ?: ('Đợt #' + openSprint.sprintId))}"></span>
-                                <span class="inline-chip" th:if="${openSprint == null}">Chưa có đợt đang mở</span>
+                                    th:text="${'Open sprint: ' + (sprintDisplayNames[openSprint.sprintId] ?: ('Sprint #' + openSprint.sprintId))}"></span>
+                                <span class="inline-chip" th:if="${openSprint == null}">No open sprint</span>
                             </div>
                             <div class="muted" style="margin-top:10px;">
-                                Mã nguồn:
-                                <a th:if="${!#strings.isEmpty(project.sourceCodeUrl)}" th:href="${project.sourceCodeUrl}" target="_blank">Mở liên kết</a>
-                                <span th:if="${#strings.isEmpty(project.sourceCodeUrl)}">Chưa có</span>
-                                <span> • </span>
-                                Tài liệu:
-                                <a th:if="${!#strings.isEmpty(project.documentUrl)}" th:href="${project.documentUrl}" target="_blank">Mở liên kết</a>
-                                <span th:if="${#strings.isEmpty(project.documentUrl)}">Chưa có</span>
+                                Source code:
+                                <a th:if="${!#strings.isEmpty(project.sourceCodeUrl)}" th:href="${project.sourceCodeUrl}" target="_blank">Open link</a>
+                                <span th:if="${#strings.isEmpty(project.sourceCodeUrl)}">Not available</span>
+                                <span> | </span>
+                                Documents:
+                                <a th:if="${!#strings.isEmpty(project.documentUrl)}" th:href="${project.documentUrl}" target="_blank">Open link</a>
+                                <span th:if="${#strings.isEmpty(project.documentUrl)}">Not available</span>
                             </div>
                             <div class="alert alert-error" style="margin-top:10px;"
                                 th:if="${project.approvalStatus == 3 and !#strings.isEmpty(project.rejectReason)}"
-                                th:text="${'Lý do giảng viên từ chối: ' + project.rejectReason}">
+                                th:text="${'Lecturer rejection reason: ' + project.rejectReason}">
                             </div>
                         </div>
 
                         <div class="summary-card">
                             <div class="section-head" style="margin-bottom:12px;">
                                 <div>
-                                    <h3 class="section-heading">Tóm tắt nhanh</h3>
+                                    <h3 class="section-heading">Quick summary</h3>
                                 </div>
                             </div>
                             <div class="summary-stats">
                                 <div class="stat-card">
-                                    <div class="stat-label">Tổng đợt làm việc</div>
+                                    <div class="stat-label">Total sprints</div>
                                     <div class="stat-value" th:text="${#lists.size(sprints)}">0</div>
                                 </div>
                                 <div class="stat-card">
-                                    <div class="stat-label">Tổng công việc</div>
+                                    <div class="stat-label">Total tasks</div>
                                     <div class="stat-value" th:text="${#lists.size(tasks)}">0</div>
                                 </div>
                                 <div class="stat-card">
-                                    <div class="stat-label">Công việc thất bại</div>
+                                    <div class="stat-label">Failed tasks</div>
                                     <div class="stat-value" th:text="${#lists.size(failedTasks)}">0</div>
                                 </div>
                                 <div class="stat-card">
-                                    <div class="stat-label">Thành viên nhóm</div>
+                                    <div class="stat-label">Group members</div>
                                     <div class="stat-value" th:text="${members.size()}">0</div>
                                 </div>
                             </div>
@@ -594,119 +594,119 @@
                     </div>
 
                     <div class="section-nav">
-                        <a class="nav-pill" href="#tong-quan">Tổng quan</a>
-                        <a class="nav-pill" href="#trang-thai">Trạng thái</a>
-                        <a class="nav-pill" href="#trung-tam-thao-tac">Thao tác</a>
-                        <a class="nav-pill" href="#yeu-cau">Yêu cầu gần nhất</a>
-                        <a class="nav-pill" href="#nhan-xet">Nhận xét giảng viên</a>
-                        <a class="nav-pill" href="/student/project/tasks">Đợt &amp; công việc</a>
+                        <a class="nav-pill" href="#overview">Overview</a>
+                        <a class="nav-pill" href="#status">Status</a>
+                        <a class="nav-pill" href="#actions">Actions</a>
+                        <a class="nav-pill" href="#requests">Latest requests</a>
+                        <a class="nav-pill" href="#feedback">Lecturer feedback</a>
+                        <a class="nav-pill" href="/student/project/tasks">Sprints &amp; tasks</a>
                     </div>
 
-                    <div class="section-anchor" id="trang-thai">
+                    <div class="section-anchor" id="status">
                         <div class="status-stack">
                             <div class="alert alert-info" th:if="${projectNotStarted}">
-                                Project chưa đến thời gian bắt đầu xây dựng, bạn chỉ có thể theo dõi thông tin và chuẩn bị kế hoạch.
+                                The project has not started yet. You can only review information and prepare the plan.
                             </div>
                             <div class="alert alert-error" th:if="${projectLockedForWork}">
-                                Project đã hết thời gian xây dựng. Các thao tác công việc và đợt làm việc đã bị khóa.
+                                The project work period has ended. Task and sprint actions are locked.
                             </div>
                             <div class="alert alert-info" th:if="${projectChangeOpen}">
-                                Project đang có yêu cầu đổi đề tài chờ xử lý. Các thao tác kế hoạch và công việc tạm thời bị khóa.
+                                There is an open project change request. Planning and task actions are temporarily locked.
                             </div>
                         </div>
                     </div>
 
-                    <div class="section-card section-anchor" id="trung-tam-thao-tac">
+                    <div class="section-card section-anchor" id="actions">
                         <div class="section-head">
                             <div>
-                                <h3 class="section-heading">Trung tâm thao tác</h3>
+                                <h3 class="section-heading">Action hub</h3>
                             </div>
                         </div>
                         <div class="action-hub">
                             <div class="action-tile">
-                                <div class="section-heading" style="font-size:16px;">Đợt làm việc &amp; công việc</div>
-                                <span class="muted">Chuyển sang trang riêng để tạo đợt, tạo công việc và lọc theo trạng thái/người làm.</span>
+                                <div class="section-heading" style="font-size:16px;">Sprints &amp; tasks</div>
+                                <span class="muted">Go to the dedicated page to create sprints, create tasks, and filter by status/assignee.</span>
                                 <div class="row-actions">
-                                    <a class="btn btn-primary" href="/student/project/tasks">Mở trang công việc</a>
+                                    <a class="btn btn-primary" href="/student/project/tasks">Open task page</a>
                                 </div>
                             </div>
                             <details class="action-tile" th:if="${canRequestEdit}">
-                                <summary>Xin cấp quyền cập nhật nội dung</summary>
-                                <span class="muted">Dùng cho project nguồn học viên khi chưa được phép sửa nội dung.</span>
+                                <summary>Request edit access</summary>
+                                <span class="muted">For student-sourced projects when edits are not allowed yet.</span>
                                 <form method="post" action="/student/project/request-edit">
-                                    <label for="requestNote">Ghi chú (tùy chọn)</label>
+                                    <label for="requestNote">Note (optional)</label>
                                     <textarea id="requestNote" name="requestNote"
-                                        placeholder="Ví dụ: Nhóm đã chuẩn bị nội dung và cần cập nhật đề tài chi tiết"></textarea>
+                                        placeholder="Example: The group has prepared content and needs to update the detailed topic."></textarea>
                                     <div class="row-actions">
-                                        <button type="submit" class="btn btn-primary">Gửi yêu cầu</button>
+                                        <button type="submit" class="btn btn-primary">Send request</button>
                                     </div>
                                 </form>
                             </details>
 
                             <details class="action-tile" th:if="${canEditContent}">
-                                <summary>Cập nhật nội dung project</summary>
-                                <span class="muted">Cập nhật tên, mô tả, link mã nguồn và tài liệu trước khi gửi giảng viên duyệt.</span>
+                                <summary>Update project content</summary>
+                                <span class="muted">Update name, description, source code link, and documents before submitting for lecturer approval.</span>
                                 <form method="post" action="/student/project/update-content">
                                     <div class="form-grid">
                                         <div class="full">
-                                            <label for="projectName">Tên project</label>
+                                            <label for="projectName">Project name</label>
                                             <input id="projectName" name="projectName" type="text"
                                                 th:value="${project.projectName}" required />
                                         </div>
                                         <div class="full">
-                                            <label for="description">Mô tả project</label>
+                                            <label for="description">Project description</label>
                                             <textarea id="description" name="description" th:text="${project.description}"></textarea>
                                         </div>
                                         <div>
-                                            <label for="sourceCodeUrl">Link mã nguồn</label>
+                                            <label for="sourceCodeUrl">Source code link</label>
                                             <input id="sourceCodeUrl" name="sourceCodeUrl" type="text" th:value="${project.sourceCodeUrl}" />
                                         </div>
                                         <div>
-                                            <label for="documentUrl">Link tài liệu</label>
+                                            <label for="documentUrl">Document link</label>
                                             <input id="documentUrl" name="documentUrl" type="text" th:value="${project.documentUrl}" />
                                         </div>
                                     </div>
                                     <div class="row-actions">
-                                        <button type="submit" class="btn">Lưu nội dung</button>
+                                        <button type="submit" class="btn">Save content</button>
                                         <button type="submit" formaction="/student/project/submit-review" class="btn btn-primary"
                                             th:disabled="${!canSubmitReview}">
-                                            Gửi giảng viên xét duyệt
+                                            Submit to lecturer for review
                                         </button>
                                     </div>
                                     <p class="muted" th:if="${!canSubmitReview}">
-                                        Cần có tên project trước khi gửi duyệt.
+                                        Project name is required before submitting.
                                     </p>
                                 </form>
                             </details>
 
                             <details class="action-tile" th:if="${canRequestProjectChange}">
-                                <summary>Gửi yêu cầu đổi project</summary>
-                                <span class="muted">Chỉ trưởng nhóm được gửi. Project đã có công việc hoàn thành sẽ không được đổi.</span>
+                                <summary>Send project change request</summary>
+                                <span class="muted">Only the leader can submit. Projects with completed tasks cannot be changed.</span>
                                 <form method="post" action="/student/project/change-requests/create">
                                     <div class="form-grid">
                                         <div class="full">
-                                            <label for="proposedProjectName">Tên project mới</label>
+                                            <label for="proposedProjectName">New project name</label>
                                             <input id="proposedProjectName" name="proposedProjectName" type="text" required />
                                         </div>
                                         <div class="full">
-                                            <label for="proposedDescription">Mô tả project mới</label>
+                                            <label for="proposedDescription">New project description</label>
                                             <textarea id="proposedDescription" name="proposedDescription"></textarea>
                                         </div>
                                         <div class="full">
-                                            <label for="changeReason">Lý do đổi project</label>
+                                            <label for="changeReason">Change reason</label>
                                             <textarea id="changeReason" name="changeReason" required
-                                                placeholder="Nêu rõ vì sao nhóm muốn đổi đề tài và phạm vi thay đổi"></textarea>
+                                                placeholder="Explain why the group wants to change the topic and the scope of changes."></textarea>
                                         </div>
                                     </div>
                                     <div class="row-actions">
-                                        <button type="submit" class="btn btn-primary">Gửi yêu cầu đổi project</button>
+                                        <button type="submit" class="btn btn-primary">Send project change request</button>
                                     </div>
                                 </form>
                             </details>
 
                             <details class="action-tile" th:if="${canUpdateFinalLinks}">
-                                <summary>Nộp link bàn giao cuối project</summary>
-                                <span class="muted">Trưởng nhóm có 1 ngày sau khi project kết thúc để cập nhật link source code và tài liệu.</span>
+                                <summary>Submit final delivery links</summary>
+                                <span class="muted">The leader has 1 day after project end to update source and document links.</span>
                                 <form method="post" action="/student/project/finalize-links">
                                     <div class="form-grid">
                                         <div>
@@ -714,110 +714,110 @@
                                             <input id="finalSource" name="sourceCodeUrl" type="text" th:value="${project.sourceCodeUrl}" required />
                                         </div>
                                         <div>
-                                            <label for="finalDoc">Link tài liệu</label>
+                                            <label for="finalDoc">Document link</label>
                                             <input id="finalDoc" name="documentUrl" type="text" th:value="${project.documentUrl}" required />
                                         </div>
                                     </div>
                                     <div class="row-actions">
-                                        <button class="btn btn-primary" type="submit">Cập nhật link bàn giao</button>
+                                        <button class="btn btn-primary" type="submit">Update delivery links</button>
                                     </div>
                                 </form>
                             </details>
 
                             <div class="action-tile" th:if="${withinFinalLinkGrace and !canUpdateFinalLinks}">
-                                <div class="section-heading" style="font-size:16px;">Bàn giao cuối project</div>
-                                <span class="muted">Chỉ trưởng nhóm mới được cập nhật link bàn giao trong giai đoạn này.</span>
+                                <div class="section-heading" style="font-size:16px;">Final delivery</div>
+                                <span class="muted">Only the leader can update delivery links during this period.</span>
                             </div>
 
                             <div class="action-tile" th:if="${project.topicSource == 'STUDENT' and !canEditContent and !canRequestEdit}">
-                                <div class="section-heading" style="font-size:16px;">Trạng thái nội dung</div>
-                                <span class="muted">Project đang chờ xử lý cấp quyền, chờ giảng viên duyệt hoặc đang có yêu cầu đổi đề tài.</span>
+                                <div class="section-heading" style="font-size:16px;">Content status</div>
+                                <span class="muted">Project is awaiting edit access, lecturer approval, or has a change request.</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="section-card section-anchor" id="yeu-cau">
+                    <div class="section-card section-anchor" id="requests">
                         <div class="section-head">
                             <div>
-                                <h3 class="section-heading">Yêu cầu và phản hồi gần nhất</h3>
-                                <div class="section-description">Theo dõi nhanh trạng thái cấp quyền cập nhật và đổi đề tài.</div>
+                                <h3 class="section-heading">Latest requests & responses</h3>
+                                <div class="section-description">Quickly track edit access and change request status.</div>
                             </div>
                         </div>
                         <div class="action-hub">
                             <div class="action-tile" th:if="${latestEditRequest != null}">
-                                <div class="section-heading" style="font-size:16px;">Yêu cầu cấp quyền gần nhất</div>
+                                <div class="section-heading" style="font-size:16px;">Latest edit access request</div>
                                 <span class="muted">
-                                    Trạng thái:
+                                    Status:
                                     <strong th:text="${latestEditRequest.status}">PENDING</strong>
                                     <span th:if="${latestEditRequest.requestedDate != null}"
-                                        th:text="${' • Gửi lúc: ' + #temporals.format(latestEditRequest.requestedDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                        th:text="${' | Sent at: ' + #temporals.format(latestEditRequest.requestedDate, 'dd/MM/yyyy HH:mm')}"></span>
                                 </span>
                                 <p class="muted" th:if="${!#strings.isEmpty(latestEditRequest.requestNote)}"
-                                    th:text="${'Ghi chú: ' + latestEditRequest.requestNote}">
+                                    th:text="${'Note: ' + latestEditRequest.requestNote}">
                                 </p>
                                 <div class="alert alert-error"
                                     th:if="${'REJECTED'.equalsIgnoreCase(latestEditRequest.status) and !#strings.isEmpty(latestEditRequest.responseReason)}"
-                                    th:text="${'Lý do nhân viên từ chối: ' + latestEditRequest.responseReason}">
+                                    th:text="${'Staff rejection reason: ' + latestEditRequest.responseReason}">
                                 </div>
                             </div>
 
                             <div class="action-tile" th:if="${latestChangeRequest != null}">
-                                <div class="section-heading" style="font-size:16px;">Yêu cầu đổi project gần nhất</div>
+                                <div class="section-heading" style="font-size:16px;">Latest project change request</div>
                                 <div class="row-actions" style="margin-top:8px;">
                                     <span th:if="${'PENDING_STAFF'.equalsIgnoreCase(latestChangeRequest.status)}"
-                                        class="badge status-pending">Chờ nhân viên duyệt</span>
+                                        class="badge status-pending">Pending staff approval</span>
                                     <span th:if="${'PENDING_LECTURER'.equalsIgnoreCase(latestChangeRequest.status)}"
-                                        class="badge status-waiting">Chờ giảng viên duyệt</span>
+                                        class="badge status-waiting">Pending lecturer approval</span>
                                     <span th:if="${'REJECTED_BY_STAFF'.equalsIgnoreCase(latestChangeRequest.status)}"
-                                        class="badge status-rejected">Nhân viên từ chối</span>
+                                        class="badge status-rejected">Rejected by staff</span>
                                     <span th:if="${'REJECTED_BY_LECTURER'.equalsIgnoreCase(latestChangeRequest.status)}"
-                                        class="badge status-rejected">Giảng viên từ chối</span>
+                                        class="badge status-rejected">Rejected by lecturer</span>
                                     <span th:if="${'APPROVED'.equalsIgnoreCase(latestChangeRequest.status)}"
-                                        class="badge status-approved">Đã duyệt đổi đề tài</span>
+                                        class="badge status-approved">Change approved</span>
                                 </div>
                                 <p class="muted" th:if="${latestChangeRequest.requestedDate != null}"
-                                    th:text="${'Gửi lúc: ' + #temporals.format(latestChangeRequest.requestedDate, 'dd/MM/yyyy HH:mm')}"></p>
-                                <p class="muted" th:text="${'Đề tài hiện tại: ' + (latestChangeRequest.currentProjectName ?: 'Chưa có tên')}"></p>
-                                <p class="muted" th:text="${'Đề tài đề xuất: ' + latestChangeRequest.proposedProjectName}"></p>
+                                    th:text="${'Sent at: ' + #temporals.format(latestChangeRequest.requestedDate, 'dd/MM/yyyy HH:mm')}"></p>
+                                <p class="muted" th:text="${'Current topic: ' + (latestChangeRequest.currentProjectName ?: 'Untitled')}"></p>
+                                <p class="muted" th:text="${'Proposed topic: ' + latestChangeRequest.proposedProjectName}"></p>
                                 <p class="muted" th:if="${!#strings.isEmpty(latestChangeRequest.proposedDescription)}"
-                                    th:text="${'Mô tả đề xuất: ' + latestChangeRequest.proposedDescription}"></p>
+                                    th:text="${'Proposed description: ' + latestChangeRequest.proposedDescription}"></p>
                                 <p class="muted" th:if="${!#strings.isEmpty(latestChangeRequest.changeReason)}"
-                                    th:text="${'Lý do đổi: ' + latestChangeRequest.changeReason}"></p>
+                                    th:text="${'Change reason: ' + latestChangeRequest.changeReason}"></p>
                                 <div class="alert alert-error"
                                     th:if="${'REJECTED_BY_STAFF'.equalsIgnoreCase(latestChangeRequest.status) and !#strings.isEmpty(latestChangeRequest.staffRejectReason)}"
-                                    th:text="${'Lý do nhân viên từ chối: ' + latestChangeRequest.staffRejectReason}">
+                                    th:text="${'Staff rejection reason: ' + latestChangeRequest.staffRejectReason}">
                                 </div>
                                 <div class="alert alert-error"
                                     th:if="${'REJECTED_BY_LECTURER'.equalsIgnoreCase(latestChangeRequest.status) and !#strings.isEmpty(latestChangeRequest.lecturerRejectReason)}"
-                                    th:text="${'Lý do giảng viên từ chối: ' + latestChangeRequest.lecturerRejectReason}">
+                                    th:text="${'Lecturer rejection reason: ' + latestChangeRequest.lecturerRejectReason}">
                                 </div>
                             </div>
 
                             <div class="action-tile" th:if="${latestEditRequest == null and latestChangeRequest == null}">
-                                <div class="section-heading" style="font-size:16px;">Chưa có yêu cầu gần đây</div>
-                                <span class="muted">Khi có yêu cầu cấp quyền hoặc đổi project, trạng thái gần nhất sẽ xuất hiện tại đây.</span>
+                                <div class="section-heading" style="font-size:16px;">No recent requests</div>
+                                <span class="muted">When there is an edit or change request, the latest status will appear here.</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="section-card section-anchor" id="nhan-xet">
+                    <div class="section-card section-anchor" id="feedback">
                         <div class="section-head">
                             <div>
-                                <h3 class="section-heading">Nhận xét từ giảng viên</h3>
-                                <div class="section-description">Các bình luận về tiến độ, chất lượng thực hiện và yêu cầu nhóm bổ sung minh chứng.</div>
+                                <h3 class="section-heading">Lecturer feedback</h3>
+                                <div class="section-description">Comments on progress, quality, and requests for additional evidence.</div>
                             </div>
                         </div>
                         <div class="action-hub" th:if="${lecturerComments != null and !#lists.isEmpty(lecturerComments)}">
                             <div class="action-tile" th:each="comment : ${lecturerComments}">
                                 <div class="section-heading" style="font-size:16px;"
-                                    th:text="${comment.lecturerName + ' (' + comment.lecturerCode + ')'}">Giảng viên</div>
+                                    th:text="${comment.lecturerName + ' (' + comment.lecturerCode + ')'}">Lecturer</div>
                                 <span class="muted"
-                                    th:text="${comment.createdAt != null ? #temporals.format(comment.createdAt, 'dd/MM/yyyy HH:mm') : '-'}">Thời gian</span>
-                                <div class="task-body" th:text="${comment.commentContent}">Nội dung bình luận</div>
+                                    th:text="${comment.createdAt != null ? #temporals.format(comment.createdAt, 'dd/MM/yyyy HH:mm') : '-'}">Time</span>
+                                <div class="task-body" th:text="${comment.commentContent}">Comment content</div>
                             </div>
                         </div>
                         <div class="muted" th:if="${lecturerComments == null or #lists.isEmpty(lecturerComments)}">
-                            Chưa có bình luận nào từ giảng viên cho project này.
+                            No lecturer comments for this project yet.
                         </div>
                     </div>
 

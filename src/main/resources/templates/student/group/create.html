@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Học viên • Tạo nhóm mới</title>
+    <title>Student - Create group</title>
     <link rel="stylesheet" href="/backoffice.css" />
     <link rel="stylesheet" href="/student-backoffice.css" />
     <script src="/js/backoffice-layout.js" defer></script>
@@ -12,24 +12,24 @@
     <div class="backoffice-shell">
         <div th:replace="~{student/layout/header :: sidebar('group')}"></div>
         <div class="backoffice-main">
-            <div th:replace="~{student/layout/header :: topbar('Tạo nhóm mới')}"></div>
+            <div th:replace="~{student/layout/header :: topbar('Create a new group')}"></div>
             <main class="backoffice-content">
                 <section class="page-section panel">
-                    <h2 class="panel-title">Tạo nhóm mới</h2>
-                    <div th:if="${error}" class="alert alert-error" th:text="${error}">Lỗi</div>
+                    <h2 class="panel-title">Create a new group</h2>
+                    <div th:if="${error}" class="alert alert-error" th:text="${error}">Error</div>
 
                     <form method="post" th:action="@{/student/group/create}">
                         <div class="form-grid">
                             <div class="full">
-                                <label for="groupName">Tên nhóm <span style="color:#dc2626;">*</span></label>
+                                <label for="groupName">Group name <span style="color:#dc2626;">*</span></label>
                                 <input type="text" id="groupName" name="groupName"
-                                    placeholder="Nhập tên nhóm (VD: DX-TD-HH)" required />
-                                <div class="hint">Mỗi học kỳ, mỗi sinh viên chỉ được tạo/tham gia tối đa 1 nhóm.</div>
+                                    placeholder="Enter group name (e.g., DX-TD-HH)" required />
+                                <div class="hint">Each semester, each student can create/join at most one group.</div>
                             </div>
                         </div>
                         <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Tạo nhóm</button>
-                            <a href="/student/group/list" class="btn btn-secondary">Hủy</a>
+                            <button type="submit" class="btn btn-primary">Create group</button>
+                            <a href="/student/group/list" class="btn btn-secondary">Cancel</a>
                         </div>
                     </form>
                 </section>

@@ -17,7 +17,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public String handleMethodNotSupported(HttpServletRequest req, HttpRequestMethodNotSupportedException ex, Model model) {
         log.info("Method not allowed: {} {} -> {}", req.getMethod(), req.getRequestURI(), ex.getMessage());
-        model.addAttribute("error", "Yêu cầu không hợp lệ (phương thức không được hỗ trợ). Vui lòng thử lại.");
+        model.addAttribute("error", "Invalid request (method not supported). Please try again.");
         return "error";
     }
 }

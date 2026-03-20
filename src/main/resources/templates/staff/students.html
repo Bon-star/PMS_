@@ -3,103 +3,125 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Nhan vien • Quan ly hoc vien</title>
+    <title>Staff • Student Management</title>
     <link rel="stylesheet" href="/backoffice.css" />
     <script src="/js/backoffice-layout.js" defer></script>
+    <style>
+        .add-options {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            align-items: center;
+        }
+        .choice-menu {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .is-hidden {
+            display: none;
+        }
+        .error-list {
+            padding-left: 18px;
+            margin: 6px 0 0;
+        }
+    </style>
 </head>
-<body class="backoffice-body staff-students-page">
+<body class="backoffice-body staff-students-page" th:attr="data-add-mode=${addMode}">
     <div class="backoffice-shell">
         <div th:replace="~{staff/layout/header :: sidebar('students')}"></div>
         <div class="backoffice-main">
-            <div th:replace="~{staff/layout/header :: topbar('Quan ly hoc vien')}"></div>
+            <div th:replace="~{staff/layout/header :: topbar('Student Management')}"></div>
             <main class="backoffice-content">
                 <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
                 <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
 
                 <section class="page-section summary-grid">
                     <div class="summary-card accent-card accent-blue">
-                        <div class="summary-label">Tra cuu ho so</div>
-                        <div class="summary-value">Nhanh</div>
-                        <div class="summary-note">Tim theo ma hoc vien hoac email.</div>
+                        <div class="summary-label">Profile lookup</div>
+                        <div class="summary-value">Quick</div>
+                        <div class="summary-note">Search by student code or email.</div>
                     </div>
                     <div class="summary-card accent-card accent-emerald">
-                        <div class="summary-label">Cap nhat thong tin</div>
-                        <div class="summary-value">Chu dong</div>
-                        <div class="summary-note">Doi email, so dien thoai, lop khi can.</div>
+                        <div class="summary-label">Update details</div>
+                        <div class="summary-value">Flexible</div>
+                        <div class="summary-note">Change email, phone, or class as needed.</div>
                     </div>
                     <div class="summary-card accent-card accent-amber">
-                        <div class="summary-label">Tao tai khoan</div>
-                        <div class="summary-value">Mot lan</div>
-                        <div class="summary-note">Tao moi va kich hoat theo email truong.</div>
+                        <div class="summary-label">Create accounts</div>
+                        <div class="summary-value">One-time</div>
+                        <div class="summary-note">Create and activate using school email.</div>
                     </div>
                     <div class="summary-card accent-card accent-rose">
-                        <div class="summary-label">Dieu huong nhanh</div>
+                        <div class="summary-label">Quick links</div>
                         <div class="button-row" style="margin-top:10px;">
-                            <a class="btn btn-primary btn-small" href="/staff/projects">Quan ly project</a>
+                            <a class="btn btn-primary btn-small" href="/staff/projects">Manage projects</a>
                         </div>
                     </div>
                 </section>
 
                 <section class="page-section metrics-grid">
                     <div class="card">
-                        <h2 class="card-title">Tra cuu nhanh</h2>
-                        <p class="meta">Nhap ma hoc vien hoac email truong de mo ho so cap nhat.</p>
+                        <h2 class="card-title">Quick lookup</h2>
+                        <p class="meta">Enter student code or school email to open their profile.</p>
                         <form method="get" action="/staff/students/lookup">
                             <div class="form-grid">
                                 <div class="full">
-                                    <label for="studentRef">Ma hoc vien hoac email</label>
+                                    <label for="studentRef">Student code or email</label>
                                     <input id="studentRef" name="studentRef" type="text" maxlength="100"
-                                        th:value="${studentRef}" placeholder="Vi du: HE123456 hoac he123456@fpt.edu.vn" required />
+                                        th:value="${studentRef}" placeholder="e.g., HE123456 or he123456@fpt.edu.vn" required />
                                 </div>
                             </div>
                             <div class="form-actions">
-                                <button type="submit" class="btn btn-secondary">Tra cuu</button>
+                                <button type="submit" class="btn btn-secondary">Lookup</button>
                             </div>
                         </form>
                     </div>
                     <div class="card">
-                        <h2 class="card-title">Huong dan xu ly</h2>
+                        <h2 class="card-title">Handling notes</h2>
                         <ul class="meta" style="padding-left:18px;">
-                            <li>Khi doi email, he thong se cap nhat luon email dang nhap.</li>
-                            <li>Khi doi so dien thoai, dam bao khong trung voi hoc vien khac.</li>
-                            <li>Khi doi lop, chon dung lop trong danh sach hien co.</li>
+                            <li>When changing email, the login email is updated as well.</li>
+                            <li>When changing phone number, ensure it is not used by another student.</li>
+                            <li>When changing class, pick a valid class from the list.</li>
                         </ul>
                     </div>
                 </section>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Cap nhat thong tin</h2>
+                    <h2 class="panel-title">Update student info</h2>
                     <div th:if="${editStudentId == null}" class="empty-state">
-                        Chua chon hoc vien. Vui long tra cuu truoc khi cap nhat.
+                        No student selected. Please lookup before updating.
                     </div>
                     <div th:if="${editStudentId != null}">
                         <form method="post" action="/staff/students/update">
                             <input type="hidden" name="studentId" th:value="${editStudentId}" />
                             <div class="form-grid">
                                 <div>
-                                    <label for="editStudentCode">Ma hoc vien</label>
+                                    <label for="editStudentCode">Student code</label>
                                     <input id="editStudentCode" name="studentCode" type="text"
                                         th:value="${editStudentCode}" readonly />
                                 </div>
                                 <div>
-                                    <label for="editFullName">Ho va ten</label>
+                                    <label for="editFullName">Full name</label>
                                     <input id="editFullName" name="fullName" type="text" maxlength="100"
-                                        th:value="${editFullName}" placeholder="Vi du: Nguyen Van A" required />
+                                        th:value="${editFullName}" placeholder="e.g., Nguyen Van A" required />
                                 </div>
                                 <div>
-                                    <label for="editSchoolEmail">Email hoc vien</label>
+                                    <label for="editSchoolEmail">Student email</label>
                                     <input id="editSchoolEmail" name="schoolEmail" type="email" maxlength="100"
-                                        th:value="${editSchoolEmail}" placeholder="Vi du: he123456@fpt.edu.vn" required />
+                                        th:value="${editSchoolEmail}" placeholder="e.g., he123456@fpt.edu.vn" required />
                                 </div>
                                 <div>
-                                    <label for="editPhoneNumber">So dien thoai</label>
+                                    <label for="editPhoneNumber">Phone number</label>
                                     <input id="editPhoneNumber" name="phoneNumber" type="text" maxlength="15"
-                                        th:value="${editPhoneNumber}" placeholder="Vi du: 0912345678" required />
+                                        th:value="${editPhoneNumber}" placeholder="e.g., 0912345678" required />
                                 </div>
                                 <div class="full">
-                                    <label for="editClassId">Lop</label>
+                                    <label for="editClassId">Class</label>
                                     <select id="editClassId" name="classId" required>
-                                        <option value="" disabled th:selected="${editSelectedClassId == null}">-- Chon lop --</option>
+                                        <option value="" disabled th:selected="${editSelectedClassId == null}">-- Select class --</option>
                                         <option th:each="c : ${classes}"
                                             th:value="${c.classId}"
                                             th:text="${(c.courseYear != null and !#strings.isEmpty(c.courseYear)) ? c.className + ' - ' + c.courseYear : c.className}"
@@ -109,57 +131,148 @@
                                 </div>
                             </div>
                             <div class="form-actions">
-                                <button type="submit" class="btn btn-primary">Cap nhat thong tin</button>
+                                <button type="submit" class="btn btn-primary">Update student</button>
                             </div>
                         </form>
                     </div>
                 </section>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Tao hoc vien moi</h2>
-                    <p class="meta">Nhap thong tin day du de tao ho so va tai khoan khoi tao.</p>
-                    <form method="post" action="/staff/students/create">
-                        <div class="form-grid">
-                            <div>
-                                <label for="studentCode">Ma hoc vien</label>
-                                <input id="studentCode" name="studentCode" type="text" maxlength="20"
-                                    th:value="${studentCode}" placeholder="Vi du: HE123456" required />
+                    <h2 class="panel-title">Add student</h2>
+                    <p class="meta">Choose how you want to add students.</p>
+                    <div class="add-options">
+                        <button type="button" class="btn btn-primary" id="addStudentToggle" aria-expanded="false">
+                            Add student
+                        </button>
+                    </div>
+                    <div id="addChoiceMenu" class="choice-menu is-hidden" role="menu">
+                        <button type="button" class="btn btn-secondary" data-add-mode="single">Add single student</button>
+                        <button type="button" class="btn btn-secondary" data-add-mode="bulk">Bulk import</button>
+                    </div>
+
+                    <div id="addSingle" th:classappend="${addMode} == 'single' ? '' : ' is-hidden'">
+                        <h3 class="card-title" style="margin-top:16px;">Add a single student</h3>
+                        <p class="meta">Enter full info to create the profile and initial account.</p>
+                        <form method="post" action="/staff/students/create">
+                            <div class="form-grid">
+                                <div>
+                                    <label for="studentCode">Student code</label>
+                                    <input id="studentCode" name="studentCode" type="text" maxlength="20"
+                                        th:value="${studentCode}" placeholder="e.g., HE123456" required />
+                                </div>
+                                <div>
+                                    <label for="fullName">Full name</label>
+                                    <input id="fullName" name="fullName" type="text" maxlength="100"
+                                        th:value="${fullNameInput}" placeholder="e.g., Nguyen Van A" required />
+                                </div>
+                                <div>
+                                    <label for="schoolEmail">Student email</label>
+                                    <input id="schoolEmail" name="schoolEmail" type="email" maxlength="100"
+                                        th:value="${schoolEmail}" placeholder="e.g., he123456@fpt.edu.vn" required />
+                                </div>
+                                <div>
+                                    <label for="phoneNumber">Phone number</label>
+                                    <input id="phoneNumber" name="phoneNumber" type="text" maxlength="15"
+                                        th:value="${phoneNumber}" placeholder="e.g., 0912345678" required />
+                                </div>
+                                <div class="full">
+                                    <label for="classId">Class</label>
+                                    <select id="classId" name="classId" required>
+                                        <option value="" disabled th:selected="${selectedClassId == null}">-- Select class --</option>
+                                        <option th:each="c : ${classes}"
+                                            th:value="${c.classId}"
+                                            th:text="${(c.courseYear != null and !#strings.isEmpty(c.courseYear)) ? c.className + ' - ' + c.courseYear : c.className}"
+                                            th:selected="${selectedClassId != null and selectedClassId == c.classId}">
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label for="fullName">Ho va ten</label>
-                                <input id="fullName" name="fullName" type="text" maxlength="100"
-                                    th:value="${fullNameInput}" placeholder="Vi du: Nguyen Van A" required />
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Create student and account</button>
                             </div>
-                            <div>
-                                <label for="schoolEmail">Email hoc vien</label>
-                                <input id="schoolEmail" name="schoolEmail" type="email" maxlength="100"
-                                    th:value="${schoolEmail}" placeholder="Vi du: he123456@fpt.edu.vn" required />
+                        </form>
+                    </div>
+
+                    <div id="addBulk" th:classappend="${addMode} == 'bulk' ? '' : ' is-hidden'">
+                        <h3 class="card-title" style="margin-top:16px;">Bulk import from Excel</h3>
+                        <p class="meta">File must include headers: StudentCode, FullName, SchoolEmail, PhoneNumber.</p>
+                        <form method="post" action="/staff/students/import" enctype="multipart/form-data">
+                            <div class="form-grid">
+                                <div>
+                                    <label for="excelFile">Excel file (.xlsx)</label>
+                                    <input id="excelFile" name="excelFile" type="file" accept=".xlsx" required />
+                                </div>
+                                  <div>
+                                    <label for="bulkClassId">Class</label>
+                                    <select id="bulkClassId" name="classId" required>
+                                        <option value="" disabled th:selected="${bulkSelectedClassId == null}">-- Select class --</option>
+                                        <option th:each="c : ${classes}"
+                                            th:value="${c.classId}"
+                                            th:text="${(c.courseYear != null and !#strings.isEmpty(c.courseYear)) ? c.className + ' - ' + c.courseYear : c.className}"
+                                            th:selected="${bulkSelectedClassId != null and bulkSelectedClassId == c.classId}">
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label for="phoneNumber">So dien thoai</label>
-                                <input id="phoneNumber" name="phoneNumber" type="text" maxlength="15"
-                                    th:value="${phoneNumber}" placeholder="Vi du: 0912345678" required />
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Import students</button>
                             </div>
-                            <div class="full">
-                                <label for="classId">Lop</label>
-                                <select id="classId" name="classId" required>
-                                    <option value="" disabled th:selected="${selectedClassId == null}">-- Chon lop --</option>
-                                    <option th:each="c : ${classes}"
-                                        th:value="${c.classId}"
-                                        th:text="${(c.courseYear != null and !#strings.isEmpty(c.courseYear)) ? c.className + ' - ' + c.courseYear : c.className}"
-                                        th:selected="${selectedClassId != null and selectedClassId == c.classId}">
-                                    </option>
-                                </select>
-                            </div>
+                        </form>
+                        <div th:if="${importErrors != null}" class="alert alert-error" style="margin-top:10px;">
+                            <div>Import errors:</div>
+                            <ul class="error-list">
+                                <li th:each="err : ${importErrors}" th:text="${err}"></li>
+                            </ul>
                         </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Tao hoc vien va tai khoan</button>
+                        <div th:if="${importSuccessCount != null}" class="alert alert-success" style="margin-top:10px;"
+                            th:text="${'Successfully imported ' + importSuccessCount + ' students.'}">
                         </div>
-                    </form>
+                    </div>
                 </section>
             </main>
             <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const singlePanel = document.getElementById('addSingle');
+            const bulkPanel = document.getElementById('addBulk');
+            const buttons = document.querySelectorAll('[data-add-mode]');
+            const toggleButton = document.getElementById('addStudentToggle');
+            const choiceMenu = document.getElementById('addChoiceMenu');
+
+            const setMode = (mode) => {
+                if (singlePanel) {
+                    singlePanel.classList.toggle('is-hidden', mode !== 'single');
+                }
+                if (bulkPanel) {
+                    bulkPanel.classList.toggle('is-hidden', mode !== 'bulk');
+                }
+                if (choiceMenu) {
+                    choiceMenu.classList.add('is-hidden');
+                }
+                if (toggleButton) {
+                    toggleButton.setAttribute('aria-expanded', 'false');
+                }
+            };
+
+            buttons.forEach((button) => {
+                button.addEventListener('click', () => setMode(button.dataset.addMode));
+            });
+
+            if (toggleButton && choiceMenu) {
+                toggleButton.addEventListener('click', () => {
+                    const isHidden = choiceMenu.classList.contains('is-hidden');
+                    choiceMenu.classList.toggle('is-hidden', !isHidden);
+                    toggleButton.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+                });
+            }
+
+            const initialMode = document.body.getAttribute('data-add-mode');
+            if (initialMode === 'single' || initialMode === 'bulk') {
+                setMode(initialMode);
+            }
+        });
+    </script>
 </body>
 </html>

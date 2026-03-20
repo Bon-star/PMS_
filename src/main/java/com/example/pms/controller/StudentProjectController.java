@@ -22,6 +22,7 @@ import com.example.pms.repository.ProjectTaskRepository;
 import com.example.pms.repository.SemesterRepository;
 import com.example.pms.repository.SprintRepository;
 import com.example.pms.service.MailService;
+import com.example.pms.service.StudentNotificationService;
 import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
@@ -100,6 +101,9 @@ public class StudentProjectController {
 
     @Autowired
     private MailService mailService;
+
+    @Autowired
+    private StudentNotificationService studentNotificationService;
 
     private static final long MAX_UPLOAD_BYTES = 10L * 1024L * 1024L;
     private static final int MAX_UPLOAD_FILES = 50;
@@ -343,14 +347,14 @@ public class StudentProjectController {
             totalBytes += file.getSize();
             if (file.getSize() > MAX_UPLOAD_BYTES) {
                 String displayName = normalizeDisplayPath(file.getOriginalFilename());
-                redirectAttributes.addFlashAttribute("error", "Tep " + displayName + " qua lon.");
+                redirectAttributes.addFlashAttribute("error", "File " + displayName + " is too large.");
                 return null;
             }
             String originalName = file.getOriginalFilename();
             String displayName = normalizeDisplayPath(originalName);
             if (!isAllowedFile(originalName)) {
                 redirectAttributes.addFlashAttribute("error",
-                        "Tep " + displayName + " khong nam trong danh sach cho phep.");
+                        "File " + displayName + " is not in the allowed list.");
                 return null;
             }
         }
@@ -359,11 +363,11 @@ public class StudentProjectController {
         }
         if (fileCount > MAX_UPLOAD_FILES) {
             redirectAttributes.addFlashAttribute("error",
-                    "Chi duoc tai toi da " + MAX_UPLOAD_FILES + " tep cho moi lan nop.");
+                    "You can upload at most " + MAX_UPLOAD_FILES + " files per submission.");
             return null;
         }
         if (totalBytes > MAX_UPLOAD_BYTES * 2) {
-            redirectAttributes.addFlashAttribute("error", "Tong dung luong tep qua lon.");
+            redirectAttributes.addFlashAttribute("error", "Total file size is too large.");
             return null;
         }
 
@@ -381,7 +385,7 @@ public class StudentProjectController {
                 boolean viewable = isViewableCodeFile(originalName);
                 saved.add(new TaskAttachment(displayName, storedName, file.getContentType(), file.getSize(), viewable));
             } catch (IOException ex) {
-                redirectAttributes.addFlashAttribute("error", "Khong the luu tep " + displayName + ".");
+                redirectAttributes.addFlashAttribute("error", "Unable to save file " + displayName + ".");
                 return null;
             }
         }
@@ -425,19 +429,14 @@ public class StudentProjectController {
     private void bindLayout(Model model, HttpSession session, Student student) {
         Object fullName = session.getAttribute("fullName");
         Object role = session.getAttribute("role");
-        model.addAttribute("studentName", fullName != null ? fullName : (student != null ? student.getFullName() : "H\u1ecdc vi\u00ean"));
+        model.addAttribute("studentName", fullName != null ? fullName : (student != null ? student.getFullName() : "Student"));
         model.addAttribute("userRole", RoleDisplayUtil.toDisplayRole(role != null ? role : "Student"));
         model.addAttribute("className", resolveClassName(student));
 
         boolean invitationEnabled = groupInvitationRepository.isInvitationTableAvailable();
         model.addAttribute("invitationFeatureEnabled", invitationEnabled);
-        if (student != null && invitationEnabled) {
-            int incomingFromLeader = groupInvitationRepository.countPendingByStudentFromLeader(student.getStudentId());
-            int needLeaderApprove = groupInvitationRepository.countPendingForLeader(student.getStudentId());
-            model.addAttribute("notificationCount", incomingFromLeader + needLeaderApprove);
-        } else {
-            model.addAttribute("notificationCount", 0);
-        }
+        model.addAttribute("notificationCount",
+                studentNotificationService.countHeaderNotifications(student, invitationEnabled));
     }
 
     private boolean isStudentSourceProject(Project project) {
@@ -488,8 +487,26 @@ public class StudentProjectController {
     }
 
     private void refreshSprintState(Project project) {
-        if (project != null) {
-            sprintRepository.closeExpiredSprintsAndFailTasks(project.getProjectId());
+        if (project == null) {
+            return;
+        }
+        Map<Integer, Integer> previousStatuses = new HashMap<>();
+        for (ProjectTask task : projectTaskRepository.findByProject(project.getProjectId())) {
+            if (task != null) {
+                previousStatuses.put(task.getTaskId(), task.getStatus());
+            }
+        }
+        sprintRepository.closeExpiredSprintsAndFailTasks(project.getProjectId());
+        for (ProjectTask task : projectTaskRepository.findByProject(project.getProjectId())) {
+            if (task == null) {
+                continue;
+            }
+            Integer previousStatus = previousStatuses.get(task.getTaskId());
+            if (previousStatus != null
+                    && previousStatus != ProjectTask.STATUS_FAILED_SPRINT
+                    && task.getStatus() == ProjectTask.STATUS_FAILED_SPRINT) {
+                studentNotificationService.notifyTaskFailedSprint(project, task);
+            }
         }
     }
 
@@ -536,16 +553,51 @@ public class StudentProjectController {
         return time == null ? null : time.toLocalDate();
     }
 
+    private boolean isAscii(String value) {
+        if (value == null) {
+            return true;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            if (value.charAt(i) > 127) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String toSprintDisplayName(int sprintId, String sprintName) {
+        String normalized = normalize(sprintName);
+        if (normalized.isEmpty() || !isAscii(normalized)) {
+            return "Sprint #" + sprintId;
+        }
+        return normalized;
+    }
+
+    private Map<Integer, String> buildSprintDisplayNames(List<Sprint> sprints) {
+        Map<Integer, String> names = new HashMap<>();
+        if (sprints == null) {
+            return names;
+        }
+        for (Sprint sprint : sprints) {
+            if (sprint == null) {
+                continue;
+            }
+            int sprintId = sprint.getSprintId();
+            names.put(sprintId, toSprintDisplayName(sprintId, sprint.getSprintName()));
+        }
+        return names;
+    }
+
     private boolean validateLeaderProject(Group group,
             Student student,
             Project project,
             RedirectAttributes redirectAttributes) {
         if (!isLeader(group, student)) {
-            redirectAttributes.addFlashAttribute("error", "Chá»‰ trÆ°á»Ÿng nhÃ³m má»›i Ä‘Æ°á»£c thá»±c hiá»‡n thao tÃ¡c nÃ y.");
+            redirectAttributes.addFlashAttribute("error", "Only the group leader can perform this action.");
             return false;
         }
         if (project == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃ³m cá»§a báº¡n chÆ°a Ä‘Æ°á»£c táº¡o project.");
+            redirectAttributes.addFlashAttribute("error", "Your group does not have a project yet.");
             return false;
         }
         return true;
@@ -554,7 +606,7 @@ public class StudentProjectController {
     private boolean validateNoOpenChangeRequest(Project project, RedirectAttributes redirectAttributes) {
         if (hasOpenChangeRequest(project)) {
             redirectAttributes.addFlashAttribute("error",
-                    "Project Ä‘ang cÃ³ yÃªu cáº§u Ä‘á»•i Ä‘á» tÃ i chá» xá»­ lÃ½ nÃªn táº¡m khÃ³a thao tÃ¡c káº¿ hoáº¡ch vÃ  cÃ´ng viá»‡c.");
+                    "The project has a pending topic change request, so planning and task actions are temporarily locked.");
             return false;
         }
         return true;
@@ -564,16 +616,17 @@ public class StudentProjectController {
         try {
             double points = Double.parseDouble(normalize(estimatedPoints).replace(',', '.'));
             if (points <= 0) {
-                redirectAttributes.addFlashAttribute("error", "Point Æ°á»›c lÆ°á»£ng pháº£i lá»›n hÆ¡n 0.");
+                redirectAttributes.addFlashAttribute("error", "Estimated points must be greater than 0.");
                 return null;
             }
             return points;
         } catch (Exception ex) {
-            redirectAttributes.addFlashAttribute("error", "Point Æ°á»›c lÆ°á»£ng khÃ´ng há»£p lá»‡.");
+            redirectAttributes.addFlashAttribute("error", "Invalid estimated points.");
             return null;
         }
     }
-
+
+
     private Integer parseIntegerOrNull(String value) {
         String normalized = normalize(value);
         if (normalized.isEmpty()) {
@@ -632,6 +685,7 @@ public class StudentProjectController {
         Sprint openSprint = sprintRepository.findOpenByProject(project.getProjectId());
         List<ProjectTask> tasks = projectTaskRepository.findByProject(project.getProjectId());
         List<ProjectTask> failedTasks = projectTaskRepository.findFailedByProject(project.getProjectId());
+        Map<Integer, String> sprintDisplayNames = buildSprintDisplayNames(sprints);
         Map<Integer, List<TaskAttachment>> taskFiles = new HashMap<>();
         Map<Integer, Boolean> taskHasCode = new HashMap<>();
         for (ProjectTask task : tasks) {
@@ -683,6 +737,7 @@ public class StudentProjectController {
         model.addAttribute("canReplanFailed", leader && canTaskOps && openSprint != null && failedTasks != null && !failedTasks.isEmpty());
         model.addAttribute("sprints", sprints);
         model.addAttribute("openSprint", openSprint);
+        model.addAttribute("sprintDisplayNames", sprintDisplayNames);
         model.addAttribute("tasks", tasks);
         model.addAttribute("failedTasks", failedTasks);
         model.addAttribute("taskFiles", taskFiles);
@@ -718,13 +773,13 @@ public class StudentProjectController {
         Integer assigneeFilter = parseIntegerOrNull(assigneeId);
 
         Map<Integer, String> statusOptions = new LinkedHashMap<>();
-        statusOptions.put(ProjectTask.STATUS_TODO, "Chờ xử lý");
-        statusOptions.put(ProjectTask.STATUS_IN_PROGRESS, "Đang xây dựng");
-        statusOptions.put(ProjectTask.STATUS_SUBMITTED, "Chờ kiểm tra");
-        statusOptions.put(ProjectTask.STATUS_DONE, "Hoàn thành");
-        statusOptions.put(ProjectTask.STATUS_REJECTED, "Trả lại");
-        statusOptions.put(ProjectTask.STATUS_FAILED_SPRINT, "Thất bại đợt");
-        statusOptions.put(ProjectTask.STATUS_CANCELLED, "Đã hủy");
+        statusOptions.put(ProjectTask.STATUS_TODO, "Pending");
+        statusOptions.put(ProjectTask.STATUS_IN_PROGRESS, "In progress");
+        statusOptions.put(ProjectTask.STATUS_SUBMITTED, "Awaiting review");
+        statusOptions.put(ProjectTask.STATUS_DONE, "Done");
+        statusOptions.put(ProjectTask.STATUS_REJECTED, "Returned");
+        statusOptions.put(ProjectTask.STATUS_FAILED_SPRINT, "Failed (sprint)");
+        statusOptions.put(ProjectTask.STATUS_CANCELLED, "Cancelled");
         if (statusFilter != null && !statusOptions.containsKey(statusFilter)) {
             statusFilter = null;
         }
@@ -753,6 +808,7 @@ public class StudentProjectController {
         Sprint openSprint = sprintRepository.findOpenByProject(project.getProjectId());
         List<ProjectTask> tasks = projectTaskRepository.findByProject(project.getProjectId());
         List<ProjectTask> failedTasks = projectTaskRepository.findFailedByProject(project.getProjectId());
+        Map<Integer, String> sprintDisplayNames = buildSprintDisplayNames(sprints);
         Map<Integer, List<TaskAttachment>> taskFiles = new HashMap<>();
         Map<Integer, Boolean> taskHasCode = new HashMap<>();
         for (ProjectTask task : tasks) {
@@ -791,6 +847,7 @@ public class StudentProjectController {
         model.addAttribute("canReplanFailed", leader && canTaskOps && openSprint != null && failedTasks != null && !failedTasks.isEmpty());
         model.addAttribute("sprints", sprints);
         model.addAttribute("openSprint", openSprint);
+        model.addAttribute("sprintDisplayNames", sprintDisplayNames);
         model.addAttribute("tasks", filteredTasks);
         model.addAttribute("taskTotalCount", tasks.size());
         model.addAttribute("taskFilteredCount", filteredTasks.size());
@@ -810,40 +867,40 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n chÆ°a cÃ³ nhÃ³m trong há»c ká»³ hiá»‡n táº¡i.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
         if (project == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃ³m cá»§a báº¡n chÆ°a Ä‘Æ°á»£c táº¡o project.");
+            redirectAttributes.addFlashAttribute("error", "Your group does not have a project yet.");
             return "redirect:/student/project";
         }
         if (!validateNoOpenChangeRequest(project, redirectAttributes)) {
             return "redirect:/student/project";
         }
         if (!isStudentSourceProject(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project nÃ y khÃ´ng thuá»™c luá»“ng há»c viÃªn tá»± cáº­p nháº­t ná»™i dung.");
+            redirectAttributes.addFlashAttribute("error", "This project does not allow student self-updates.");
             return "redirect:/student/project";
         }
         if (project.isStudentCanEdit()) {
-            redirectAttributes.addFlashAttribute("success", "Báº¡n Ä‘Ã£ cÃ³ quyá»n cáº­p nháº­t ná»™i dung project.");
+            redirectAttributes.addFlashAttribute("success", "You already have permission to update the project content.");
             return "redirect:/student/project";
         }
         if (projectEditRequestRepository.existsPendingByProjectAndStudent(project.getProjectId(), student.getStudentId())) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n Ä‘Ã£ gá»­i yÃªu cáº§u cáº¥p quyá»n vÃ  Ä‘ang chá» nhÃ¢n viÃªn xá»­ lÃ½.");
+            redirectAttributes.addFlashAttribute("error", "You have already requested permission and are waiting for staff to review.");
             return "redirect:/student/project";
         }
         String note = normalize(requestNote);
         if (note.length() > 2000) {
-            redirectAttributes.addFlashAttribute("error", "Ghi chÃº yÃªu cáº§u quÃ¡ dÃ i.");
+            redirectAttributes.addFlashAttribute("error", "Request note is too long.");
             return "redirect:/student/project";
         }
         int requestId = projectEditRequestRepository.createRequest(project.getProjectId(), student.getStudentId(), note);
         if (requestId <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ gá»­i yÃªu cáº§u cáº¥p quyá»n. Vui lÃ²ng thá»­ láº¡i.");
+            redirectAttributes.addFlashAttribute("error", "Unable to submit permission request. Please try again.");
             return "redirect:/student/project";
         }
-        redirectAttributes.addFlashAttribute("success", "ÄÃ£ gá»­i yÃªu cáº§u cáº¥p quyá»n cáº­p nháº­t ná»™i dung project.");
+        redirectAttributes.addFlashAttribute("success", "Permission request to update project content has been sent.");
         return "redirect:/student/project";
     }
 
@@ -860,36 +917,36 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n chÆ°a cÃ³ nhÃ³m trong há»c ká»³ hiá»‡n táº¡i.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
         if (project == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃ³m cá»§a báº¡n chÆ°a Ä‘Æ°á»£c táº¡o project.");
+            redirectAttributes.addFlashAttribute("error", "Your group does not have a project yet.");
             return "redirect:/student/project";
         }
         if (!validateNoOpenChangeRequest(project, redirectAttributes)) {
             return "redirect:/student/project";
         }
         if (!isStudentSourceProject(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project nÃ y khÃ´ng thuá»™c luá»“ng há»c viÃªn tá»± cáº­p nháº­t ná»™i dung.");
+            redirectAttributes.addFlashAttribute("error", "This project does not allow student self-updates.");
             return "redirect:/student/project";
         }
         if (!project.isStudentCanEdit()) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n chÆ°a Ä‘Æ°á»£c cáº¥p quyá»n cáº­p nháº­t ná»™i dung project.");
+            redirectAttributes.addFlashAttribute("error", "You are not authorized to update the project content.");
             return "redirect:/student/project";
         }
         if (isProjectLockedForWork(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project Ä‘Ã£ háº¿t háº¡n nÃªn khÃ´ng thá»ƒ cáº­p nháº­t thÃªm ná»™i dung.");
+            redirectAttributes.addFlashAttribute("error", "The project has ended, so you cannot update its content.");
             return "redirect:/student/project";
         }
         String normalizedName = normalize(projectName);
         if (normalizedName.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "TÃªn project khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+            redirectAttributes.addFlashAttribute("error", "Project name cannot be empty.");
             return "redirect:/student/project";
         }
         if (normalizedName.length() > 200) {
-            redirectAttributes.addFlashAttribute("error", "TÃªn project tá»‘i Ä‘a 200 kÃ½ tá»±.");
+            redirectAttributes.addFlashAttribute("error", "Project name can be at most 200 characters.");
             return "redirect:/student/project";
         }
         int updated = projectRepository.updateStudentContent(
@@ -899,10 +956,10 @@ public class StudentProjectController {
                 normalize(sourceCodeUrl),
                 normalize(documentUrl));
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ cáº­p nháº­t ná»™i dung project.");
+            redirectAttributes.addFlashAttribute("error", "Unable to update project content.");
             return "redirect:/student/project";
         }
-        redirectAttributes.addFlashAttribute("success", "ÄÃ£ cáº­p nháº­t ná»™i dung project.");
+        redirectAttributes.addFlashAttribute("success", "Project content updated.");
         return "redirect:/student/project";
     }
 
@@ -914,38 +971,40 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n chÆ°a cÃ³ nhÃ³m trong há»c ká»³ hiá»‡n táº¡i.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
         if (project == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃ³m cá»§a báº¡n chÆ°a Ä‘Æ°á»£c táº¡o project.");
+            redirectAttributes.addFlashAttribute("error", "Your group does not have a project yet.");
             return "redirect:/student/project";
         }
         if (!validateNoOpenChangeRequest(project, redirectAttributes)) {
             return "redirect:/student/project";
         }
         if (!isStudentSourceProject(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project nÃ y khÃ´ng thuá»™c luá»“ng há»c viÃªn tá»± cáº­p nháº­t ná»™i dung.");
+            redirectAttributes.addFlashAttribute("error", "This project does not allow student self-updates.");
             return "redirect:/student/project";
         }
         if (!project.isStudentCanEdit()) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n chÆ°a Ä‘Æ°á»£c cáº¥p quyá»n cáº­p nháº­t ná»™i dung project.");
+            redirectAttributes.addFlashAttribute("error", "You are not authorized to update the project content.");
             return "redirect:/student/project";
         }
         if (isProjectLockedForWork(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project Ä‘Ã£ háº¿t háº¡n nÃªn khÃ´ng thá»ƒ gá»­i duyá»‡t.");
+            redirectAttributes.addFlashAttribute("error", "The project has ended, so it cannot be submitted for approval.");
             return "redirect:/student/project";
         }
         if (normalize(project.getProjectName()).isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Vui lÃ²ng cáº­p nháº­t tÃªn project trÆ°á»›c khi gá»­i duyá»‡t.");
+            redirectAttributes.addFlashAttribute("error", "Please update the project name before submitting for approval.");
             return "redirect:/student/project";
         }
         int updated = projectRepository.submitForLecturerReview(project.getProjectId());
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ gá»­i yÃªu cáº§u duyá»‡t tá»›i giáº£ng viÃªn.");
+            redirectAttributes.addFlashAttribute("error", "Unable to send approval request to lecturers.");
             return "redirect:/student/project";
         }
+        Project refreshedProject = projectRepository.findById(project.getProjectId());
+        studentNotificationService.notifyProjectSubmittedForReview(refreshedProject != null ? refreshedProject : project);
 
         Set<String> uniqueEmails = new LinkedHashSet<>();
         for (String email : projectRepository.findLecturerEmailsForProject(project.getProjectId())) {
@@ -965,10 +1024,10 @@ public class StudentProjectController {
         }
         if (uniqueEmails.isEmpty()) {
             redirectAttributes.addFlashAttribute("success",
-                    "ÄÃ£ gá»­i yÃªu cáº§u duyá»‡t. Hiá»‡n chÆ°a cÃ³ giáº£ng viÃªn nÃ o Ä‘Æ°á»£c phÃ¢n lá»›p Ä‘á»ƒ nháº­n email.");
+                    "Approval request sent. There are no lecturers assigned to receive the email yet.");
         } else {
             redirectAttributes.addFlashAttribute("success",
-                    "ÄÃ£ gá»­i yÃªu cáº§u duyá»‡t tá»›i giáº£ng viÃªn. Email Ä‘Ã£ gá»­i: " + sent + "/" + uniqueEmails.size() + ".");
+                    "Approval request sent to lecturers. Emails sent: " + sent + "/" + uniqueEmails.size() + ".");
         }
         return "redirect:/student/project";
     }
@@ -985,7 +1044,7 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Bạn chưa có nhóm trong học kỳ hiện tại.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
@@ -993,19 +1052,19 @@ public class StudentProjectController {
             return "redirect:/student/project";
         }
         if (!isProjectApproved(project)) {
-            redirectAttributes.addFlashAttribute("error", "Chỉ project đã duyệt mới được gửi yêu cầu đổi đề tài.");
+            redirectAttributes.addFlashAttribute("error", "Only approved projects can request a topic change.");
             return "redirect:/student/project";
         }
         if (isProjectLockedForWork(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project đã hết hạn nên không thể gửi yêu cầu đổi đề tài.");
+            redirectAttributes.addFlashAttribute("error", "The project has ended, so a topic change request cannot be sent.");
             return "redirect:/student/project";
         }
         if (hasOpenChangeRequest(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project đã có yêu cầu đổi đề tài đang chờ xử lý.");
+            redirectAttributes.addFlashAttribute("error", "A topic change request is already pending for this project.");
             return "redirect:/student/project";
         }
         if (projectTaskRepository.hasDoneTasksByProject(project.getProjectId())) {
-            redirectAttributes.addFlashAttribute("error", "Project đã có công việc hoàn thành nên không thể đổi đề tài nữa.");
+            redirectAttributes.addFlashAttribute("error", "This project already has completed tasks, so the topic cannot be changed.");
             return "redirect:/student/project";
         }
 
@@ -1013,19 +1072,19 @@ public class StudentProjectController {
         String normalizedDescription = normalize(proposedDescription);
         String normalizedReason = normalize(changeReason);
         if (normalizedName.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Tên project đề xuất mới không được để trống.");
+            redirectAttributes.addFlashAttribute("error", "Proposed project name cannot be empty.");
             return "redirect:/student/project";
         }
         if (normalizedName.length() > 200) {
-            redirectAttributes.addFlashAttribute("error", "Tên project đề xuất tối đa 200 ký tự.");
+            redirectAttributes.addFlashAttribute("error", "Proposed project name can be at most 200 characters.");
             return "redirect:/student/project";
         }
         if (normalizedReason.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Vui lòng nhập lý do đổi project.");
+            redirectAttributes.addFlashAttribute("error", "Please provide a reason for changing the project.");
             return "redirect:/student/project";
         }
         if (normalizedReason.length() > 2000) {
-            redirectAttributes.addFlashAttribute("error", "Lý do đổi project quá dài.");
+            redirectAttributes.addFlashAttribute("error", "Reason for changing the project is too long.");
             return "redirect:/student/project";
         }
 
@@ -1036,11 +1095,12 @@ public class StudentProjectController {
                 normalizedDescription,
                 normalizedReason);
         if (requestId <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể gửi yêu cầu đổi project. Vui lòng thử lại.");
+            redirectAttributes.addFlashAttribute("error", "Unable to submit project change request. Please try again.");
             return "redirect:/student/project";
         }
 
-        redirectAttributes.addFlashAttribute("success", "Đã gửi yêu cầu đổi project tới nhân viên đào tạo.");
+        studentNotificationService.notifyProjectChangeRequested(project, student.getFullName());
+        redirectAttributes.addFlashAttribute("success", "Project change request sent to training staff.");
         return "redirect:/student/project";
     }
 
@@ -1054,7 +1114,7 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n chÆ°a cÃ³ nhÃ³m trong há»c ká»³ hiá»‡n táº¡i.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
@@ -1062,15 +1122,15 @@ public class StudentProjectController {
             return "redirect:/student/project";
         }
         if (!isProjectApproved(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project pháº£i á»Ÿ tráº¡ng thÃ¡i Ä‘Ã£ duyá»‡t má»›i táº¡o Ä‘Æ°á»£c Ä‘á»£t lÃ m viá»‡c.");
+            redirectAttributes.addFlashAttribute("error", "The project must be approved before creating a sprint.");
             return "redirect:/student/project";
         }
         if (project.getStartDate() == null || project.getEndDate() == null) {
-            redirectAttributes.addFlashAttribute("error", "Project chÆ°a cÃ³ má»‘c thá»i gian báº¯t Ä‘áº§u/káº¿t thÃºc.");
+            redirectAttributes.addFlashAttribute("error", "The project does not have start/end dates.");
             return "redirect:/student/project";
         }
         if (isProjectLockedForWork(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project Ä‘Ã£ háº¿t háº¡n nÃªn khÃ´ng thá»ƒ táº¡o Ä‘á»£t lÃ m viá»‡c má»›i.");
+            redirectAttributes.addFlashAttribute("error", "The project has ended, so a new sprint cannot be created.");
             return "redirect:/student/project";
         }
         if (!validateNoOpenChangeRequest(project, redirectAttributes)) {
@@ -1084,19 +1144,23 @@ public class StudentProjectController {
                 toDate(project.getStartDate()),
                 toDate(project.getEndDate()));
         if (sprintId == -2) {
-            redirectAttributes.addFlashAttribute("error", "ÄÃ£ cÃ³ Ä‘á»£t lÃ m viá»‡c Ä‘ang má»Ÿ. HÃ£y chá» Ä‘á»£t hiá»‡n táº¡i káº¿t thÃºc.");
+            redirectAttributes.addFlashAttribute("error", "There is already an open sprint. Please wait for the current sprint to end.");
             return "redirect:/student/project";
         }
         if (sprintId == -3) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ táº¡o Ä‘á»£t lÃ m viá»‡c vÃ¬ vÆ°á»£t quÃ¡ thá»i gian cá»§a project.");
+            redirectAttributes.addFlashAttribute("error", "Cannot create a sprint because it exceeds the project timeline.");
             return "redirect:/student/project";
         }
         if (sprintId <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ táº¡o Ä‘á»£t lÃ m viá»‡c má»›i.");
+            redirectAttributes.addFlashAttribute("error", "Unable to create a new sprint.");
             return "redirect:/student/project";
         }
 
-        redirectAttributes.addFlashAttribute("success", "ÄÃ£ táº¡o Ä‘á»£t lÃ m viá»‡c má»›i thÃ nh cÃ´ng.");
+        Sprint createdSprint = sprintRepository.findById(sprintId);
+        if (createdSprint != null) {
+            studentNotificationService.notifySprintCreated(project, createdSprint);
+        }
+        redirectAttributes.addFlashAttribute("success", "New sprint created successfully.");
         return "redirect:/student/project";
     }
 
@@ -1111,7 +1175,7 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Bạn chưa có nhóm trong học kỳ hiện tại.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
@@ -1119,7 +1183,7 @@ public class StudentProjectController {
             return "redirect:/student/project";
         }
         if (!isProjectApproved(project) || isProjectLockedForWork(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project hiện không cho phép cập nhật đợt làm việc.");
+            redirectAttributes.addFlashAttribute("error", "The project currently does not allow sprint updates.");
             return "redirect:/student/project";
         }
         if (!validateNoOpenChangeRequest(project, redirectAttributes)) {
@@ -1128,30 +1192,30 @@ public class StudentProjectController {
 
         Sprint sprint = findSprintInProject(project, sprintId);
         if (sprint == null) {
-            redirectAttributes.addFlashAttribute("error", "Đợt làm việc không tồn tại trong project của nhóm.");
+            redirectAttributes.addFlashAttribute("error", "The sprint does not exist in the group's project.");
             return "redirect:/student/project";
         }
         if (sprint.isClosed() || sprint.isCancelled()) {
-            redirectAttributes.addFlashAttribute("error", "Chỉ đợt làm việc đang mở mới được sửa tên.");
+            redirectAttributes.addFlashAttribute("error", "Only the open sprint can be renamed.");
             return "redirect:/student/project";
         }
 
         String normalizedName = normalize(sprintName);
         if (normalizedName.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Tên đợt làm việc không được để trống.");
+            redirectAttributes.addFlashAttribute("error", "Sprint name cannot be empty.");
             return "redirect:/student/project";
         }
         if (normalizedName.length() > 50) {
-            redirectAttributes.addFlashAttribute("error", "Tên đợt làm việc tối đa 50 ký tự.");
+            redirectAttributes.addFlashAttribute("error", "Sprint name can be at most 50 characters.");
             return "redirect:/student/project";
         }
 
         int updated = sprintRepository.updateSprintName(sprintId, project.getProjectId(), normalizedName);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể cập nhật tên đợt làm việc.");
+            redirectAttributes.addFlashAttribute("error", "Unable to update sprint name.");
             return "redirect:/student/project";
         }
-        redirectAttributes.addFlashAttribute("success", "Đã cập nhật tên đợt làm việc.");
+        redirectAttributes.addFlashAttribute("success", "Sprint name updated.");
         return "redirect:/student/project";
     }
 
@@ -1165,7 +1229,7 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Bạn chưa có nhóm trong học kỳ hiện tại.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
@@ -1173,7 +1237,7 @@ public class StudentProjectController {
             return "redirect:/student/project";
         }
         if (!isProjectApproved(project) || isProjectLockedForWork(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project hiện không cho phép xóa đợt làm việc.");
+            redirectAttributes.addFlashAttribute("error", "The project currently does not allow sprint deletion.");
             return "redirect:/student/project";
         }
         if (!validateNoOpenChangeRequest(project, redirectAttributes)) {
@@ -1182,24 +1246,24 @@ public class StudentProjectController {
 
         Sprint sprint = findSprintInProject(project, sprintId);
         if (sprint == null) {
-            redirectAttributes.addFlashAttribute("error", "Đợt làm việc không tồn tại trong project của nhóm.");
+            redirectAttributes.addFlashAttribute("error", "The sprint does not exist in the group's project.");
             return "redirect:/student/project";
         }
         if (sprint.isClosed() || sprint.isCancelled()) {
-            redirectAttributes.addFlashAttribute("error", "Chỉ đợt làm việc đang mở mới được xóa.");
+            redirectAttributes.addFlashAttribute("error", "Only the open sprint can be deleted.");
             return "redirect:/student/project";
         }
         if (sprintRepository.hasAnyTasks(sprintId)) {
-            redirectAttributes.addFlashAttribute("error", "Đợt làm việc đã có công việc nên không thể xóa cứng. Hãy dùng hủy đợt làm việc nếu cần.");
+            redirectAttributes.addFlashAttribute("error", "This sprint has tasks, so it cannot be hard-deleted. Cancel the sprint instead if needed.");
             return "redirect:/student/project";
         }
 
         int deleted = sprintRepository.deleteEmptyOpenSprint(sprintId, project.getProjectId());
         if (deleted <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể xóa đợt làm việc.");
+            redirectAttributes.addFlashAttribute("error", "Unable to delete sprint.");
             return "redirect:/student/project";
         }
-        redirectAttributes.addFlashAttribute("success", "Đã xóa đợt làm việc trống.");
+        redirectAttributes.addFlashAttribute("success", "Empty sprint deleted.");
         return "redirect:/student/project";
     }
 
@@ -1215,7 +1279,7 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Bạn chưa có nhóm trong học kỳ hiện tại.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
@@ -1223,7 +1287,7 @@ public class StudentProjectController {
             return "redirect:/student/project";
         }
         if (!isProjectApproved(project) || isProjectLockedForWork(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project hiện không cho phép hủy đợt làm việc.");
+            redirectAttributes.addFlashAttribute("error", "The project currently does not allow sprint cancellation.");
             return "redirect:/student/project";
         }
         if (!validateNoOpenChangeRequest(project, redirectAttributes)) {
@@ -1232,36 +1296,55 @@ public class StudentProjectController {
 
         Sprint sprint = findSprintInProject(project, sprintId);
         if (sprint == null) {
-            redirectAttributes.addFlashAttribute("error", "Đợt làm việc không tồn tại trong project của nhóm.");
+            redirectAttributes.addFlashAttribute("error", "The sprint does not exist in the group's project.");
             return "redirect:/student/project";
         }
         if (sprint.isClosed() || sprint.isCancelled()) {
-            redirectAttributes.addFlashAttribute("error", "Chỉ đợt làm việc đang mở mới được hủy.");
+            redirectAttributes.addFlashAttribute("error", "Only the open sprint can be cancelled.");
             return "redirect:/student/project";
         }
         if (projectTaskRepository.hasDoneTasksInSprint(sprintId)) {
-            redirectAttributes.addFlashAttribute("error", "Đợt làm việc đã có công việc hoàn thành nên không thể hủy.");
+            redirectAttributes.addFlashAttribute("error", "This sprint has completed tasks, so it cannot be cancelled.");
             return "redirect:/student/project";
         }
 
         String normalizedReason = normalize(cancelReason);
         if (normalizedReason.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Vui lòng nhập lý do hủy đợt làm việc.");
+            redirectAttributes.addFlashAttribute("error", "Please enter a reason for cancelling the sprint.");
             return "redirect:/student/project";
         }
         if (normalizedReason.length() > 2000) {
-            redirectAttributes.addFlashAttribute("error", "Lý do hủy đợt làm việc quá dài.");
+            redirectAttributes.addFlashAttribute("error", "Sprint cancellation reason is too long.");
             return "redirect:/student/project";
+        }
+
+        List<ProjectTask> tasksCancelledBySprint = new ArrayList<>();
+        for (ProjectTask existingTask : projectTaskRepository.findByProject(project.getProjectId())) {
+            if (existingTask != null
+                    && existingTask.getSprintId() == sprintId
+                    && existingTask.getStatus() != ProjectTask.STATUS_DONE
+                    && existingTask.getStatus() != ProjectTask.STATUS_CANCELLED) {
+                tasksCancelledBySprint.add(existingTask);
+            }
         }
 
         int updated = sprintRepository.cancelSprint(sprintId, project.getProjectId(), student.getStudentId(), normalizedReason);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể hủy đợt làm việc.");
+            redirectAttributes.addFlashAttribute("error", "Unable to cancel sprint.");
             return "redirect:/student/project";
         }
-        projectTaskRepository.cancelTasksBySprint(sprintId, student.getStudentId(), "Công việc bị hủy do đợt làm việc đã bị hủy.");
+        projectTaskRepository.cancelTasksBySprint(sprintId, student.getStudentId(), "Task cancelled because the sprint was cancelled.");
+        studentNotificationService.notifySprintCancelled(project, sprint, normalizedReason);
+        String sprintLabel = normalize(sprint.getSprintName());
+        if (sprintLabel.isEmpty()) {
+            sprintLabel = "Sprint #" + sprint.getSprintId();
+        }
+        for (ProjectTask cancelledTask : tasksCancelledBySprint) {
+            studentNotificationService.notifyTaskCancelled(project, cancelledTask,
+                    "Sprint \"" + sprintLabel + "\" was cancelled. Reason: " + normalizedReason);
+        }
 
-        redirectAttributes.addFlashAttribute("success", "Đã hủy đợt làm việc và toàn bộ công việc chưa hoàn thành trong đợt.");
+        redirectAttributes.addFlashAttribute("success", "Sprint cancelled and all unfinished tasks in the sprint were cancelled.");
         return "redirect:/student/project";
     }
 
@@ -1281,7 +1364,7 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n chÆ°a cÃ³ nhÃ³m trong há»c ká»³ hiá»‡n táº¡i.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
@@ -1289,15 +1372,15 @@ public class StudentProjectController {
             return "redirect:/student/project";
         }
         if (!isProjectApproved(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project chá»‰ Ä‘Æ°á»£c táº¡o cÃ´ng viá»‡c sau khi Ä‘Ã£ duyá»‡t.");
+            redirectAttributes.addFlashAttribute("error", "Tasks can be created only after the project is approved.");
             return "redirect:/student/project";
         }
         if (isProjectNotStarted(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project chÆ°a tá»›i thá»i gian báº¯t Ä‘áº§u xÃ¢y dá»±ng.");
+            redirectAttributes.addFlashAttribute("error", "The project build period has not started yet.");
             return "redirect:/student/project";
         }
         if (isProjectLockedForWork(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project Ä‘Ã£ háº¿t háº¡n nÃªn khÃ´ng thá»ƒ táº¡o cÃ´ng viá»‡c.");
+            redirectAttributes.addFlashAttribute("error", "The project has ended, so tasks cannot be created.");
             return "redirect:/student/project";
         }
         if (!validateNoOpenChangeRequest(project, redirectAttributes)) {
@@ -1307,21 +1390,21 @@ public class StudentProjectController {
         refreshSprintState(project);
         Sprint openSprint = sprintRepository.findOpenByProject(project.getProjectId());
         if (openSprint == null) {
-            redirectAttributes.addFlashAttribute("error", "ChÆ°a cÃ³ Ä‘á»£t lÃ m viá»‡c Ä‘ang má»Ÿ. HÃ£y táº¡o Ä‘á»£t lÃ m viá»‡c trÆ°á»›c.");
+            redirectAttributes.addFlashAttribute("error", "There is no open sprint. Please create a sprint first.");
             return "redirect:/student/project";
         }
         if (sprintId != openSprint.getSprintId()) {
-            redirectAttributes.addFlashAttribute("error", "Chá»‰ Ä‘Æ°á»£c thÃªm cÃ´ng viá»‡c vÃ o Ä‘á»£t lÃ m viá»‡c Ä‘ang má»Ÿ.");
+            redirectAttributes.addFlashAttribute("error", "Tasks can only be added to the open sprint.");
             return "redirect:/student/project";
         }
 
         String normalizedTaskName = normalize(taskName);
         if (normalizedTaskName.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "TÃªn cÃ´ng viá»‡c khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+            redirectAttributes.addFlashAttribute("error", "Task name cannot be empty.");
             return "redirect:/student/project";
         }
         if (normalizedTaskName.length() > 200) {
-            redirectAttributes.addFlashAttribute("error", "TÃªn cÃ´ng viá»‡c tá»‘i Ä‘a 200 kÃ½ tá»±.");
+            redirectAttributes.addFlashAttribute("error", "Task name can be at most 200 characters.");
             return "redirect:/student/project";
         }
 
@@ -1331,17 +1414,17 @@ public class StudentProjectController {
         }
 
         if (!groupMemberRepository.isMember(group.getGroupId(), assigneeId)) {
-            redirectAttributes.addFlashAttribute("error", "NgÆ°á»i Ä‘Æ°á»£c giao cÃ´ng viá»‡c pháº£i lÃ  thÃ nh viÃªn trong nhÃ³m.");
+            redirectAttributes.addFlashAttribute("error", "Assignee must be a member of the group.");
             return "redirect:/student/project";
         }
         if (!groupMemberRepository.isMember(group.getGroupId(), reviewerId)) {
-            redirectAttributes.addFlashAttribute("error", "NgÆ°á»i kiá»ƒm tra pháº£i lÃ  thÃ nh viÃªn trong nhÃ³m.");
+            redirectAttributes.addFlashAttribute("error", "Reviewer must be a member of the group.");
             return "redirect:/student/project";
         }
         int memberCount = groupMemberRepository.countMembers(group.getGroupId());
         if (assigneeId == reviewerId && memberCount > 1) {
             redirectAttributes.addFlashAttribute("error",
-                    "Người thực hiện và người kiểm tra phải là hai người khác nhau (trừ khi nhóm chỉ có 1 thành viên).");
+                    "Assignee and reviewer must be different people (unless the group has only 1 member).");
             return "redirect:/student/project";
         }
 
@@ -1354,12 +1437,17 @@ public class StudentProjectController {
                 assigneeId,
                 reviewerId);
         if (taskId <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ táº¡o cÃ´ng viá»‡c. Vui lÃ²ng kiá»ƒm tra dá»¯ liá»‡u.");
+            redirectAttributes.addFlashAttribute("error", "Unable to create task. Please check the data.");
             return "redirect:/student/project";
         }
 
+        ProjectTask createdTask = projectTaskRepository.findById(taskId);
+        if (createdTask != null) {
+            studentNotificationService.notifyTaskAssigned(project, createdTask);
+            studentNotificationService.notifyTaskReviewerAssigned(project, createdTask);
+        }
         redirectAttributes.addFlashAttribute("success",
-                "ÄÃ£ táº¡o cÃ´ng viá»‡c. Point: " + points + " tÆ°Æ¡ng Ä‘Æ°Æ¡ng " + (points * 4.0d) + " giá».");
+                "Task created. Points: " + points + " equals " + (points * 4.0d) + " hours.");
         return "redirect:/student/project";
     }
 
@@ -1379,7 +1467,7 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Bạn chưa có nhóm trong học kỳ hiện tại.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
@@ -1387,7 +1475,7 @@ public class StudentProjectController {
             return "redirect:/student/project";
         }
         if (!isProjectApproved(project) || isProjectLockedForWork(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project hiện không cho phép cập nhật công việc.");
+            redirectAttributes.addFlashAttribute("error", "The project currently does not allow task updates.");
             return "redirect:/student/project";
         }
         if (!validateNoOpenChangeRequest(project, redirectAttributes)) {
@@ -1396,21 +1484,23 @@ public class StudentProjectController {
 
         ProjectTask task = findTaskInProject(project, taskId);
         if (task == null) {
-            redirectAttributes.addFlashAttribute("error", "Công việc không tồn tại trong project của nhóm.");
+            redirectAttributes.addFlashAttribute("error", "Task does not exist in the group's project.");
             return "redirect:/student/project";
         }
         if (task.getStatus() != ProjectTask.STATUS_TODO && task.getStatus() != ProjectTask.STATUS_REJECTED) {
-            redirectAttributes.addFlashAttribute("error", "Chỉ công việc ở trạng thái chờ xử lý hoặc trả lại mới được chỉnh sửa.");
+            redirectAttributes.addFlashAttribute("error", "Only tasks in Pending or Returned status can be edited.");
             return "redirect:/student/project";
         }
+        int previousAssigneeId = task.getAssigneeId();
+        Integer previousReviewerId = task.getReviewerId();
 
         String normalizedTaskName = normalize(taskName);
         if (normalizedTaskName.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Tên công việc không được để trống.");
+            redirectAttributes.addFlashAttribute("error", "Task name cannot be empty.");
             return "redirect:/student/project";
         }
         if (normalizedTaskName.length() > 200) {
-            redirectAttributes.addFlashAttribute("error", "Tên công việc tối đa 200 ký tự.");
+            redirectAttributes.addFlashAttribute("error", "Task name can be at most 200 characters.");
             return "redirect:/student/project";
         }
         Double points = parseEstimatedPoints(estimatedPoints, redirectAttributes);
@@ -1418,17 +1508,17 @@ public class StudentProjectController {
             return "redirect:/student/project";
         }
         if (!groupMemberRepository.isMember(group.getGroupId(), assigneeId)) {
-            redirectAttributes.addFlashAttribute("error", "Người thực hiện phải là thành viên trong nhóm.");
+            redirectAttributes.addFlashAttribute("error", "Assignee must be a member of the group.");
             return "redirect:/student/project";
         }
         if (!groupMemberRepository.isMember(group.getGroupId(), reviewerId)) {
-            redirectAttributes.addFlashAttribute("error", "Người kiểm tra phải là thành viên trong nhóm.");
+            redirectAttributes.addFlashAttribute("error", "Reviewer must be a member of the group.");
             return "redirect:/student/project";
         }
         int memberCount = groupMemberRepository.countMembers(group.getGroupId());
         if (assigneeId == reviewerId && memberCount > 1) {
             redirectAttributes.addFlashAttribute("error",
-                    "Người thực hiện và người kiểm tra phải là hai người khác nhau (trừ khi nhóm chỉ có 1 thành viên).");
+                    "Assignee and reviewer must be different people (unless the group has only 1 member).");
             return "redirect:/student/project";
         }
 
@@ -1441,10 +1531,23 @@ public class StudentProjectController {
                 assigneeId,
                 reviewerId);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể cập nhật công việc.");
+            redirectAttributes.addFlashAttribute("error", "Unable to update task.");
             return "redirect:/student/project";
         }
-        redirectAttributes.addFlashAttribute("success", "Đã cập nhật công việc.");
+        ProjectTask updatedTask = projectTaskRepository.findById(taskId);
+        if (updatedTask != null) {
+            if (updatedTask.getAssigneeId() != previousAssigneeId) {
+                studentNotificationService.notifyTaskAssigned(project, updatedTask);
+            }
+            Integer currentReviewerId = updatedTask.getReviewerId();
+            boolean reviewerChanged = previousReviewerId == null
+                    ? currentReviewerId != null
+                    : !previousReviewerId.equals(currentReviewerId);
+            if (reviewerChanged) {
+                studentNotificationService.notifyTaskReviewerAssigned(project, updatedTask);
+            }
+        }
+        redirectAttributes.addFlashAttribute("success", "Task updated.");
         return "redirect:/student/project";
     }
 
@@ -1458,7 +1561,7 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Bạn chưa có nhóm trong học kỳ hiện tại.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
@@ -1466,7 +1569,7 @@ public class StudentProjectController {
             return "redirect:/student/project";
         }
         if (!isProjectApproved(project) || isProjectLockedForWork(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project hiện không cho phép xóa công việc.");
+            redirectAttributes.addFlashAttribute("error", "The project currently does not allow task deletion.");
             return "redirect:/student/project";
         }
         if (!validateNoOpenChangeRequest(project, redirectAttributes)) {
@@ -1475,20 +1578,20 @@ public class StudentProjectController {
 
         ProjectTask task = findTaskInProject(project, taskId);
         if (task == null) {
-            redirectAttributes.addFlashAttribute("error", "Công việc không tồn tại trong project của nhóm.");
+            redirectAttributes.addFlashAttribute("error", "Task does not exist in the group's project.");
             return "redirect:/student/project";
         }
         if (task.getStatus() != ProjectTask.STATUS_TODO) {
-            redirectAttributes.addFlashAttribute("error", "Chỉ công việc còn nguyên ở trạng thái chờ xử lý mới được xóa cứng.");
+            redirectAttributes.addFlashAttribute("error", "Only untouched tasks in Pending status can be hard-deleted.");
             return "redirect:/student/project";
         }
 
         int deleted = projectTaskRepository.deleteTaskIfPristine(taskId);
         if (deleted <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể xóa công việc. Nếu công việc đã phát sinh lịch sử, hãy dùng hủy công việc.");
+            redirectAttributes.addFlashAttribute("error", "Unable to delete task. If the task has history, please cancel it instead.");
             return "redirect:/student/project";
         }
-        redirectAttributes.addFlashAttribute("success", "Đã xóa công việc còn nguyên.");
+        redirectAttributes.addFlashAttribute("success", "Untouched task deleted.");
         return "redirect:/student/project";
     }
 
@@ -1503,7 +1606,7 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Bạn chưa có nhóm trong học kỳ hiện tại.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
@@ -1511,7 +1614,7 @@ public class StudentProjectController {
             return "redirect:/student/project";
         }
         if (!isProjectApproved(project) || isProjectLockedForWork(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project hiện không cho phép hủy công việc.");
+            redirectAttributes.addFlashAttribute("error", "The project currently does not allow task cancellation.");
             return "redirect:/student/project";
         }
         if (!validateNoOpenChangeRequest(project, redirectAttributes)) {
@@ -1520,34 +1623,35 @@ public class StudentProjectController {
 
         ProjectTask task = findTaskInProject(project, taskId);
         if (task == null) {
-            redirectAttributes.addFlashAttribute("error", "Công việc không tồn tại trong project của nhóm.");
+            redirectAttributes.addFlashAttribute("error", "Task does not exist in the group's project.");
             return "redirect:/student/project";
         }
         if (task.getStatus() == ProjectTask.STATUS_DONE) {
-            redirectAttributes.addFlashAttribute("error", "Công việc đã hoàn thành nên không thể hủy.");
+            redirectAttributes.addFlashAttribute("error", "Completed tasks cannot be cancelled.");
             return "redirect:/student/project";
         }
         if (task.getStatus() == ProjectTask.STATUS_CANCELLED) {
-            redirectAttributes.addFlashAttribute("error", "Công việc này đã bị hủy trước đó.");
+            redirectAttributes.addFlashAttribute("error", "This task has already been cancelled.");
             return "redirect:/student/project";
         }
 
         String normalizedReason = normalize(cancelReason);
         if (normalizedReason.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Vui lòng nhập lý do hủy công việc.");
+            redirectAttributes.addFlashAttribute("error", "Please enter a reason for cancelling the task.");
             return "redirect:/student/project";
         }
         if (normalizedReason.length() > 2000) {
-            redirectAttributes.addFlashAttribute("error", "Lý do hủy công việc quá dài.");
+            redirectAttributes.addFlashAttribute("error", "Task cancellation reason is too long.");
             return "redirect:/student/project";
         }
 
         int updated = projectTaskRepository.cancelTask(taskId, student.getStudentId(), normalizedReason);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể hủy công việc.");
+            redirectAttributes.addFlashAttribute("error", "Unable to cancel task.");
             return "redirect:/student/project";
         }
-        redirectAttributes.addFlashAttribute("success", "Đã hủy công việc.");
+        studentNotificationService.notifyTaskCancelled(project, task, normalizedReason);
+        redirectAttributes.addFlashAttribute("success", "Task cancelled.");
         return "redirect:/student/project";
     }
 
@@ -1561,49 +1665,49 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n chÆ°a cÃ³ nhÃ³m trong há»c ká»³ hiá»‡n táº¡i.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
         if (project == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃ³m cá»§a báº¡n chÆ°a Ä‘Æ°á»£c táº¡o project.");
+            redirectAttributes.addFlashAttribute("error", "Your group does not have a project yet.");
             return "redirect:/student/project";
         }
         boolean projectChangeOpen = hasOpenChangeRequest(project);
         if (!canOperateTask(project, projectChangeOpen)) {
             redirectAttributes.addFlashAttribute("error",
                     projectChangeOpen
-                            ? "Project đang có yêu cầu đổi đề tài chờ xử lý nên tạm khóa thao tác công việc."
-                            : "Project hiá»‡n khÃ´ng cho phÃ©p thao tÃ¡c cÃ´ng viá»‡c.");
+                            ? "The project has a pending topic change request, so task actions are temporarily locked."
+                            : "The project currently does not allow task operations.");
             return "redirect:/student/project";
         }
 
         refreshSprintState(project);
         ProjectTask task = findTaskInProject(project, taskId);
         if (task == null) {
-            redirectAttributes.addFlashAttribute("error", "CÃ´ng viá»‡c khÃ´ng tá»“n táº¡i trong project cá»§a nhÃ³m.");
+            redirectAttributes.addFlashAttribute("error", "Task does not exist in the group's project.");
             return "redirect:/student/project";
         }
         if (task.getAssigneeId() != student.getStudentId()) {
-            redirectAttributes.addFlashAttribute("error", "Chá»‰ ngÆ°á»i Ä‘Æ°á»£c giao má»›i Ä‘Æ°á»£c báº¯t Ä‘áº§u cÃ´ng viá»‡c nÃ y.");
+            redirectAttributes.addFlashAttribute("error", "Only the assignee can start this task.");
             return "redirect:/student/project";
         }
         if (task.getStatus() == ProjectTask.STATUS_FAILED_SPRINT) {
-            redirectAttributes.addFlashAttribute("error", "CÃ´ng viá»‡c Ä‘Ã£ tháº¥t báº¡i á»Ÿ Ä‘á»£t lÃ m viá»‡c cÅ©. HÃ£y Ä‘á»ƒ trÆ°á»Ÿng nhÃ³m Ä‘Æ°a vÃ o Ä‘á»£t má»›i.");
+            redirectAttributes.addFlashAttribute("error", "This task failed in a previous sprint. Ask the group leader to move it to a new sprint.");
             return "redirect:/student/project";
         }
         if (task.getStatus() == ProjectTask.STATUS_CANCELLED) {
-            redirectAttributes.addFlashAttribute("error", "Công việc này đã bị hủy nên không thể bắt đầu lại.");
+            redirectAttributes.addFlashAttribute("error", "This task was cancelled, so it cannot be started again.");
             return "redirect:/student/project";
         }
 
         int updated = projectTaskRepository.markInProgress(taskId, student.getStudentId());
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ chuyá»ƒn cÃ´ng viá»‡c sang tráº¡ng thÃ¡i Ä‘ang lÃ m.");
+            redirectAttributes.addFlashAttribute("error", "Unable to move task to In Progress.");
             return "redirect:/student/project";
         }
 
-        redirectAttributes.addFlashAttribute("success", "ÄÃ£ báº¯t Ä‘áº§u cÃ´ng viá»‡c.");
+        redirectAttributes.addFlashAttribute("success", "Task started.");
         return "redirect:/student/project";
     }
 
@@ -1623,35 +1727,35 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "B???n ch??a c?? nh??m trong h???c k??? hi???n t???i.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
         if (project == null) {
-            redirectAttributes.addFlashAttribute("error", "Nh??m c???a b???n ch??a ???????c t???o project.");
+            redirectAttributes.addFlashAttribute("error", "Your group does not have a project yet.");
             return "redirect:/student/project";
         }
         boolean projectChangeOpen = hasOpenChangeRequest(project);
         if (!canOperateTask(project, projectChangeOpen)) {
             redirectAttributes.addFlashAttribute("error",
                     projectChangeOpen
-                            ? "Project ??ang c?? y??u c???u ?????i ????? t??i ch??? x??? l?? n??n t???m kh??a thao t??c c??ng vi???c."
-                            : "Project hi???n kh??ng cho ph??p thao t??c c??ng vi???c.");
+                            ? "The project has a pending topic change request, so task actions are temporarily locked."
+                            : "The project currently does not allow task operations.");
             return "redirect:/student/project";
         }
 
         refreshSprintState(project);
         ProjectTask task = findTaskInProject(project, taskId);
         if (task == null) {
-            redirectAttributes.addFlashAttribute("error", "C??ng vi???c kh??ng t???n t???i trong project c???a nh??m.");
+            redirectAttributes.addFlashAttribute("error", "Task does not exist in the group's project.");
             return "redirect:/student/project";
         }
         if (task.getAssigneeId() != student.getStudentId()) {
-            redirectAttributes.addFlashAttribute("error", "Ch??? ng?????i ???????c giao m???i ???????c n???p c??ng vi???c n??y.");
+            redirectAttributes.addFlashAttribute("error", "Only the assignee can submit this task.");
             return "redirect:/student/project";
         }
         if (task.getStatus() == ProjectTask.STATUS_CANCELLED) {
-            redirectAttributes.addFlashAttribute("error", "C??ng vi???c n??y ???? b??? h???y n??n kh??ng th??? n???p.");
+            redirectAttributes.addFlashAttribute("error", "This task was cancelled, so it cannot be submitted.");
             return "redirect:/student/project";
         }
 
@@ -1659,11 +1763,11 @@ public class StudentProjectController {
         String url = normalize(submissionUrl);
         String code = normalize(submissionCode);
         if (url.length() > 500) {
-            redirectAttributes.addFlashAttribute("error", "Link minh chung qua dai.");
+            redirectAttributes.addFlashAttribute("error", "Reference link is too long.");
             return "redirect:/student/project";
         }
         if (code.length() > 20000) {
-            redirectAttributes.addFlashAttribute("error", "Code qua dai, vui long rut gon.");
+            redirectAttributes.addFlashAttribute("error", "Code is too long, please shorten it.");
             return "redirect:/student/project";
         }
 
@@ -1696,7 +1800,7 @@ public class StudentProjectController {
         boolean hasAny = !isBlank(note) || !isBlank(url) || !finalAttachments.isEmpty() || !isBlank(finalCode);
         if (!hasAny) {
             redirectAttributes.addFlashAttribute("error",
-                    "Noi dung nop can co mo ta, link, file hoac doan code.");
+                    "Submission must include a description, link, file, or code snippet.");
             return "redirect:/student/project";
         }
 
@@ -1708,11 +1812,13 @@ public class StudentProjectController {
                 serializeAttachments(finalAttachments),
                 finalCode);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Kh??ng th??? n???p c??ng vi???c. H??y ch???c ch???n c??ng vi???c ??ang ??? tr???ng th??i ??ang l??m.");
+            redirectAttributes.addFlashAttribute("error", "Unable to submit the task. Make sure the task is In Progress.");
             return "redirect:/student/project";
         }
 
-        redirectAttributes.addFlashAttribute("success", "???? n???p c??ng vi???c ????? ng?????i ki???m tra ho???c tr?????ng nh??m x??t duy???t.");
+        ProjectTask submittedTask = projectTaskRepository.findById(taskId);
+        studentNotificationService.notifyTaskSubmitted(project, submittedTask != null ? submittedTask : task);
+        redirectAttributes.addFlashAttribute("success", "Task submitted and is awaiting review by the reviewer or group leader.");
         return "redirect:/student/project";
     }
 
@@ -1726,45 +1832,46 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Ban chua co nhom trong hoc ky hien tai.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
         if (project == null) {
-            redirectAttributes.addFlashAttribute("error", "Nhom cua ban chua duoc tao project.");
+            redirectAttributes.addFlashAttribute("error", "Your group does not have a project yet.");
             return "redirect:/student/project";
         }
         boolean projectChangeOpen = hasOpenChangeRequest(project);
         if (!canOperateTask(project, projectChangeOpen)) {
             redirectAttributes.addFlashAttribute("error",
                     projectChangeOpen
-                            ? "Project dang co yeu cau doi de tai cho xu ly nen tam khoa thao tac cong viec."
-                            : "Project hien khong cho phep thao tac cong viec.");
+                            ? "The project has a pending topic change request, so task actions are temporarily locked."
+                            : "The project currently does not allow task operations.");
             return "redirect:/student/project";
         }
 
         refreshSprintState(project);
         ProjectTask task = findTaskInProject(project, taskId);
         if (task == null) {
-            redirectAttributes.addFlashAttribute("error", "Cong viec khong ton tai trong project cua nhom.");
+            redirectAttributes.addFlashAttribute("error", "Task does not exist in the group's project.");
             return "redirect:/student/project";
         }
         if (task.getAssigneeId() != student.getStudentId()) {
-            redirectAttributes.addFlashAttribute("error", "Chi nguoi duoc giao moi duoc huy nop cong viec.");
+            redirectAttributes.addFlashAttribute("error", "Only the assignee can cancel the submission.");
             return "redirect:/student/project";
         }
         if (task.getStatus() != ProjectTask.STATUS_SUBMITTED) {
-            redirectAttributes.addFlashAttribute("error", "Cong viec khong o trang thai cho kiem tra.");
+            redirectAttributes.addFlashAttribute("error", "Task is not in Awaiting Review status.");
             return "redirect:/student/project";
         }
 
         int updated = projectTaskRepository.unsubmitTask(taskId, student.getStudentId());
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Khong the huy nop cong viec. Hay thu lai.");
+            redirectAttributes.addFlashAttribute("error", "Unable to cancel submission. Please try again.");
             return "redirect:/student/project";
         }
 
-        redirectAttributes.addFlashAttribute("success", "Da huy nop. Cong viec quay ve trang thai dang lam.");
+        studentNotificationService.notifyTaskSubmissionCancelled(project, task);
+        redirectAttributes.addFlashAttribute("success", "Submission cancelled. Task moved back to In Progress.");
         return "redirect:/student/project";
     }
 
@@ -1882,26 +1989,26 @@ public class StudentProjectController {
                 }
             }
             if (target == null || !target.isViewable()) {
-                redirectAttributes.addFlashAttribute("error", "Kh??ng th??? xem code t??? file n??y.");
+                redirectAttributes.addFlashAttribute("error", "Cannot view code from this file.");
                 return "redirect:/student/project";
             }
             Path filePath = Paths.get(System.getProperty("user.dir"), TASK_UPLOAD_DIR,
                     String.valueOf(taskId), target.getStoredName());
             if (!Files.exists(filePath)) {
-                redirectAttributes.addFlashAttribute("error", "Kh??ng t??m th???y file.");
+                redirectAttributes.addFlashAttribute("error", "File not found.");
                 return "redirect:/student/project";
             }
             try {
                 long size = Files.size(filePath);
                 if (size > MAX_CODE_VIEW_BYTES) {
-                    redirectAttributes.addFlashAttribute("error", "File qu?? l???n ????? xem tr???c ti???p.");
+                    redirectAttributes.addFlashAttribute("error", "File is too large to preview.");
                     return "redirect:/student/project";
                 }
                 codeContent = Files.readString(filePath, StandardCharsets.UTF_8);
                 codeTitle = target.getDisplayName();
                 downloadUrl = "/student/project/tasks/" + taskId + "/files/" + target.getStoredName();
             } catch (IOException ex) {
-                redirectAttributes.addFlashAttribute("error", "Kh??ng th??? ?????c file.");
+                redirectAttributes.addFlashAttribute("error", "Unable to read file.");
                 return "redirect:/student/project";
             }
         }
@@ -1926,35 +2033,35 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n chÆ°a cÃ³ nhÃ³m trong há»c ká»³ hiá»‡n táº¡i.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
         if (project == null) {
-            redirectAttributes.addFlashAttribute("error", "NhÃ³m cá»§a báº¡n chÆ°a Ä‘Æ°á»£c táº¡o project.");
+            redirectAttributes.addFlashAttribute("error", "Your group does not have a project yet.");
             return "redirect:/student/project";
         }
         boolean projectChangeOpen = hasOpenChangeRequest(project);
         if (!canOperateTask(project, projectChangeOpen)) {
             redirectAttributes.addFlashAttribute("error",
                     projectChangeOpen
-                            ? "Project đang có yêu cầu đổi đề tài chờ xử lý nên tạm khóa thao tác công việc."
-                            : "Project hiá»‡n khÃ´ng cho phÃ©p thao tÃ¡c cÃ´ng viá»‡c.");
+                            ? "The project has a pending topic change request, so task actions are temporarily locked."
+                            : "The project currently does not allow task operations.");
             return "redirect:/student/project";
         }
 
         refreshSprintState(project);
         ProjectTask task = findTaskInProject(project, taskId);
         if (task == null) {
-            redirectAttributes.addFlashAttribute("error", "CÃ´ng viá»‡c khÃ´ng tá»“n táº¡i trong project cá»§a nhÃ³m.");
+            redirectAttributes.addFlashAttribute("error", "Task does not exist in the group's project.");
             return "redirect:/student/project";
         }
         if (task.getStatus() == ProjectTask.STATUS_CANCELLED) {
-            redirectAttributes.addFlashAttribute("error", "Công việc này đã bị hủy nên không thể review.");
+            redirectAttributes.addFlashAttribute("error", "This task was cancelled, so it cannot be reviewed.");
             return "redirect:/student/project";
         }
         if (!canReviewTask(task, group, student)) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n khÃ´ng cÃ³ quyá»n duyá»‡t cÃ´ng viá»‡c nÃ y.");
+            redirectAttributes.addFlashAttribute("error", "You are not allowed to review this task.");
             return "redirect:/student/project";
         }
 
@@ -1964,28 +2071,30 @@ public class StudentProjectController {
         if ("approve".equals(normalizedAction)) {
             int updated = projectTaskRepository.approveTask(taskId, comment);
             if (updated <= 0) {
-                redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ duyá»‡t cÃ´ng viá»‡c. CÃ´ng viá»‡c cáº§n á»Ÿ tráº¡ng thÃ¡i chá» duyá»‡t.");
+                redirectAttributes.addFlashAttribute("error", "Unable to approve task. It must be in Awaiting Review status.");
                 return "redirect:/student/project";
             }
-            redirectAttributes.addFlashAttribute("success", "ÄÃ£ duyá»‡t hoÃ n thÃ nh cÃ´ng viá»‡c.");
+            studentNotificationService.notifyTaskCompleted(project, task);
+            redirectAttributes.addFlashAttribute("success", "Task approved as completed.");
             return "redirect:/student/project";
         }
 
         if ("reject".equals(normalizedAction)) {
             if (comment.isEmpty()) {
-                redirectAttributes.addFlashAttribute("error", "Vui lÃ²ng nháº­p lÃ½ do khi tráº£ láº¡i cÃ´ng viá»‡c.");
+                redirectAttributes.addFlashAttribute("error", "Please enter a reason when returning the task.");
                 return "redirect:/student/project";
             }
             int updated = projectTaskRepository.rejectTask(taskId, comment);
             if (updated <= 0) {
-                redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ tráº£ láº¡i cÃ´ng viá»‡c. CÃ´ng viá»‡c cáº§n á»Ÿ tráº¡ng thÃ¡i chá» duyá»‡t.");
+                redirectAttributes.addFlashAttribute("error", "Unable to return task. It must be in Awaiting Review status.");
                 return "redirect:/student/project";
             }
-            redirectAttributes.addFlashAttribute("success", "ÄÃ£ tráº£ láº¡i cÃ´ng viá»‡c Ä‘á»ƒ há»c viÃªn chá»‰nh sá»­a vÃ  ná»™p láº¡i.");
+            studentNotificationService.notifyTaskReturned(project, task, comment);
+            redirectAttributes.addFlashAttribute("success", "Task returned for the student to revise and resubmit.");
             return "redirect:/student/project";
         }
 
-        redirectAttributes.addFlashAttribute("error", "HÃ nh Ä‘á»™ng duyá»‡t cÃ´ng viá»‡c khÃ´ng há»£p lá»‡.");
+        redirectAttributes.addFlashAttribute("error", "Invalid task review action.");
         return "redirect:/student/project";
     }
 
@@ -2002,7 +2111,7 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n chÆ°a cÃ³ nhÃ³m trong há»c ká»³ hiá»‡n táº¡i.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
@@ -2013,49 +2122,53 @@ public class StudentProjectController {
         if (!canOperateTask(project, projectChangeOpen)) {
             redirectAttributes.addFlashAttribute("error",
                     projectChangeOpen
-                            ? "Project đang có yêu cầu đổi đề tài chờ xử lý nên tạm khóa thao tác công việc."
-                            : "Project hiá»‡n khÃ´ng cho phÃ©p thao tÃ¡c cÃ´ng viá»‡c.");
+                            ? "The project has a pending topic change request, so task actions are temporarily locked."
+                            : "The project currently does not allow task operations.");
             return "redirect:/student/project";
         }
 
         refreshSprintState(project);
         Sprint openSprint = sprintRepository.findOpenByProject(project.getProjectId());
         if (openSprint == null) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng cÃ³ Ä‘á»£t lÃ m viá»‡c Ä‘ang má»Ÿ Ä‘á»ƒ nháº­n cÃ´ng viá»‡c tháº¥t báº¡i.");
+            redirectAttributes.addFlashAttribute("error", "There is no open sprint to receive failed tasks.");
             return "redirect:/student/project";
         }
         if (openSprint.getSprintId() != sprintId) {
-            redirectAttributes.addFlashAttribute("error", "CÃ´ng viá»‡c tháº¥t báº¡i chá»‰ Ä‘Æ°á»£c chuyá»ƒn vÃ o Ä‘á»£t lÃ m viá»‡c Ä‘ang má»Ÿ.");
+            redirectAttributes.addFlashAttribute("error", "Failed tasks can only be moved to the open sprint.");
             return "redirect:/student/project";
         }
 
         ProjectTask task = findTaskInProject(project, taskId);
         if (task == null || task.getStatus() != ProjectTask.STATUS_FAILED_SPRINT) {
-            redirectAttributes.addFlashAttribute("error", "CÃ´ng viá»‡c khÃ´ng há»£p lá»‡ hoáº·c chÆ°a á»Ÿ tráº¡ng thÃ¡i tháº¥t báº¡i Ä‘á»£t.");
+            redirectAttributes.addFlashAttribute("error", "Task is invalid or not in Failed (sprint) status.");
             return "redirect:/student/project";
         }
         if (!groupMemberRepository.isMember(group.getGroupId(), assigneeId)) {
-            redirectAttributes.addFlashAttribute("error", "NgÆ°á»i thá»±c hiá»‡n pháº£i lÃ  thÃ nh viÃªn trong nhÃ³m.");
+            redirectAttributes.addFlashAttribute("error", "Assignee must be a member of the group.");
             return "redirect:/student/project";
         }
         if (!groupMemberRepository.isMember(group.getGroupId(), reviewerId)) {
-            redirectAttributes.addFlashAttribute("error", "NgÆ°á»i kiá»ƒm tra pháº£i lÃ  thÃ nh viÃªn trong nhÃ³m.");
+            redirectAttributes.addFlashAttribute("error", "Reviewer must be a member of the group.");
             return "redirect:/student/project";
         }
         int memberCount = groupMemberRepository.countMembers(group.getGroupId());
         if (assigneeId == reviewerId && memberCount > 1) {
             redirectAttributes.addFlashAttribute("error",
-                    "Người thực hiện và người kiểm tra phải là hai người khác nhau (trừ khi nhóm chỉ có 1 thành viên).");
+                    "Assignee and reviewer must be different people (unless the group has only 1 member).");
             return "redirect:/student/project";
         }
 
         int updated = projectTaskRepository.replanFailedTask(taskId, sprintId, assigneeId, reviewerId);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ chuyá»ƒn cÃ´ng viá»‡c tháº¥t báº¡i vÃ o Ä‘á»£t lÃ m viá»‡c má»›i.");
+            redirectAttributes.addFlashAttribute("error", "Unable to move failed task to the new sprint.");
             return "redirect:/student/project";
         }
 
-        redirectAttributes.addFlashAttribute("success", "ÄÃ£ chuyá»ƒn cÃ´ng viá»‡c tháº¥t báº¡i vÃ o Ä‘á»£t lÃ m viá»‡c má»›i vÃ  gÃ¡n láº¡i thÃ nh viÃªn.");
+        ProjectTask replannedTask = projectTaskRepository.findById(taskId);
+        if (replannedTask != null) {
+            studentNotificationService.notifyTaskReplanned(project, replannedTask);
+        }
+        redirectAttributes.addFlashAttribute("success", "Failed task moved to the new sprint and reassigned.");
         return "redirect:/student/project";
     }
 
@@ -2070,36 +2183,36 @@ public class StudentProjectController {
         }
         Group group = resolveCurrentGroup(student);
         if (group == null) {
-            redirectAttributes.addFlashAttribute("error", "Báº¡n chÆ°a cÃ³ nhÃ³m trong há»c ká»³ hiá»‡n táº¡i.");
+            redirectAttributes.addFlashAttribute("error", "You don't have a group in the current term.");
             return "redirect:/student/project";
         }
         if (!isLeader(group, student)) {
-            redirectAttributes.addFlashAttribute("error", "Chá»‰ trÆ°á»Ÿng nhÃ³m má»›i Ä‘Æ°á»£c chá»‘t link project.");
+            redirectAttributes.addFlashAttribute("error", "Only the group leader can finalize the project links.");
             return "redirect:/student/project";
         }
         Project project = projectRepository.findByGroupId(group.getGroupId());
         if (!isProjectApproved(project)) {
-            redirectAttributes.addFlashAttribute("error", "Project chÆ°a duyá»‡t nÃªn chÆ°a thá»ƒ chá»‘t link.");
+            redirectAttributes.addFlashAttribute("error", "The project is not approved yet, so links cannot be finalized.");
             return "redirect:/student/project";
         }
         if (!isWithinFinalLinkGrace(project)) {
-            redirectAttributes.addFlashAttribute("error", "Chá»‰ Ä‘Æ°á»£c chá»‘t link trong 1 ngÃ y sau khi project káº¿t thÃºc.");
+            redirectAttributes.addFlashAttribute("error", "Links can only be finalized within 1 day after the project ends.");
             return "redirect:/student/project";
         }
 
         String sourceUrl = normalize(sourceCodeUrl);
         String docUrl = normalize(documentUrl);
         if (sourceUrl.isEmpty() || docUrl.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Cáº§n nháº­p cáº£ link source code vÃ  link tÃ i liá»‡u.");
+            redirectAttributes.addFlashAttribute("error", "Both source code and document links are required.");
             return "redirect:/student/project";
         }
 
         int updated = projectRepository.updateFinalLinks(project.getProjectId(), sourceUrl, docUrl);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ cáº­p nháº­t link bÃ n giao cuá»‘i project.");
+            redirectAttributes.addFlashAttribute("error", "Unable to update final delivery links.");
             return "redirect:/student/project";
         }
-        redirectAttributes.addFlashAttribute("success", "ÄÃ£ cáº­p nháº­t link source code vÃ  tÃ i liá»‡u bÃ n giao.");
+        redirectAttributes.addFlashAttribute("success", "Final source code and document links updated.");
         return "redirect:/student/project";
     }
 }

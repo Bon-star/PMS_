@@ -6,6 +6,7 @@ import com.example.pms.repository.ClassRepository;
 import com.example.pms.service.StaffStudentService;
 import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
+import java.io.InputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,10 +14,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 @RequestMapping("/staff")
 public class StaffHomeController {
+
+    private static final long MAX_EXCEL_BYTES = 10L * 1024L * 1024L;
 
     @Autowired
     private ClassRepository classRepository;
@@ -31,8 +35,8 @@ public class StaffHomeController {
 
     private void bindCommon(Model model, HttpSession session) {
         Object fullName = session.getAttribute("fullName");
-        model.addAttribute("staffName", fullName != null ? fullName : "Nh\u00e2n vi\u00ean");
-        model.addAttribute("displayName", fullName != null ? fullName : "Nh\u00e2n vi\u00ean");
+        model.addAttribute("staffName", fullName != null ? fullName : "Staff");
+        model.addAttribute("displayName", fullName != null ? fullName : "Staff");
         model.addAttribute("displayRole", RoleDisplayUtil.toDisplayRole("Staff"));
         model.addAttribute("classes", classRepository.findAll());
     }
@@ -84,6 +88,7 @@ public class StaffHomeController {
         }
 
         bindCommon(model, session);
+        model.addAttribute("addMode", "single");
         model.addAttribute("studentCode", studentCode);
         model.addAttribute("fullNameInput", fullName);
         model.addAttribute("schoolEmail", schoolEmail);
@@ -93,7 +98,7 @@ public class StaffHomeController {
         try {
             staffStudentService.createStudentWithAccount(studentCode, fullName, schoolEmail, phoneNumber, classId);
             model.addAttribute("success",
-                    "Đã tạo học viên và tài khoản thành công. Học viên có thể vào trang đăng ký để đặt mật khẩu.");
+                    "Student and account created successfully. The student can visit the registration page to set a password.");
 
             model.addAttribute("studentCode", "");
             model.addAttribute("fullNameInput", "");
@@ -103,7 +108,53 @@ public class StaffHomeController {
         } catch (IllegalArgumentException ex) {
             model.addAttribute("error", ex.getMessage());
         } catch (Exception ex) {
-            model.addAttribute("error", "Không thể tạo học viên. Vui lòng thử lại.");
+            model.addAttribute("error", "Unable to create student. Please try again.");
+        }
+
+        return "staff/students";
+    }
+
+    @PostMapping("/students/import")
+    public String importStudents(@RequestParam("excelFile") MultipartFile excelFile,
+            @RequestParam("classId") Integer classId,
+            Model model,
+            HttpSession session) {
+
+        if (!isStaffSession(session)) {
+            return "redirect:/acc/log";
+        }
+
+        bindCommon(model, session);
+        model.addAttribute("addMode", "bulk");
+        model.addAttribute("bulkSelectedClassId", classId);
+
+        if (excelFile == null || excelFile.isEmpty()) {
+            model.addAttribute("error", "Please choose an Excel file.");
+            return "staff/students";
+        }
+
+        String fileName = excelFile.getOriginalFilename();
+        if (fileName == null || !fileName.toLowerCase().endsWith(".xlsx")) {
+            model.addAttribute("error", "Only .xlsx files are supported.");
+            return "staff/students";
+        }
+
+        if (excelFile.getSize() > MAX_EXCEL_BYTES) {
+            model.addAttribute("error", "Excel file is too large (max 10MB).");
+            return "staff/students";
+        }
+
+        try (InputStream inputStream = excelFile.getInputStream()) {
+            StaffStudentService.ImportResult result = staffStudentService.importStudentsFromExcel(inputStream, classId);
+            if (result.hasErrors()) {
+                model.addAttribute("error", "Import failed. Please check the file.");
+                model.addAttribute("importErrors", result.getErrors());
+                return "staff/students";
+            }
+            model.addAttribute("importSuccessCount", result.getSuccessCount());
+            model.addAttribute("success", "Imported " + result.getSuccessCount() + " students.");
+        } catch (Exception ex) {
+            model.addAttribute("error", "Unable to import students. Please try again.");
         }
 
         return "staff/students";
@@ -119,7 +170,7 @@ public class StaffHomeController {
         } catch (IllegalArgumentException ex) {
             model.addAttribute("error", ex.getMessage());
         } catch (Exception ex) {
-            model.addAttribute("error", "Khong the tra cuu hoc vien. Vui long thu lai.");
+            model.addAttribute("error", "Unable to look up student. Please try again.");
         }
 
         return "staff/students";
@@ -171,7 +222,7 @@ public class StaffHomeController {
         bindCommon(model, session);
 
         if (studentId == null || studentId <= 0) {
-            model.addAttribute("error", "Vui long tra cuu hoc vien truoc khi cap nhat.");
+            model.addAttribute("error", "Please look up a student before updating.");
             return "staff/students";
         }
 
@@ -184,7 +235,7 @@ public class StaffHomeController {
                     classId);
             bindEditStudent(model, updated);
             model.addAttribute("studentRef", updated.getStudentCode());
-            model.addAttribute("success", "Da cap nhat thong tin hoc vien.");
+            model.addAttribute("success", "Student information updated.");
         } catch (IllegalArgumentException ex) {
             model.addAttribute("error", ex.getMessage());
             try {
@@ -195,7 +246,7 @@ public class StaffHomeController {
                 // ignore
             }
         } catch (Exception ex) {
-            model.addAttribute("error", "Khong the cap nhat hoc vien. Vui long thu lai.");
+            model.addAttribute("error", "Unable to update student. Please try again.");
             try {
                 Student existing = staffStudentService.findByReference(String.valueOf(studentId));
                 bindEditStudent(model, existing);

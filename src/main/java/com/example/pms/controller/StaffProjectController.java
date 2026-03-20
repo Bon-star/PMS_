@@ -14,6 +14,7 @@ import com.example.pms.repository.SemesterRepository;
 import com.example.pms.repository.SprintRepository;
 import com.example.pms.repository.StaffRepository;
 import com.example.pms.service.MailService;
+import com.example.pms.service.StudentNotificationService;
 import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
 import java.time.LocalDateTime;
@@ -58,6 +59,9 @@ public class StaffProjectController {
 
     @Autowired
     private MailService mailService;
+
+    @Autowired
+    private StudentNotificationService studentNotificationService;
 
     private Account getSessionAccount(HttpSession session) {
         return (Account) session.getAttribute("account");
@@ -153,20 +157,20 @@ public class StaffProjectController {
             normalizedStartDate = parseDateTimeInput(startDate);
             normalizedEndDate = parseDateTimeInput(endDate);
         } catch (Exception ex) {
-            redirectAttributes.addFlashAttribute("error", "Thá»i gian báº¯t Ä‘áº§u/káº¿t thÃºc khÃ´ng há»£p lá»‡.");
+            redirectAttributes.addFlashAttribute("error", "Invalid start/end time.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         if (!"INDIA".equals(normalizedSource)
                 && !"LECTURER".equals(normalizedSource)
                 && !"STUDENT".equals(normalizedSource)) {
-            redirectAttributes.addFlashAttribute("error", "Nguá»“n ná»™i dung project khÃ´ng há»£p lá»‡.");
+            redirectAttributes.addFlashAttribute("error", "Invalid project content source.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         Project existed = projectRepository.findByGroupId(groupId);
         if (existed != null && existed.getProjectId() > 0) {
-            redirectAttributes.addFlashAttribute("error", "NhÃ³m nÃ y Ä‘Ã£ cÃ³ project.");
+            redirectAttributes.addFlashAttribute("error", "This group already has a project.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
@@ -175,20 +179,20 @@ public class StaffProjectController {
         if ("STUDENT".equals(normalizedSource)) {
             approvalStatus = Project.STATUS_WAITING_STUDENT_CONTENT;
             if (normalizedName.isEmpty()) {
-                normalizedName = "Äá» tÃ i do há»c viÃªn Ä‘á» xuáº¥t";
+                normalizedName = "Student-proposed topic";
             }
         } else {
             approvalStatus = Project.STATUS_APPROVED;
             if (normalizedName.isEmpty()) {
-                redirectAttributes.addFlashAttribute("error", "Vui lÃ²ng nháº­p tÃªn project.");
+                redirectAttributes.addFlashAttribute("error", "Please enter a project name.");
                 return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
             }
             if (normalizedStartDate == null || normalizedEndDate == null) {
-                redirectAttributes.addFlashAttribute("error", "Project Ä‘Ã£ duyá»‡t pháº£i cÃ³ thá»i gian báº¯t Ä‘áº§u vÃ  káº¿t thÃºc.");
+                redirectAttributes.addFlashAttribute("error", "Approved projects must have start and end dates.");
                 return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
             }
             if (!normalizedEndDate.isAfter(normalizedStartDate)) {
-                redirectAttributes.addFlashAttribute("error", "Thá»i gian káº¿t thÃºc pháº£i sau thá»i gian báº¯t Ä‘áº§u.");
+                redirectAttributes.addFlashAttribute("error", "End time must be after start time.");
                 return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
             }
         }
@@ -203,11 +207,15 @@ public class StaffProjectController {
                 approvalStatus == Project.STATUS_APPROVED ? normalizedEndDate : null,
                 studentCanEdit);
         if (projectId <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ táº¡o project. Vui lÃ²ng kiá»ƒm tra dá»¯ liá»‡u.");
+            redirectAttributes.addFlashAttribute("error", "Unable to create project. Please check the data.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
-        redirectAttributes.addFlashAttribute("success", "ÄÃ£ táº¡o project thÃ nh cÃ´ng cho nhÃ³m.");
+        Project createdProject = projectRepository.findById(projectId);
+        if (createdProject != null) {
+            studentNotificationService.notifyProjectAssigned(createdProject);
+        }
+        redirectAttributes.addFlashAttribute("success", "Project created successfully for the group.");
         return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
     }
 
@@ -223,7 +231,7 @@ public class StaffProjectController {
         int resolvedSemesterId = resolveSemesterId(semesterId);
         ProjectEditRequest request = projectEditRequestRepository.findById(requestId);
         if (request == null || !"PENDING".equalsIgnoreCase(request.getStatus())) {
-            redirectAttributes.addFlashAttribute("error", "YÃªu cáº§u cáº¥p quyá»n khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ xá»­ lÃ½.");
+            redirectAttributes.addFlashAttribute("error", "Edit access request is invalid or already processed.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
@@ -233,12 +241,16 @@ public class StaffProjectController {
 
         int updated = projectEditRequestRepository.approve(requestId, staffId);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ duyá»‡t yÃªu cáº§u cáº¥p quyá»n.");
+            redirectAttributes.addFlashAttribute("error", "Unable to approve edit access request.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         projectRepository.setStudentCanEdit(request.getProjectId(), true);
-        redirectAttributes.addFlashAttribute("success", "ÄÃ£ cáº¥p quyá»n cáº­p nháº­t ná»™i dung project cho há»c viÃªn.");
+        Project project = projectRepository.findById(request.getProjectId());
+        if (project != null) {
+            studentNotificationService.notifyEditAccessGranted(project);
+        }
+        redirectAttributes.addFlashAttribute("success", "Edit access granted to students for project content.");
         return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
     }
 
@@ -255,13 +267,13 @@ public class StaffProjectController {
         int resolvedSemesterId = resolveSemesterId(semesterId);
         String normalizedReason = normalize(reason);
         if (normalizedReason.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Vui lÃ²ng nháº­p lÃ½ do tá»« chá»‘i.");
+            redirectAttributes.addFlashAttribute("error", "Please provide a rejection reason.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         ProjectEditRequest request = projectEditRequestRepository.findById(requestId);
         if (request == null || !"PENDING".equalsIgnoreCase(request.getStatus())) {
-            redirectAttributes.addFlashAttribute("error", "YÃªu cáº§u cáº¥p quyá»n khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ xá»­ lÃ½.");
+            redirectAttributes.addFlashAttribute("error", "Edit access request is invalid or already processed.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
@@ -271,12 +283,16 @@ public class StaffProjectController {
 
         int updated = projectEditRequestRepository.reject(requestId, staffId, normalizedReason);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ tá»« chá»‘i yÃªu cáº§u cáº¥p quyá»n.");
+            redirectAttributes.addFlashAttribute("error", "Unable to reject edit access request.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         projectRepository.setStudentCanEdit(request.getProjectId(), false);
-        redirectAttributes.addFlashAttribute("success", "ÄÃ£ tá»« chá»‘i yÃªu cáº§u cáº¥p quyá»n cáº­p nháº­t project.");
+        Project project = projectRepository.findById(request.getProjectId());
+        if (project != null) {
+            studentNotificationService.notifyEditAccessRejected(project, normalizedReason);
+        }
+        redirectAttributes.addFlashAttribute("success", "Edit access request rejected.");
         return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
     }
 
@@ -292,17 +308,17 @@ public class StaffProjectController {
         int resolvedSemesterId = resolveSemesterId(semesterId);
         ProjectChangeRequest request = projectChangeRequestRepository.findById(requestId);
         if (request == null || !ProjectChangeRequest.STATUS_PENDING_STAFF.equalsIgnoreCase(request.getStatus())) {
-            redirectAttributes.addFlashAttribute("error", "YÃªu cáº§u Ä‘á»•i project khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ xá»­ lÃ½.");
+            redirectAttributes.addFlashAttribute("error", "Project change request is invalid or already processed.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         Project project = projectRepository.findById(request.getProjectId());
         if (project == null) {
-            redirectAttributes.addFlashAttribute("error", "Project khÃ´ng cÃ²n tá»“n táº¡i.");
+            redirectAttributes.addFlashAttribute("error", "Project no longer exists.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
         if (projectTaskRepository.hasDoneTasksByProject(project.getProjectId())) {
-            redirectAttributes.addFlashAttribute("error", "Project Ä‘Ã£ cÃ³ cÃ´ng viá»‡c hoÃ n thÃ nh nÃªn khÃ´ng thá»ƒ chuyá»ƒn yÃªu cáº§u Ä‘á»•i Ä‘á» tÃ i cho giáº£ng viÃªn.");
+            redirectAttributes.addFlashAttribute("error", "Projects with completed tasks cannot forward change requests to the lecturer.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
@@ -312,7 +328,7 @@ public class StaffProjectController {
 
         int updated = projectChangeRequestRepository.approveByStaff(requestId, staffId);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ chuyá»ƒn yÃªu cáº§u Ä‘á»•i project sang giáº£ng viÃªn.");
+            redirectAttributes.addFlashAttribute("error", "Unable to forward the project change request to the lecturer.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
@@ -328,7 +344,7 @@ public class StaffProjectController {
             try {
                 mailService.sendProjectChangeReviewRequest(
                         email,
-                        normalize(project.getProjectName()).isEmpty() ? "Project chÆ°a cÃ³ tÃªn" : project.getProjectName(),
+                        normalize(project.getProjectName()).isEmpty() ? "Untitled project" : project.getProjectName(),
                         request.getProposedProjectName(),
                         request.getGroupName());
                 sent++;
@@ -339,11 +355,12 @@ public class StaffProjectController {
 
         if (uniqueEmails.isEmpty()) {
             redirectAttributes.addFlashAttribute("success",
-                    "ÄÃ£ chuyá»ƒn yÃªu cáº§u Ä‘á»•i project sang bÆ°á»›c giáº£ng viÃªn duyá»‡t. Hiá»‡n chÆ°a cÃ³ giáº£ng viÃªn nÃ o nháº­n Ä‘Æ°á»£c email.");
+                    "Project change request forwarded for lecturer approval. No lecturer has received the email yet.");
         } else {
             redirectAttributes.addFlashAttribute("success",
-                    "ÄÃ£ chuyá»ƒn yÃªu cáº§u Ä‘á»•i project sang giáº£ng viÃªn duyá»‡t. Email Ä‘Ã£ gá»­i: " + sent + "/" + uniqueEmails.size() + ".");
+                    "Project change request forwarded for lecturer approval. Emails sent: " + sent + "/" + uniqueEmails.size() + ".");
         }
+        studentNotificationService.notifyProjectChangeForwarded(project);
         return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
     }
 
@@ -360,13 +377,13 @@ public class StaffProjectController {
         int resolvedSemesterId = resolveSemesterId(semesterId);
         String normalizedReason = normalize(reason);
         if (normalizedReason.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Vui lÃ²ng nháº­p lÃ½ do tá»« chá»‘i yÃªu cáº§u Ä‘á»•i project.");
+            redirectAttributes.addFlashAttribute("error", "Please provide a rejection reason for the project change request.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
         ProjectChangeRequest request = projectChangeRequestRepository.findById(requestId);
         if (request == null || !ProjectChangeRequest.STATUS_PENDING_STAFF.equalsIgnoreCase(request.getStatus())) {
-            redirectAttributes.addFlashAttribute("error", "YÃªu cáº§u Ä‘á»•i project khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ xá»­ lÃ½.");
+            redirectAttributes.addFlashAttribute("error", "Project change request is invalid or already processed.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
@@ -376,11 +393,15 @@ public class StaffProjectController {
 
         int updated = projectChangeRequestRepository.rejectByStaff(requestId, staffId, normalizedReason);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "KhÃ´ng thá»ƒ tá»« chá»‘i yÃªu cáº§u Ä‘á»•i project.");
+            redirectAttributes.addFlashAttribute("error", "Unable to reject the project change request.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
-        redirectAttributes.addFlashAttribute("success", "ÄÃ£ tá»« chá»‘i yÃªu cáº§u Ä‘á»•i project.");
+        Project project = projectRepository.findById(request.getProjectId());
+        if (project != null) {
+            studentNotificationService.notifyProjectChangeRejected(project, normalizedReason);
+        }
+        redirectAttributes.addFlashAttribute("success", "Project change request rejected.");
         return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
     }
 
@@ -397,7 +418,7 @@ public class StaffProjectController {
         Project project = projectRepository.findById(projectId);
         if (project == null || project.getProjectId() <= 0) {
             int resolvedSemesterId = resolveSemesterId(semesterId);
-            redirectAttributes.addFlashAttribute("error", "Project khÃ´ng tá»“n táº¡i.");
+            redirectAttributes.addFlashAttribute("error", "Project does not exist.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 

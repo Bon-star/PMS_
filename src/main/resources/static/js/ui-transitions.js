@@ -53,7 +53,7 @@
     window.loadAuthPage = loadAuthPage;
     window.replaceAuthContentFromHTML = replaceAuthContentFromHTML;
 
-    function showServerError(status, html){ const w=document.querySelector('.auth-wrapper'); if(!w){ alert('Server error: '+status); console.error(html); return; } let b=w.querySelector('.server-error-box'); if(!b){ b=document.createElement('div'); b.className='server-error-box'; b.style.margin='12px'; b.style.padding='12px'; b.style.background='#8b1f1f'; b.style.color='#fff'; b.style.borderRadius='6px'; w.insertBefore(b, w.firstChild);} b.textContent='Lỗi từ máy chủ (HTTP '+status+'). Vui lòng thử lại.'; console.error('Server HTML response:', html); }
+    function showServerError(status, html){ const w=document.querySelector('.auth-wrapper'); if(!w){ alert('Server error: '+status); console.error(html); return; } let b=w.querySelector('.server-error-box'); if(!b){ b=document.createElement('div'); b.className='server-error-box'; b.style.margin='12px'; b.style.padding='12px'; b.style.background='#8b1f1f'; b.style.color='#fff'; b.style.borderRadius='6px'; w.insertBefore(b, w.firstChild);} b.textContent='Server error (HTTP '+status+'). Please try again.'; console.error('Server HTML response:', html); }
 
 
     window.addEventListener('popstate', function(e){ loadAuthPage(window.location.pathname + window.location.search, false); });
@@ -126,7 +126,7 @@
         const params = new URLSearchParams(fd);
         finalUrl = action + (action.indexOf('?') === -1 ? '?' : '&') + params.toString();
       }
-      const submitBtn = form.querySelector('button[type="submit"]'); if(submitBtn){ submitBtn.disabled=true; submitBtn.dataset._orig=submitBtn.innerHTML; submitBtn.innerHTML='Đang xử lý...'; submitBtn.classList.add('btn-disabled'); }
+      const submitBtn = form.querySelector('button[type="submit"]'); if(submitBtn){ submitBtn.disabled=true; submitBtn.dataset._orig=submitBtn.innerHTML; submitBtn.innerHTML='Processing...'; submitBtn.classList.add('btn-disabled'); }
       console.debug('[AJAX submit] method=', method, 'url=', finalUrl);
       fetch(finalUrl, opts).then(r=>r.text().then(t=>({ok:r.ok,status:r.status,text:t}))).then(res=>{ if(!res.ok){ if(submitBtn){ try{ submitBtn.disabled=false; submitBtn.innerHTML=submitBtn.dataset._orig||submitBtn.innerHTML; submitBtn.classList.remove('btn-disabled'); }catch(e){} } showServerError(res.status, res.text); return; } if(submitBtn){ try{ submitBtn.disabled=false; submitBtn.innerHTML=submitBtn.dataset._orig||submitBtn.innerHTML; submitBtn.classList.remove('btn-disabled'); }catch(e){} }
         const pushHistory = (method === 'get');
@@ -175,12 +175,12 @@
           if(!showErrors && p1.length === 0 && p2.length === 0 && ph.length === 0){ clearError(); return true; }
           // only validate phone if the phone input exists (reset form doesn't have phone)
           if(phone){
-            if(ph.length === 0){ showError('Yêu cầu nhập số điện thoại'); return false; }
+            if(ph.length === 0){ showError('Phone number is required'); return false; }
             // simple digits check
-            if(!/^\d{9,12}$/.test(ph)) { showError('Số điện thoại không hợp lệ (9-12 chữ số)'); return false; }
+            if(!/^\d{9,12}$/.test(ph)) { showError('Invalid phone number (9-12 digits)'); return false; }
           }
-          if(p1.length < 6){ showError('Mật khẩu tối thiểu 6 ký tự'); return false; }
-          if(p1 !== p2){ showError('Mật khẩu không khớp'); return false; }
+          if(p1.length < 6){ showError('Password must be at least 6 characters'); return false; }
+          if(p1 !== p2){ showError('Passwords do not match'); return false; }
           clearError(); return true;
         }
 

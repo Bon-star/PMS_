@@ -179,7 +179,7 @@ public class AccountController {
         String normalizedEmail = normalizeInput(email);
         ResolvedIdentity identity = resolveIdentityByEmail(normalizedEmail);
         if (identity == null) {
-            model.addAttribute("error", "Sai email hoặc mật khẩu!");
+            model.addAttribute("error", "Incorrect email or password!");
             model.addAttribute("email", normalizedEmail);
             return "login";
         }
@@ -187,19 +187,19 @@ public class AccountController {
         Account account = resolveAccountFromIdentity(identity, normalizedEmail, false);
         if (account == null || account.getPasswordHash() == null || account.getPasswordHash().trim().isEmpty()
                 || !passwordEncoder.matches(pass, account.getPasswordHash())) {
-            model.addAttribute("error", "Sai email hoặc mật khẩu!");
+            model.addAttribute("error", "Incorrect email or password!");
             model.addAttribute("email", normalizedEmail);
             return "login";
         }
 
         if (account.getRole() == null || !identity.role.equalsIgnoreCase(account.getRole())) {
-            model.addAttribute("error", "Dữ liệu tài khoản không đồng bộ với hồ sơ người dùng.");
+            model.addAttribute("error", "Account data is not synchronized with the user profile.");
             model.addAttribute("email", normalizedEmail);
             return "login";
         }
 
         if (!account.getIsActive()) {
-            model.addAttribute("error", "Tài khoản chưa được kích hoạt!");
+            model.addAttribute("error", "Account is not activated yet.");
             model.addAttribute("email", normalizedEmail);
             return "login";
         }
@@ -243,7 +243,7 @@ public class AccountController {
         String normalizedPhone = normalizeInput(phone);
 
         if (!pass.equals(repass)) {
-            model.addAttribute("error", "Mật khẩu nhập lại không khớp!");
+            model.addAttribute("error", "Passwords do not match!");
             model.addAttribute("email", normalizedEmail);
             model.addAttribute("phone", normalizedPhone);
             return "register";
@@ -251,14 +251,14 @@ public class AccountController {
 
         ResolvedIdentity identity = resolveIdentityByEmail(normalizedEmail);
         if (identity == null) {
-            model.addAttribute("error", "Email này chưa có trong dữ liệu nhà trường!");
+            model.addAttribute("error", "This email is not in the school records.");
             model.addAttribute("email", normalizedEmail);
             model.addAttribute("phone", normalizedPhone);
             return "register";
         }
 
         if (!isPhoneMatch(identity, normalizedPhone)) {
-            model.addAttribute("error", "Số điện thoại không khớp với hồ sơ nhà trường!");
+            model.addAttribute("error", "Phone number does not match the school record.");
             model.addAttribute("email", normalizedEmail);
             model.addAttribute("phone", normalizedPhone);
             return "register";
@@ -266,14 +266,14 @@ public class AccountController {
 
         Account account = resolveAccountFromIdentity(identity, normalizedEmail, true);
         if (account == null) {
-            model.addAttribute("error", "Không thể khởi tạo tài khoản. Vui lòng liên hệ quản trị hệ thống.");
+            model.addAttribute("error", "Unable to create the account. Please contact the system administrator.");
             model.addAttribute("email", normalizedEmail);
             model.addAttribute("phone", normalizedPhone);
             return "register";
         }
 
         if (account.getIsActive()) {
-            model.addAttribute("error", "Tài khoản này đã được kích hoạt. Vui lòng đăng nhập.");
+            model.addAttribute("error", "This account is already activated. Please sign in.");
             return "register";
         }
 
@@ -281,7 +281,7 @@ public class AccountController {
         try {
             mailService.sendOtp(normalizedEmail, otp);
         } catch (Exception e) {
-            model.addAttribute("error", "Lỗi gửi mail OTP. Vui lòng thử lại!");
+            model.addAttribute("error", "Failed to send OTP email. Please try again.");
             model.addAttribute("email", normalizedEmail);
             model.addAttribute("phone", normalizedPhone);
             return "register";
@@ -307,15 +307,90 @@ public class AccountController {
             Account acc = resolveAccountFromIdentity(identity, normalizedEmail, false);
             if (acc != null) {
                 accountRepo.updatePasswordById(acc.getId(), passwordEncoder.encode(password));
-                model.addAttribute("success", "Kích hoạt tài khoản thành công! Hãy đăng nhập.");
+                model.addAttribute("success", "Account activated successfully! Please sign in.");
                 return "login";
             }
         }
 
-        model.addAttribute("error", "Mã OTP không đúng hoặc hết hạn!");
+        model.addAttribute("error", "Invalid or expired OTP.");
         model.addAttribute("email", normalizedEmail);
         model.addAttribute("password", password);
         model.addAttribute("type", "REGISTER");
+        return "verify-otp";
+    }
+
+    @PostMapping("/resend-otp")
+    public String resendOtp(@RequestParam("type") String type,
+            @RequestParam("email") String email,
+            @RequestParam(value = "password", required = false) String password,
+            @RequestParam(value = "phone", required = false) String phone,
+            HttpSession session,
+            Model model) {
+
+        String normalizedType = normalizeInput(type).toUpperCase();
+        String normalizedEmail = normalizeInput(email);
+
+        if ("REGISTER".equals(normalizedType)) {
+            String normalizedPhone = normalizeInput(phone);
+            ResolvedIdentity identity = resolveIdentityByEmail(normalizedEmail);
+            if (identity == null) {
+                model.addAttribute("error", "This email is not in the school records.");
+                return "register";
+            }
+
+            if (!isPhoneMatch(identity, normalizedPhone)) {
+                model.addAttribute("error", "Phone number does not match the school record.");
+                model.addAttribute("email", normalizedEmail);
+                model.addAttribute("phone", normalizedPhone);
+                return "register";
+            }
+
+            Account account = resolveAccountFromIdentity(identity, normalizedEmail, true);
+            if (account == null) {
+                model.addAttribute("error", "Unable to create the account. Please contact the system administrator.");
+                model.addAttribute("email", normalizedEmail);
+                model.addAttribute("phone", normalizedPhone);
+                return "register";
+            }
+
+            if (account.getIsActive()) {
+                model.addAttribute("error", "This account is already activated. Please sign in.");
+                return "register";
+            }
+
+            try {
+                String otp = otpService.generateOtp(normalizedEmail);
+                mailService.sendOtp(normalizedEmail, otp);
+                model.addAttribute("success", "A new OTP has been sent. The previous code is no longer valid.");
+            } catch (Exception e) {
+                model.addAttribute("error", "Failed to resend OTP email. Please try again.");
+            }
+
+            model.addAttribute("email", normalizedEmail);
+            model.addAttribute("password", password);
+            model.addAttribute("phone", normalizedPhone);
+            model.addAttribute("type", "REGISTER");
+            return "verify-otp";
+        }
+
+        String resetEmail = normalizedEmail;
+        if (resetEmail.isEmpty()) {
+            resetEmail = (String) session.getAttribute("forgotEmail");
+        }
+        if (resetEmail == null || resetEmail.isBlank()) {
+            return "redirect:/acc/forgot";
+        }
+
+        try {
+            String otp = otpService.generateOtp(resetEmail);
+            mailService.sendOtp(resetEmail, otp);
+            model.addAttribute("success", "A new OTP has been sent. The previous code is no longer valid.");
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to resend OTP email. Please try again.");
+        }
+
+        model.addAttribute("email", resetEmail);
+        model.addAttribute("type", "RESET");
         return "verify-otp";
     }
 
@@ -348,18 +423,18 @@ public class AccountController {
 
         ResolvedIdentity identity = resolveIdentityByEmail(normalizedEmail);
         if (identity == null) {
-            model.addAttribute("error", "Email không tồn tại!");
+            model.addAttribute("error", "Email does not exist.");
             return "forgot-password";
         }
 
         Account acc = resolveAccountFromIdentity(identity, normalizedEmail, false);
         if (acc == null) {
-            model.addAttribute("error", "Tài khoản chưa được khởi tạo hoặc không hợp lệ!");
+            model.addAttribute("error", "Account has not been created or is invalid.");
             return "forgot-password";
         }
 
         if (acc.getAuthProvider() != null && !"LOCAL".equalsIgnoreCase(acc.getAuthProvider())) {
-            model.addAttribute("error", "Tài khoản mạng xã hội không thể đổi mật khẩu!");
+            model.addAttribute("error", "Social login accounts cannot change the password.");
             return "forgot-password";
         }
 
@@ -367,7 +442,7 @@ public class AccountController {
         try {
             mailService.sendOtp(normalizedEmail, otp);
         } catch (Exception e) {
-            model.addAttribute("error", "Lỗi gửi mail!");
+            model.addAttribute("error", "Failed to send OTP email. Please try again.");
             return "forgot-password";
         }
 
@@ -391,7 +466,7 @@ public class AccountController {
             return "redirect:/acc/reset-pass";
         }
 
-        model.addAttribute("error", "Mã OTP sai!");
+        model.addAttribute("error", "Invalid OTP.");
         model.addAttribute("email", email);
         model.addAttribute("type", "RESET");
         return "verify-otp";
@@ -417,7 +492,7 @@ public class AccountController {
         }
 
         if (!pass.equals(repass)) {
-            model.addAttribute("error", "Mật khẩu không khớp!");
+            model.addAttribute("error", "Passwords do not match.");
             return "reset-password";
         }
 
@@ -435,7 +510,8 @@ public class AccountController {
         }
 
         session.invalidate();
-        model.addAttribute("success", "Đổi mật khẩu thành công!");
+        model.addAttribute("success", "Password changed successfully!");
         return "login";
     }
 }
+

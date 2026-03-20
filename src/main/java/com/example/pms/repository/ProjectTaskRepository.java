@@ -54,7 +54,7 @@ public class ProjectTaskRepository {
     private int createMainSprint(int projectId, LocalDate startDate, LocalDate endDate) {
         ensureSchema();
         String sql = "INSERT INTO Sprints (ProjectID, SprintName, StartDate, EndDate, IsClosed) " +
-                "OUTPUT INSERTED.SprintID VALUES (?, N'Đợt chính', ?, ?, 0)";
+                "OUTPUT INSERTED.SprintID VALUES (?, N'Main sprint', ?, ?, 0)";
         Integer sprintId = db.queryForObject(sql, Integer.class, projectId, startDate, endDate);
         return sprintId != null ? sprintId : -1;
     }

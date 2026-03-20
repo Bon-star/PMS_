@@ -11,6 +11,7 @@ import com.example.pms.repository.ProjectChangeRequestRepository;
 import com.example.pms.repository.ProjectRepository;
 import com.example.pms.repository.ProjectTaskRepository;
 import com.example.pms.repository.SprintRepository;
+import com.example.pms.service.StudentNotificationService;
 import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
 import java.time.LocalDate;
@@ -49,6 +50,9 @@ public class LecturerProjectController {
 
     @Autowired
     private SprintRepository sprintRepository;
+
+    @Autowired
+    private StudentNotificationService studentNotificationService;
 
     private String normalize(String value) {
         return value == null ? "" : value.trim();
@@ -117,13 +121,13 @@ public class LecturerProjectController {
         }
 
         if (!projectRepository.canLecturerAccessProject(lecturer.getLecturerId(), projectId)) {
-            redirectAttributes.addFlashAttribute("error", "Bạn không có quyền xem tiến độ của project này.");
+            redirectAttributes.addFlashAttribute("error", "You do not have permission to view this project's progress.");
             return "redirect:/lecturer/projects";
         }
 
         Project project = projectRepository.findById(projectId);
         if (project == null || project.getProjectId() <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Project không tồn tại.");
+            redirectAttributes.addFlashAttribute("error", "Project does not exist.");
             return "redirect:/lecturer/projects";
         }
 
@@ -153,29 +157,30 @@ public class LecturerProjectController {
         }
 
         if (!projectRepository.canLecturerAccessProject(lecturer.getLecturerId(), projectId)) {
-            redirectAttributes.addFlashAttribute("error", "Bạn không có quyền bình luận cho project này.");
+            redirectAttributes.addFlashAttribute("error", "You do not have permission to comment on this project.");
             return "redirect:/lecturer/projects";
         }
 
         Project project = projectRepository.findById(projectId);
         if (project == null || project.getProjectId() <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Project không tồn tại.");
+            redirectAttributes.addFlashAttribute("error", "Project does not exist.");
             return "redirect:/lecturer/projects";
         }
 
         String normalizedComment = normalize(commentContent);
         if (normalizedComment.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Vui lòng nhập nội dung bình luận.");
+            redirectAttributes.addFlashAttribute("error", "Please enter comment content.");
             return "redirect:/lecturer/projects/" + projectId + "/progress";
         }
 
         int created = projectCommentRepository.create(projectId, lecturer.getLecturerId(), normalizedComment);
         if (created <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể lưu bình luận tiến độ.");
+            redirectAttributes.addFlashAttribute("error", "Unable to save progress comment.");
             return "redirect:/lecturer/projects/" + projectId + "/progress";
         }
 
-        redirectAttributes.addFlashAttribute("success", "Đã lưu bình luận tiến độ.");
+        studentNotificationService.notifyLecturerComment(project, normalizedComment);
+        redirectAttributes.addFlashAttribute("success", "Progress comment saved.");
         return "redirect:/lecturer/projects/" + projectId + "/progress";
     }
 
@@ -191,7 +196,7 @@ public class LecturerProjectController {
         }
 
         if (!canReviewProject(lecturer.getLecturerId(), projectId)) {
-            redirectAttributes.addFlashAttribute("error", "Bạn không có quyền duyệt project này hoặc project không còn chờ duyệt.");
+            redirectAttributes.addFlashAttribute("error", "You do not have permission to approve this project or it is no longer pending.");
             return "redirect:/lecturer/projects";
         }
 
@@ -201,12 +206,12 @@ public class LecturerProjectController {
             start = LocalDate.parse(normalize(startDate));
             end = LocalDate.parse(normalize(endDate));
         } catch (Exception ex) {
-            redirectAttributes.addFlashAttribute("error", "Ngày bắt đầu/kết thúc không hợp lệ.");
+            redirectAttributes.addFlashAttribute("error", "Invalid start/end date.");
             return "redirect:/lecturer/projects";
         }
 
         if (!end.isAfter(start)) {
-            redirectAttributes.addFlashAttribute("error", "Ngày kết thúc phải sau ngày bắt đầu.");
+            redirectAttributes.addFlashAttribute("error", "End date must be after start date.");
             return "redirect:/lecturer/projects";
         }
 
@@ -214,11 +219,15 @@ public class LecturerProjectController {
         LocalDateTime endTime = end.atTime(LocalTime.of(23, 59, 59));
         int updated = projectRepository.approveByLecturer(projectId, startTime, endTime);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể duyệt project.");
+            redirectAttributes.addFlashAttribute("error", "Unable to approve project.");
             return "redirect:/lecturer/projects";
         }
 
-        redirectAttributes.addFlashAttribute("success", "Đã duyệt project thành công.");
+        Project approvedProject = projectRepository.findById(projectId);
+        if (approvedProject != null) {
+            studentNotificationService.notifyProjectApproved(approvedProject);
+        }
+        redirectAttributes.addFlashAttribute("success", "Project approved successfully.");
         return "redirect:/lecturer/projects";
     }
 
@@ -233,23 +242,27 @@ public class LecturerProjectController {
         }
 
         if (!canReviewProject(lecturer.getLecturerId(), projectId)) {
-            redirectAttributes.addFlashAttribute("error", "Bạn không có quyền từ chối project này hoặc project không còn chờ duyệt.");
+            redirectAttributes.addFlashAttribute("error", "You do not have permission to reject this project or it is no longer pending.");
             return "redirect:/lecturer/projects";
         }
 
         String normalizedReason = normalize(reason);
         if (normalizedReason.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Vui lòng nhập lý do từ chối.");
+            redirectAttributes.addFlashAttribute("error", "Please provide a rejection reason.");
             return "redirect:/lecturer/projects";
         }
 
         int updated = projectRepository.rejectByLecturer(projectId, normalizedReason);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể từ chối project.");
+            redirectAttributes.addFlashAttribute("error", "Unable to reject project.");
             return "redirect:/lecturer/projects";
         }
 
-        redirectAttributes.addFlashAttribute("success", "Đã từ chối project và gửi lý do cho học viên.");
+        Project rejectedProject = projectRepository.findById(projectId);
+        if (rejectedProject != null) {
+            studentNotificationService.notifyProjectRejected(rejectedProject, normalizedReason);
+        }
+        redirectAttributes.addFlashAttribute("success", "Project rejected and reason sent to students.");
         return "redirect:/lecturer/projects";
     }
 
@@ -266,24 +279,33 @@ public class LecturerProjectController {
         }
 
         if (!canReviewChangeRequest(lecturer.getLecturerId(), requestId)) {
-            redirectAttributes.addFlashAttribute("error", "Bạn không có quyền duyệt yêu cầu đổi project này hoặc yêu cầu không còn chờ duyệt.");
+            redirectAttributes.addFlashAttribute("error", "You do not have permission to approve this project change request or it is no longer pending.");
             return "redirect:/lecturer/projects";
         }
 
         ProjectChangeRequest request = projectChangeRequestRepository.findById(requestId);
         if (request == null || !ProjectChangeRequest.STATUS_PENDING_LECTURER.equalsIgnoreCase(request.getStatus())) {
-            redirectAttributes.addFlashAttribute("error", "Yêu cầu đổi project không hợp lệ hoặc đã xử lý.");
+            redirectAttributes.addFlashAttribute("error", "Project change request is invalid or already processed.");
             return "redirect:/lecturer/projects";
         }
 
         Project project = projectRepository.findById(request.getProjectId());
         if (project == null) {
-            redirectAttributes.addFlashAttribute("error", "Project không còn tồn tại.");
+            redirectAttributes.addFlashAttribute("error", "Project no longer exists.");
             return "redirect:/lecturer/projects";
         }
         if (projectTaskRepository.hasDoneTasksByProject(project.getProjectId())) {
-            redirectAttributes.addFlashAttribute("error", "Project đã có công việc hoàn thành nên không thể đổi đề tài.");
+            redirectAttributes.addFlashAttribute("error", "Projects with completed tasks cannot change topics.");
             return "redirect:/lecturer/projects";
+        }
+
+        List<com.example.pms.model.ProjectTask> cancelledTasks = new java.util.ArrayList<>();
+        for (com.example.pms.model.ProjectTask task : projectTaskRepository.findByProject(project.getProjectId())) {
+            if (task != null
+                    && task.getStatus() != com.example.pms.model.ProjectTask.STATUS_DONE
+                    && task.getStatus() != com.example.pms.model.ProjectTask.STATUS_CANCELLED) {
+                cancelledTasks.add(task);
+            }
         }
 
         LocalDate start;
@@ -292,37 +314,44 @@ public class LecturerProjectController {
             start = LocalDate.parse(normalize(startDate));
             end = LocalDate.parse(normalize(endDate));
         } catch (Exception ex) {
-            redirectAttributes.addFlashAttribute("error", "Ngày bắt đầu/kết thúc cho đề tài mới không hợp lệ.");
+            redirectAttributes.addFlashAttribute("error", "Invalid start/end date for the new topic.");
             return "redirect:/lecturer/projects";
         }
         if (!end.isAfter(start)) {
-            redirectAttributes.addFlashAttribute("error", "Ngày kết thúc phải sau ngày bắt đầu.");
+            redirectAttributes.addFlashAttribute("error", "End date must be after start date.");
             return "redirect:/lecturer/projects";
         }
 
         LocalDateTime startTime = start.atStartOfDay();
         LocalDateTime endTime = end.atTime(LocalTime.of(23, 59, 59));
-        int updatedProject = projectRepository.applyApprovedChange(
+        int updatedProjectRows = projectRepository.applyApprovedChange(
                 project.getProjectId(),
                 request.getProposedProjectName(),
                 request.getProposedDescription(),
                 startTime,
                 endTime);
-        if (updatedProject <= 0) {
-            throw new IllegalStateException("Không thể cập nhật project theo đề tài mới.");
+        if (updatedProjectRows <= 0) {
+            throw new IllegalStateException("Unable to update project with the new topic.");
         }
 
-        String taskCancelReason = "Kế hoạch cũ bị hủy do project đã được duyệt đổi đề tài mới.";
-        String sprintCancelReason = "Đợt làm việc cũ bị hủy do project đã được duyệt đổi đề tài mới.";
+        String taskCancelReason = "Old plan canceled because the project change was approved.";
+        String sprintCancelReason = "Old sprint canceled because the project change was approved.";
         projectTaskRepository.cancelAllNonCompletedByProject(project.getProjectId(), taskCancelReason);
         sprintRepository.cancelAllByProject(project.getProjectId(), sprintCancelReason);
 
         int updatedRequest = projectChangeRequestRepository.approveByLecturer(requestId, lecturer.getLecturerId());
         if (updatedRequest <= 0) {
-            throw new IllegalStateException("Không thể cập nhật trạng thái duyệt yêu cầu đổi project.");
+            throw new IllegalStateException("Unable to update approval status for the project change request.");
         }
 
-        redirectAttributes.addFlashAttribute("success", "Đã duyệt đổi project và hủy toàn bộ kế hoạch cũ chưa hoàn thành.");
+        Project projectAfterChange = projectRepository.findById(project.getProjectId());
+        if (projectAfterChange != null) {
+            studentNotificationService.notifyProjectChangeApproved(projectAfterChange);
+            for (com.example.pms.model.ProjectTask task : cancelledTasks) {
+                studentNotificationService.notifyTaskCancelled(projectAfterChange, task, taskCancelReason);
+            }
+        }
+        redirectAttributes.addFlashAttribute("success", "Project change approved and all unfinished old plans were canceled.");
         return "redirect:/lecturer/projects";
     }
 
@@ -337,29 +366,33 @@ public class LecturerProjectController {
         }
 
         if (!canReviewChangeRequest(lecturer.getLecturerId(), requestId)) {
-            redirectAttributes.addFlashAttribute("error", "Bạn không có quyền từ chối yêu cầu đổi project này hoặc yêu cầu không còn chờ duyệt.");
+            redirectAttributes.addFlashAttribute("error", "You do not have permission to reject this project change request or it is no longer pending.");
             return "redirect:/lecturer/projects";
         }
 
         String normalizedReason = normalize(reason);
         if (normalizedReason.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Vui lòng nhập lý do từ chối yêu cầu đổi project.");
+            redirectAttributes.addFlashAttribute("error", "Please provide a rejection reason for the change request.");
             return "redirect:/lecturer/projects";
         }
 
         ProjectChangeRequest request = projectChangeRequestRepository.findById(requestId);
         if (request == null || !ProjectChangeRequest.STATUS_PENDING_LECTURER.equalsIgnoreCase(request.getStatus())) {
-            redirectAttributes.addFlashAttribute("error", "Yêu cầu đổi project không hợp lệ hoặc đã xử lý.");
+            redirectAttributes.addFlashAttribute("error", "Project change request is invalid or already processed.");
             return "redirect:/lecturer/projects";
         }
 
         int updated = projectChangeRequestRepository.rejectByLecturer(requestId, lecturer.getLecturerId(), normalizedReason);
         if (updated <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Không thể từ chối yêu cầu đổi project.");
+            redirectAttributes.addFlashAttribute("error", "Unable to reject the project change request.");
             return "redirect:/lecturer/projects";
         }
 
-        redirectAttributes.addFlashAttribute("success", "Đã từ chối yêu cầu đổi project.");
+        Project project = projectRepository.findById(request.getProjectId());
+        if (project != null) {
+            studentNotificationService.notifyProjectChangeRejected(project, normalizedReason);
+        }
+        redirectAttributes.addFlashAttribute("success", "Project change request rejected.");
         return "redirect:/lecturer/projects";
     }
 }

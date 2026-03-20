@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Học viên • Chi tiết nhóm</title>
+    <title>Student - Group detail</title>
     <link rel="stylesheet" href="/backoffice.css" />
     <link rel="stylesheet" href="/student-backoffice.css" />
     <script src="/js/backoffice-layout.js" defer></script>
@@ -17,111 +17,152 @@
                 <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
                 <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
                 <div th:unless="${invitationFeatureEnabled}" class="alert alert-error">
-                    Chức năng mời/xác nhận đang tắt vì CSDL chưa có bảng <strong>Group_Invitations</strong>.
+                    Invites/confirmations are disabled because the database does not have the <strong>Group_Invitations</strong> table.
                 </div>
+                <button th:if="${isMember and !isLeader}"
+                    class="btn btn-soft-danger btn-small standalone-danger-button"
+                    type="submit"
+                    form="leave-group-form"
+                    onclick="return confirm('Are you sure you want to leave this group?');">
+                    Leave group
+                </button>
+                <button th:if="${isLeader}"
+                    class="btn btn-soft-danger btn-small standalone-danger-button"
+                    type="submit"
+                    form="delete-group-form"
+                    onclick="return confirm('Are you sure you want to delete this group?');">
+                    Delete group
+                </button>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Thành viên (<span th:text="${memberCount}">0</span>)</h2>
+                    <h2 class="panel-title">Members (<span th:text="${memberCount}"></span>)</h2>
                     <div class="request-list">
-                        <div class="request-card" th:each="m : ${members}">
-                            <div>
+                        <div class="request-card member-card" th:each="m : ${members}">
+                            <div class="member-main">
                                 <div class="request-title">
-                                    <span th:text="${m.fullName}">Tên thành viên</span>
-                                    <span class="meta">(<span th:text="${m.studentCode}">HE000000</span>)</span>
+                                    <span th:text="${m.fullName}"></span>
+                                    <span class="meta">(<span th:text="${m.studentCode}"></span>)</span>
                                     <span class="badge badge-approved"
-                                          th:if="${group.leaderId != null and group.leaderId == m.studentId}">Nhóm trưởng</span>
+                                          th:if="${group.leaderId != null and group.leaderId == m.studentId}">Leader</span>
                                 </div>
                             </div>
-                            <div class="inline-actions"
-                                th:if="${isLeader and m.studentId != studentId and !membershipLockedByProjectStart}">
-                                <form method="post" th:action="@{/student/group/{id}/kick(id=${group.groupId})}">
+                            <div class="inline-actions member-actions" th:if="${isLeader and m.studentId != studentId}">
+                                <form method="post"
+                                    th:action="@{/student/group/{id}/transfer-leader(id=${group.groupId})}">
+                                    <input type="hidden" name="newLeaderId" th:value="${m.studentId}" />
+                                    <button class="btn btn-secondary btn-small" type="submit"
+                                        th:attr="onclick=|return confirm('Transfer leadership to ${m.fullName}?');|">
+                                        Transfer leadership
+                                    </button>
+                                </form>
+                                <form method="post"
+                                    th:if="${!membershipLockedByProjectStart}"
+                                    th:action="@{/student/group/{id}/kick(id=${group.groupId})}">
                                     <input type="hidden" name="studentId" th:value="${m.studentId}" />
-                                    <button class="btn btn-soft-danger btn-small" type="submit">Mời ra khỏi nhóm</button>
+                                    <button class="btn btn-soft-danger btn-small" type="submit"
+                                        th:attr="onclick=|return confirm('Remove ${m.fullName} from the group?');|">
+                                        Remove from group
+                                    </button>
                                 </form>
                             </div>
                         </div>
                     </div>
                     <div class="meta" th:if="${membershipLockedByProjectStart}">
-                        Project đã bắt đầu nên không thể mời thành viên ra khỏi nhóm hoặc rời nhóm.
+                        The project has started, so members cannot be removed or leave the group.
+                    </div>
+                    <div class="meta" th:if="${isLeader and memberCount > 1}" style="margin-top:10px;">
+                        You can transfer leadership to another active member at any time.
                     </div>
                 </section>
 
-                <section class="page-section panel" th:if="${isMember and invitationFeatureEnabled and !groupHasProject}">
-                    <h2 class="panel-title">Mời thành viên</h2>
-                    <form class="inline-actions" method="post" th:action="@{/student/group/{id}/invite(id=${group.groupId})}">
-                        <input class="inline-input" type="text" name="studentRef" placeholder="Nhập MSSV hoặc mã sinh viên" required />
-                        <button class="btn btn-primary btn-small" type="submit">Gửi yêu cầu</button>
-                    </form>
-                    <div class="table-wrap" th:if="${availableStudents != null and availableStudents.size() > 0}">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>MSSV</th>
-                                    <th>Họ tên</th>
-                                    <th>Email</th>
-                                    <th>Mời</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:each="s : ${availableStudents}">
-                                    <td th:text="${s.studentCode}">HE000000</td>
-                                    <td th:text="${s.fullName}">Nguyễn Văn A</td>
-                                    <td th:text="${s.schoolEmail}">a@fpt.edu.vn</td>
-                                    <td>
-                                        <form method="post" th:action="@{/student/group/{id}/invite(id=${group.groupId})}">
-                                            <input type="hidden" name="studentRef" th:value="${s.studentCode}" />
-                                            <button class="btn btn-secondary btn-small" type="submit">Mời</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="meta" th:if="${availableStudents == null || availableStudents.size() == 0}">
-                        Không còn sinh viên nào trong lớp có thể mời vào nhóm.
-                    </div>
-                </section>
+                <div th:replace="~{student/group/invite-candidates :: inviteCandidatesPanel}"></div>
 
                 <section class="page-section panel" th:if="${isMember and groupHasProject}">
-                    <h2 class="panel-title">Mời thành viên</h2>
-                    <div class="meta">Nhóm đã có project nên không thể nhận thêm thành viên mới.</div>
+                    <h2 class="panel-title">Invite members</h2>
+                    <div class="meta">This group already has a project, so no new members can join.</div>
                 </section>
 
                 <section class="page-section panel" th:if="${!isMember}">
-                    <h2 class="panel-title">Yêu cầu tham gia nhóm</h2>
-                    <div class="meta" th:if="${!invitationFeatureEnabled}">Chức năng thông báo chưa bật nên không gửi yêu cầu được.</div>
-                    <div class="meta" th:if="${invitationFeatureEnabled and groupHasProject}">Nhóm này đã có project nên không nhận thêm yêu cầu tham gia.</div>
-                    <div class="meta" th:if="${invitationFeatureEnabled and hasActiveGroup}">Bạn đang ở trong một nhóm khác nên không thể gửi yêu cầu.</div>
-                    <div class="meta" th:if="${invitationFeatureEnabled and !hasActiveGroup and hasPendingJoinRequest}">Bạn đã gửi yêu cầu vào nhóm này và đang chờ nhóm trưởng duyệt.</div>
+                    <h2 class="panel-title">Request to join the group</h2>
+                    <div class="meta" th:if="${!invitationFeatureEnabled}">Notifications are disabled, so join requests cannot be sent.</div>
+                    <div class="meta" th:if="${invitationFeatureEnabled and groupHasProject}">This group already has a project and cannot accept new join requests.</div>
+                    <div class="meta" th:if="${invitationFeatureEnabled and hasActiveGroup}">You are already in another group, so you cannot send a request.</div>
+                    <div class="meta" th:if="${invitationFeatureEnabled and !hasActiveGroup and hasPendingJoinRequest}">You already sent a request and it is waiting for approval from the group leader.</div>
                     <form th:if="${canRequestJoin}" method="post" th:action="@{/student/group/{id}/join-request(id=${group.groupId})}">
-                        <button class="btn btn-primary btn-small" type="submit">Gửi yêu cầu tham gia</button>
+                        <button class="btn btn-primary btn-small" type="submit">Send join request</button>
                     </form>
                 </section>
 
-                <section class="page-section panel" th:if="${isMember}">
-                    <h2 class="panel-title">Thao tác</h2>
-                    <div class="inline-actions" th:if="${!isLeader and !membershipLockedByProjectStart}">
-                        <form method="post" th:action="@{/student/group/{id}/leave(id=${group.groupId})}">
-                            <button class="btn btn-soft-danger btn-small" type="submit">Rời nhóm</button>
-                        </form>
-                    </div>
-                    <div class="inline-actions" th:if="${isLeader and canDeleteGroup}">
-                        <form method="post" th:action="@{/student/group/{id}/delete(id=${group.groupId})}">
-                            <button class="btn btn-soft-danger btn-small" type="submit"
-                                onclick="return confirm('Bạn chắc chắn muốn xóa nhóm?');">Xóa nhóm</button>
-                        </form>
-                        <div class="meta">Nhóm chỉ còn nhóm trưởng nên có thể xóa.</div>
-                    </div>
-                    <div class="meta" th:if="${membershipLockedByProjectStart}">
-                        Project đã bắt đầu nên thành viên không thể rời nhóm, bị kick hoặc xóa nhóm.
-                    </div>
-                    <div class="meta" th:if="${isLeader and !canDeleteGroup and !membershipLockedByProjectStart}">
-                        Nhóm trưởng không thể rời nhóm. Hãy mời thành viên ra khỏi nhóm, sau đó xóa nhóm khi chỉ còn một mình.
-                    </div>
-                </section>
+                <form th:if="${isMember and !isLeader}"
+                    id="leave-group-form"
+                    method="post"
+                    th:action="@{/student/group/{id}/leave(id=${group.groupId})}"
+                    hidden></form>
+                <form th:if="${isLeader}"
+                    id="delete-group-form"
+                    method="post"
+                    th:action="@{/student/group/{id}/delete(id=${group.groupId})}"
+                    hidden></form>
             </main>
             <div th:replace="~{student/layout/footer :: pageFooter}"></div>
         </div>
     </div>
+    <script>
+        document.addEventListener('click', async function (event) {
+            const link = event.target.closest('.js-invite-page-link');
+            if (!link || event.defaultPrevented) {
+                return;
+            }
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+            }
+
+            const panel = document.getElementById('invite-candidates-panel');
+            if (!panel || !panel.dataset.fragmentUrl || !window.fetch) {
+                return;
+            }
+
+            event.preventDefault();
+            if (panel.dataset.loading === '1') {
+                return;
+            }
+
+            const page = link.dataset.invitePage || '1';
+            const fragmentUrl = new URL(panel.dataset.fragmentUrl, window.location.origin);
+            fragmentUrl.searchParams.set('invitePage', page);
+
+            panel.dataset.loading = '1';
+            panel.setAttribute('aria-busy', 'true');
+            panel.style.opacity = '0.6';
+
+            try {
+                const response = await fetch(fragmentUrl.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Unable to load invite candidates.');
+                }
+
+                const html = (await response.text()).trim();
+                if (!html) {
+                    throw new Error('Empty response.');
+                }
+
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = html;
+                const nextPanel = wrapper.firstElementChild;
+                if (!nextPanel) {
+                    throw new Error('Invalid response.');
+                }
+
+                panel.replaceWith(nextPanel);
+                window.history.replaceState({}, '', link.href);
+            } catch (error) {
+                window.location.href = link.href;
+            }
+        });
+    </script>
 </body>
 </html>

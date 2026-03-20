@@ -14,19 +14,19 @@ public class MailService {
     public void sendOtp(String to, String otp) {
         SimpleMailMessage mail = new SimpleMailMessage();
         mail.setTo(to);
-        mail.setSubject("Mã xác thực đăng ký (OTP)");
-        mail.setText("Mã OTP của bạn là: " + otp + "\nMã này có hiệu lực trong 5 phút. Vui lòng không chia sẻ cho ai.");
+        mail.setSubject("Registration verification code (OTP)");
+        mail.setText("Your OTP code is: " + otp + "\nThis code is valid for 5 minutes. Please do not share it.");
         mailSender.send(mail);
     }
 
     public void sendProjectReviewRequest(String to, String projectName, String groupName) {
         SimpleMailMessage mail = new SimpleMailMessage();
         mail.setTo(to);
-        mail.setSubject("PMS - Có project cần xét duyệt");
-        mail.setText("Bạn có một project cần xét duyệt trong PMS.\n\n" +
-                "Nhóm: " + groupName + "\n" +
+        mail.setSubject("PMS - Project review required");
+        mail.setText("You have a project awaiting review in PMS.\n\n" +
+                "Group: " + groupName + "\n" +
                 "Project: " + projectName + "\n\n" +
-                "Vui lòng đăng nhập hệ thống PMS để xem chi tiết và duyệt/từ chối.");
+                "Please sign in to PMS to view details and approve or reject.");
         mailSender.send(mail);
     }
 
@@ -36,12 +36,12 @@ public class MailService {
             String groupName) {
         SimpleMailMessage mail = new SimpleMailMessage();
         mail.setTo(to);
-        mail.setSubject("PMS - Có yêu cầu đổi project cần xét duyệt");
-        mail.setText("Có yêu cầu đổi project cần xét duyệt trong PMS.\n\n" +
-                "Nhóm: " + groupName + "\n" +
-                "Project hiện tại: " + currentProjectName + "\n" +
-                "Project đề xuất mới: " + proposedProjectName + "\n\n" +
-                "Vui lòng đăng nhập hệ thống PMS để xem chi tiết và duyệt/từ chối.");
+        mail.setSubject("PMS - Project change request review");
+        mail.setText("A project change request requires review in PMS.\n\n" +
+                "Group: " + groupName + "\n" +
+                "Current project: " + currentProjectName + "\n" +
+                "Proposed project: " + proposedProjectName + "\n\n" +
+                "Please sign in to PMS to view details and approve or reject.");
         mailSender.send(mail);
     }
 }

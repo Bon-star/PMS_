@@ -3,8 +3,10 @@ package com.example.pms.controller;
 import com.example.pms.model.Account;
 import com.example.pms.model.Classes;
 import com.example.pms.model.Student;
-import com.example.pms.util.RoleDisplayUtil;
 import com.example.pms.repository.ClassRepository;
+import com.example.pms.repository.GroupInvitationRepository;
+import com.example.pms.service.StudentNotificationService;
+import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -18,6 +20,12 @@ public class StudentHomeController {
 
     @Autowired
     private ClassRepository classRepository;
+
+    @Autowired
+    private GroupInvitationRepository groupInvitationRepository;
+
+    @Autowired
+    private StudentNotificationService studentNotificationService;
 
     @GetMapping("/home")
     public String index(Model model, HttpSession session) {
@@ -45,6 +53,10 @@ public class StudentHomeController {
         }
 
         model.addAttribute("userRole", RoleDisplayUtil.toDisplayRole(role != null ? role : "Student"));
+        boolean invitationEnabled = groupInvitationRepository.isInvitationTableAvailable();
+        model.addAttribute("invitationFeatureEnabled", invitationEnabled);
+        model.addAttribute("notificationCount",
+                studentNotificationService.countHeaderNotifications(student, invitationEnabled));
 
         return "student/home/index";
     }

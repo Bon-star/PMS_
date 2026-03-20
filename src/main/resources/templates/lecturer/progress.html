@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Giảng viên • Tiến độ project</title>
+    <title>Lecturer • Project progress</title>
     <link rel="stylesheet" href="/backoffice.css" />
     <script src="/js/backoffice-layout.js" defer></script>
 </head>
@@ -11,7 +11,7 @@
     <div class="backoffice-shell">
         <div th:replace="~{lecturer/layout/header :: sidebar('projects')}"></div>
         <div class="backoffice-main">
-            <div th:replace="~{lecturer/layout/header :: topbar('Theo dõi tiến độ project')}"></div>
+            <div th:replace="~{lecturer/layout/header :: topbar('Project progress')}"></div>
             <main class="backoffice-content">
                 <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
                 <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
@@ -19,77 +19,77 @@
                 <section class="page-section summary-grid">
                     <div class="summary-card">
                         <div class="summary-label">Project</div>
-                        <div class="summary-value" th:text="${project.projectName} ?: 'Chưa đặt tên'">Chưa đặt tên</div>
-                        <div class="summary-note" th:text="${project.groupName + ' • ' + (project.className ?: 'Chưa có lớp')}">Nhóm</div>
+                        <div class="summary-value" th:text="${project.projectName} ?: 'Untitled'">Untitled</div>
+                        <div class="summary-note" th:text="${project.groupName + ' • ' + (project.className ?: 'No class yet')}">Group</div>
                     </div>
                     <div class="summary-card">
-                        <div class="summary-label">Đợt làm việc</div>
+                        <div class="summary-label">Sprints</div>
                         <div class="summary-value" th:text="${sprints != null ? #lists.size(sprints) : 0}">0</div>
-                        <div class="summary-note">Số đợt đang theo dõi trong project này.</div>
+                        <div class="summary-note">Number of sprints in this project.</div>
                     </div>
                     <div class="summary-card">
-                        <div class="summary-label">Công việc</div>
+                        <div class="summary-label">Tasks</div>
                         <div class="summary-value" th:text="${taskHistory != null ? #lists.size(taskHistory) : 0}">0</div>
-                        <div class="summary-note">Toàn bộ công việc đã tạo của nhóm.</div>
+                        <div class="summary-note">All tasks created by the group.</div>
                     </div>
                     <div class="summary-card">
-                        <div class="summary-label">Bình luận</div>
+                        <div class="summary-label">Comments</div>
                         <div class="summary-value" th:text="${lecturerComments != null ? #lists.size(lecturerComments) : 0}">0</div>
-                        <div class="summary-note">Số nhận xét giảng viên đã để lại trên project.</div>
+                        <div class="summary-note">Lecturer comments on this project.</div>
                     </div>
                 </section>
 
                 <section class="page-section panel">
                     <div class="button-row" style="justify-content: space-between; align-items: flex-start;">
                         <div>
-                            <h2 class="panel-title">Thông tin project</h2>
+                            <h2 class="panel-title">Project overview</h2>
                             <div class="meta">
-                                Nhóm <strong th:text="${project.groupName}">Nhóm</strong>
-                                • Lớp <strong th:text="${project.className} ?: 'Chưa có lớp'">Lớp</strong>
-                                • Trưởng nhóm <strong th:text="${project.leaderName} ?: 'Chưa có'">Leader</strong>
+                                Group <strong th:text="${project.groupName}">Group</strong>
+                                • Class <strong th:text="${project.className} ?: 'No class yet'">Class</strong>
+                                • Leader <strong th:text="${project.leaderName} ?: 'Not assigned'">Leader</strong>
                             </div>
                             <div class="meta" style="margin-top:6px;">
-                                Thời gian thực hiện:
+                                Timeline:
                                 <strong th:text="${project.startDate != null ? #temporals.format(project.startDate, 'dd/MM/yyyy HH:mm') : '-'}">-</strong>
-                                đến
+                                to
                                 <strong th:text="${project.endDate != null ? #temporals.format(project.endDate, 'dd/MM/yyyy HH:mm') : '-'}">-</strong>
                             </div>
                             <div class="meta" style="margin-top:8px; white-space: pre-wrap;"
                                 th:if="${project.description != null and !#strings.isEmpty(project.description)}"
-                                th:text="${project.description}">Mô tả</div>
+                                th:text="${project.description}">Description</div>
                         </div>
-                        <a class="btn" href="/lecturer/projects">Quay lại danh sách project</a>
+                        <a class="btn" href="/lecturer/projects">Back to project list</a>
                     </div>
                 </section>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Đợt làm việc</h2>
-                    <div th:if="${sprints == null or #lists.isEmpty(sprints)}" class="empty-state">Project chưa có đợt làm việc nào.</div>
+                    <h2 class="panel-title">Sprints</h2>
+                    <div th:if="${sprints == null or #lists.isEmpty(sprints)}" class="empty-state">This project has no sprints yet.</div>
                     <div th:if="${sprints != null and !#lists.isEmpty(sprints)}" class="table-wrap">
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Đợt làm việc</th>
-                                    <th>Bắt đầu</th>
-                                    <th>Kết thúc</th>
-                                    <th>Trạng thái</th>
-                                    <th>Ghi chú</th>
+                                    <th>Sprint</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:each="sp : ${sprints}">
-                                    <td th:text="${sp.sprintName ?: 'Đợt #' + sp.sprintId}">Đợt</td>
+                                    <td th:text="${sp.sprintName ?: 'Sprint #' + sp.sprintId}">Sprint</td>
                                     <td th:text="${sp.startDate != null ? #temporals.format(sp.startDate, 'dd/MM/yyyy') : '-'}">-</td>
                                     <td th:text="${sp.endDate != null ? #temporals.format(sp.endDate, 'dd/MM/yyyy') : '-'}">-</td>
                                     <td>
-                                        <span th:if="${sp.cancelled}" class="badge status-cancelled">Đã hủy</span>
-                                        <span th:if="${!sp.cancelled and sp.closed}" class="badge status-submitted">Đã đóng</span>
-                                        <span th:if="${!sp.cancelled and !sp.closed}" class="badge status-progress">Đang mở</span>
+                                        <span th:if="${sp.cancelled}" class="badge status-cancelled">Cancelled</span>
+                                        <span th:if="${!sp.cancelled and sp.closed}" class="badge status-submitted">Closed</span>
+                                        <span th:if="${!sp.cancelled and !sp.closed}" class="badge status-progress">Open</span>
                                     </td>
                                     <td>
                                         <div class="muted" th:if="${sp.cancelled and !#strings.isEmpty(sp.cancelReason)}" th:text="${sp.cancelReason}"></div>
                                         <div class="muted" th:if="${sp.cancelledAt != null}"
-                                            th:text="${'Hủy lúc: ' + #temporals.format(sp.cancelledAt, 'dd/MM/yyyy HH:mm')}">Hủy lúc</div>
+                                            th:text="${'Cancelled at: ' + #temporals.format(sp.cancelledAt, 'dd/MM/yyyy HH:mm')}">Cancelled at</div>
                                     </td>
                                 </tr>
                             </tbody>
@@ -98,28 +98,28 @@
                 </section>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Hiệu suất tổng theo thành viên</h2>
+                    <h2 class="panel-title">Overall performance by member</h2>
                     <div class="metrics-grid">
                         <div class="table-wrap">
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Thành viên</th>
-                                        <th>Tổng việc</th>
-                                        <th>Hoàn thành</th>
-                                        <th>Thất bại</th>
-                                        <th>Đang làm</th>
-                                        <th>Chờ duyệt</th>
-                                        <th>Chờ xử lý</th>
-                                        <th>Tỷ lệ</th>
+                                        <th>Member</th>
+                                        <th>Total</th>
+                                        <th>Completed</th>
+                                        <th>Failed</th>
+                                        <th>In progress</th>
+                                        <th>Submitted</th>
+                                        <th>To do</th>
+                                        <th>Rate</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr th:if="${overallPerformance == null or #lists.isEmpty(overallPerformance)}">
-                                        <td colspan="8">Chưa có dữ liệu hiệu suất.</td>
+                                        <td colspan="8">No performance data yet.</td>
                                     </tr>
                                     <tr th:each="item : ${overallPerformance}">
-                                        <td th:text="${item.studentName + ' (' + item.studentCode + ')'}">Tên</td>
+                                        <td th:text="${item.studentName + ' (' + item.studentCode + ')'}">Name</td>
                                         <td th:text="${item.totalTasks}">0</td>
                                         <td th:text="${item.doneTasks}">0</td>
                                         <td th:text="${item.failedTasks}">0</td>
@@ -133,11 +133,11 @@
                         </div>
                         <div>
                             <div th:if="${overallPerformance == null or #lists.isEmpty(overallPerformance)}" class="empty-state">
-                                Chưa đủ dữ liệu để hiển thị biểu đồ hoàn thành.
+                                Not enough data to render the completion chart.
                             </div>
                             <div th:if="${overallPerformance != null and !#lists.isEmpty(overallPerformance)}" class="bar-list">
                                 <div class="bar-row" th:each="item : ${overallPerformance}">
-                                    <div th:text="${item.studentName + ' (' + item.studentCode + ')'}">Tên</div>
+                                    <div th:text="${item.studentName + ' (' + item.studentCode + ')'}">Name</div>
                                     <div class="bar-track">
                                         <div class="bar-fill" th:style="${'width:' + item.doneRatePercent + '%'}"></div>
                                     </div>
@@ -149,26 +149,26 @@
                 </section>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Hiệu suất theo đợt làm việc</h2>
-                    <div th:if="${sprintPerformance == null or #lists.isEmpty(sprintPerformance)}" class="empty-state">Chưa có số liệu theo đợt làm việc.</div>
+                    <h2 class="panel-title">Performance by sprint</h2>
+                    <div th:if="${sprintPerformance == null or #lists.isEmpty(sprintPerformance)}" class="empty-state">No sprint-level data yet.</div>
                     <div th:if="${sprintPerformance != null and !#lists.isEmpty(sprintPerformance)}" class="table-wrap">
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Đợt làm việc</th>
-                                    <th>Thành viên</th>
-                                    <th>Tổng việc</th>
-                                    <th>Hoàn thành</th>
-                                    <th>Thất bại</th>
-                                    <th>Đang làm</th>
-                                    <th>Chờ duyệt</th>
-                                    <th>Chờ xử lý</th>
+                                    <th>Sprint</th>
+                                    <th>Member</th>
+                                    <th>Total</th>
+                                    <th>Completed</th>
+                                    <th>Failed</th>
+                                    <th>In progress</th>
+                                    <th>Submitted</th>
+                                    <th>To do</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:each="item : ${sprintPerformance}">
-                                    <td th:text="${item.sprintName ?: 'Đợt #' + item.sprintId}">Đợt</td>
-                                    <td th:text="${item.studentName + ' (' + item.studentCode + ')'}">Tên</td>
+                                    <td th:text="${item.sprintName ?: 'Sprint #' + item.sprintId}">Sprint</td>
+                                    <td th:text="${item.studentName + ' (' + item.studentCode + ')'}">Name</td>
                                     <td th:text="${item.totalTasks}">0</td>
                                     <td th:text="${item.doneTasks}">0</td>
                                     <td th:text="${item.failedTasks}">0</td>
@@ -182,44 +182,44 @@
                 </section>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Lịch sử công việc</h2>
-                    <div th:if="${taskHistory == null or #lists.isEmpty(taskHistory)}" class="empty-state">Chưa có công việc nào trong project.</div>
+                    <h2 class="panel-title">Task history</h2>
+                    <div th:if="${taskHistory == null or #lists.isEmpty(taskHistory)}" class="empty-state">No tasks recorded for this project.</div>
                     <div th:if="${taskHistory != null and !#lists.isEmpty(taskHistory)}" class="table-wrap">
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Công việc</th>
-                                    <th>Đợt làm việc</th>
-                                    <th>Người thực hiện</th>
-                                    <th>Người kiểm tra</th>
-                                    <th>Point</th>
-                                    <th>Trạng thái</th>
-                                    <th>Minh chứng</th>
+                                    <th>Task</th>
+                                    <th>Sprint</th>
+                                    <th>Assignee</th>
+                                    <th>Reviewer</th>
+                                    <th>Points</th>
+                                    <th>Status</th>
+                                    <th>Evidence</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:each="task : ${taskHistory}">
                                     <td>
-                                        <div th:text="${task.taskName}">Công việc</div>
+                                        <div th:text="${task.taskName}">Task</div>
                                         <div class="muted" th:if="${task.description != null and !#strings.isEmpty(task.description)}" th:text="${task.description}"></div>
                                     </td>
-                                    <td th:text="${task.sprintName ?: 'Đợt #' + task.sprintId}">Đợt</td>
-                                    <td th:text="${task.assigneeName + ' (' + task.assigneeCode + ')'}">Người thực hiện</td>
-                                    <td th:text="${task.reviewerName} ?: 'Chưa gán'">Reviewer</td>
+                                    <td th:text="${task.sprintName ?: 'Sprint #' + task.sprintId}">Sprint</td>
+                                    <td th:text="${task.assigneeName + ' (' + task.assigneeCode + ')'}">Assignee</td>
+                                    <td th:text="${task.reviewerName} ?: 'Unassigned'">Reviewer</td>
                                     <td th:text="${task.estimatedPoints}">0</td>
                                     <td>
-                                        <span th:if="${task.status == 0}" class="badge status-todo">Chờ xử lý</span>
-                                        <span th:if="${task.status == 1}" class="badge status-progress">Đang xây dựng</span>
-                                        <span th:if="${task.status == 2}" class="badge status-submitted">Chờ kiểm tra</span>
-                                        <span th:if="${task.status == 3}" class="badge status-done">Hoàn thành</span>
-                                        <span th:if="${task.status == 4}" class="badge status-rejected">Trả lại</span>
-                                        <span th:if="${task.status == 5}" class="badge status-failed">Thất bại đợt</span>
-                                        <span th:if="${task.status == 6}" class="badge status-cancelled">Đã hủy</span>
+                                        <span th:if="${task.status == 0}" class="badge status-todo">To do</span>
+                                        <span th:if="${task.status == 1}" class="badge status-progress">In progress</span>
+                                        <span th:if="${task.status == 2}" class="badge status-submitted">Pending review</span>
+                                        <span th:if="${task.status == 3}" class="badge status-done">Completed</span>
+                                        <span th:if="${task.status == 4}" class="badge status-rejected">Returned</span>
+                                        <span th:if="${task.status == 5}" class="badge status-failed">Sprint failed</span>
+                                        <span th:if="${task.status == 6}" class="badge status-cancelled">Cancelled</span>
                                     </td>
                                     <td>
                                         <div class="muted" th:if="${task.submissionNote != null and !#strings.isEmpty(task.submissionNote)}" th:text="${task.submissionNote}"></div>
                                         <div class="muted" th:if="${task.submissionUrl != null and !#strings.isEmpty(task.submissionUrl)}">
-                                            <a th:href="${task.submissionUrl}" target="_blank">Mở link minh chứng</a>
+                                            <a th:href="${task.submissionUrl}" target="_blank">Open evidence link</a>
                                         </div>
                                         <div class="muted" th:if="${task.reviewComment != null and !#strings.isEmpty(task.reviewComment)}" th:text="${task.reviewComment}"></div>
                                     </td>
@@ -230,23 +230,23 @@
                 </section>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Bình luận của giảng viên</h2>
+                    <h2 class="panel-title">Lecturer comments</h2>
                     <form method="post" th:action="@{/lecturer/projects/{id}/comments(id=${project.projectId})}">
-                        <label for="commentContent">Nội dung bình luận</label>
-                        <textarea id="commentContent" name="commentContent" placeholder="Nhập nhận xét về tiến độ, chất lượng làm việc hoặc yêu cầu nhóm cập nhật thêm minh chứng." required></textarea>
+                        <label for="commentContent">Comment content</label>
+                        <textarea id="commentContent" name="commentContent" placeholder="Leave feedback on progress, quality, or request additional evidence." required></textarea>
                         <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Lưu bình luận</button>
+                            <button type="submit" class="btn btn-primary">Save comment</button>
                         </div>
                     </form>
 
                     <div style="margin-top:16px;" th:if="${lecturerComments == null or #lists.isEmpty(lecturerComments)}" class="empty-state">
-                        Chưa có bình luận nào cho project này.
+                        No comments for this project yet.
                     </div>
                     <div style="margin-top:16px;" th:if="${lecturerComments != null and !#lists.isEmpty(lecturerComments)}" class="comment-list">
                         <article th:each="comment : ${lecturerComments}" class="comment-card">
-                            <h3 class="comment-title" th:text="${comment.lecturerName + ' (' + comment.lecturerCode + ')'}">Giảng viên</h3>
-                            <div class="comment-meta" th:text="${comment.createdAt != null ? #temporals.format(comment.createdAt, 'dd/MM/yyyy HH:mm') : '-'}">Thời gian</div>
-                            <div class="comment-body" th:text="${comment.commentContent}">Nội dung</div>
+                            <h3 class="comment-title" th:text="${comment.lecturerName + ' (' + comment.lecturerCode + ')'}">Lecturer</h3>
+                            <div class="comment-meta" th:text="${comment.createdAt != null ? #temporals.format(comment.createdAt, 'dd/MM/yyyy HH:mm') : '-'}">Time</div>
+                            <div class="comment-body" th:text="${comment.commentContent}">Content</div>
                         </article>
                     </div>
                 </section>

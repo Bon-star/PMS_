@@ -157,7 +157,7 @@ public class SprintRepository {
 
         if (normalizedName.isEmpty()) {
             int sprintNo = latest == null ? 1 : extractSprintNo(latest.getSprintName()) + 1;
-            normalizedName = "Đợt làm việc " + sprintNo;
+            normalizedName = "Sprint " + sprintNo;
         }
 
         try {
@@ -257,7 +257,7 @@ public class SprintRepository {
             String failTasksSql = "UPDATE t " +
                     "SET t.Status = ?, " +
                     "    t.ReviewComment = CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(t.ReviewComment, ''))), '') IS NULL " +
-                    "           THEN N'Công việc thất bại do chưa hoàn thành trước khi kết thúc đợt làm việc.' " +
+                    "           THEN N'Task failed because it was not completed before the sprint ended.' " +
                     "           ELSE t.ReviewComment END, " +
                     "    t.ReviewedAt = GETDATE(), " +
                     "    t.ActualEndTime = ISNULL(t.ActualEndTime, GETDATE()) " +

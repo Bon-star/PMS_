@@ -82,3 +82,212 @@
     opacity: 0.6;
     pointer-events: none;
 }
+
+.student-group-detail-page .member-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+}
+
+.student-group-detail-page .member-main {
+    min-width: 0;
+}
+
+.student-group-detail-page .member-actions {
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.student-group-detail-page .member-actions form {
+    margin: 0;
+}
+
+.student-group-detail-page .standalone-danger-button {
+    margin: 0 0 16px;
+}
+
+.student-group-list-page .group-list-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+}
+
+.student-group-list-page .group-list-main {
+    min-width: 0;
+}
+
+.student-group-list-page .group-title-link {
+    display: inline-flex;
+    color: inherit;
+    text-decoration: none;
+}
+
+.student-group-list-page .group-title-link:hover {
+    text-decoration: underline;
+}
+
+.student-group-list-page .group-list-actions {
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.student-group-list-page .group-list-actions form {
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .student-group-list-page .group-list-card {
+        grid-template-columns: 1fr;
+        align-items: flex-start;
+    }
+
+    .student-group-list-page .group-list-actions {
+        justify-content: flex-start;
+    }
+
+    .student-group-detail-page .member-card {
+        grid-template-columns: 1fr;
+        align-items: flex-start;
+    }
+
+    .student-group-detail-page .member-actions {
+        justify-content: flex-start;
+    }
+}
+
+.student-group-notifications-page .request-list {
+    gap: 10px;
+}
+
+.student-group-notifications-page .request-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 14px;
+}
+
+.student-group-notifications-page .request-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 2px;
+    font-size: 15px;
+}
+
+.student-group-notifications-page .request-body {
+    margin-top: 4px;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.student-group-notifications-page .request-meta {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.student-group-notifications-page .inline-actions {
+    justify-content: flex-end;
+    align-items: flex-start;
+}
+
+@media (max-width: 768px) {
+    .student-group-notifications-page .request-card {
+        grid-template-columns: 1fr;
+    }
+
+    .student-group-notifications-page .inline-actions {
+        justify-content: flex-start;
+    }
+}
+
+.student-group-notifications-page .notice-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.student-group-notifications-page .notice-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 16px;
+    border: 1px solid var(--bo-border);
+    border-radius: 14px;
+    background: var(--bo-surface-muted);
+}
+
+.student-group-notifications-page .notice-main {
+    min-width: 0;
+}
+
+.student-group-notifications-page .notice-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.student-group-notifications-page .notice-badges {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.student-group-notifications-page .notice-title-text {
+    font-size: 15px;
+    line-height: 1.3;
+    color: var(--bo-text);
+}
+
+.student-group-notifications-page .notice-text {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--bo-text);
+}
+
+.student-group-notifications-page .notice-time {
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--bo-subtext);
+    white-space: nowrap;
+}
+
+.student-group-notifications-page .notice-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+    .student-group-notifications-page .notice-card {
+        grid-template-columns: 1fr;
+        align-items: flex-start;
+    }
+
+    .student-group-notifications-page .notice-time {
+        white-space: normal;
+    }
+
+    .student-group-notifications-page .notice-actions {
+        justify-content: flex-start;
+    }
+}

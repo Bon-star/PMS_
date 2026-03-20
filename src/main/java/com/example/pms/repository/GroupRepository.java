@@ -111,6 +111,22 @@ public class GroupRepository {
         }
     }
 
+    public int updateLeader(int groupId, int newLeaderId) {
+        try {
+            String sql = "UPDATE g SET LeaderID = ? " +
+                    "FROM Groups g " +
+                    "WHERE g.GroupID = ? " +
+                    "AND EXISTS ( " +
+                    "    SELECT 1 FROM Group_Members gm " +
+                    "    WHERE gm.GroupID = g.GroupID AND gm.StudentID = ? AND gm.IsActive = 1" +
+                    ")";
+            return db.update(sql, newLeaderId, groupId, newLeaderId);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return 0;
+        }
+    }
+
     private Group mapGroup(java.sql.ResultSet rs) throws java.sql.SQLException {
         Group g = new Group();
         g.setGroupId(rs.getInt("GroupID"));

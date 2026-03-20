@@ -38,8 +38,8 @@ public class LecturerHomeController {
         }
 
         Object fullName = session.getAttribute("fullName");
-        model.addAttribute("lecturerName", fullName != null ? fullName : "Giảng viên");
-        model.addAttribute("displayName", fullName != null ? fullName : "Giảng viên");
+        model.addAttribute("lecturerName", fullName != null ? fullName : "Lecturer");
+        model.addAttribute("displayName", fullName != null ? fullName : "Lecturer");
         model.addAttribute("displayRole", RoleDisplayUtil.toDisplayRole("Lecturer"));
         model.addAttribute("pendingProjectCount", projectRepository.findPendingForLecturer(lecturer.getLecturerId()).size());
         model.addAttribute("pendingChangeCount", projectChangeRequestRepository.findPendingForLecturer(lecturer.getLecturerId()).size());
