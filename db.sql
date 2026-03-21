@@ -157,23 +157,75 @@ CREATE TABLE Class_Lecturers (
 );
 GO
 
+CREATE TABLE ProjectTemplates (
+    TemplateID INT PRIMARY KEY IDENTITY(1,1),
+    Name NVARCHAR(200) NOT NULL,
+    Description NVARCHAR(MAX),
+    Source NVARCHAR(50) NOT NULL, -- India / Lecturer
+
+    Version INT NOT NULL DEFAULT 1,
+    IsActive BIT NOT NULL DEFAULT 1,
+
+    SemesterID INT NULL,
+    Year INT NULL,
+
+    CreatedByStaffID INT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE ProjectAssignments (
+    AssignmentID INT PRIMARY KEY IDENTITY(1,1),
+
+    TemplateID INT NOT NULL,
+    GroupID INT NOT NULL,
+
+    StartDate DATETIME NOT NULL,
+    EndDate DATETIME NOT NULL,
+
+    Status VARCHAR(20) DEFAULT 'ASSIGNED',
+
+    AssignedByStaffID INT,
+    AssignedAt DATETIME DEFAULT GETDATE(),
+
+    CONSTRAINT FK_Assignment_Template FOREIGN KEY (TemplateID) REFERENCES ProjectTemplates(TemplateID),
+    CONSTRAINT FK_Assignment_Group FOREIGN KEY (GroupID) REFERENCES Groups(GroupID)
+);
+
+
 CREATE TABLE Projects (
     ProjectID INT PRIMARY KEY IDENTITY(1,1),
-    GroupID INT UNIQUE NOT NULL,
-    ProjectName NVARCHAR(200) NULL,
-    Description NVARCHAR(MAX) NULL,
-    TopicSource NVARCHAR(50) NULL,
-    ApprovalStatus INT NOT NULL DEFAULT 1,
-    RejectReason NVARCHAR(MAX) NULL,
-    SourceCodeUrl NVARCHAR(500) NULL,
-    DocumentUrl NVARCHAR(500) NULL,
-    SubmissionDate DATETIME NULL,
-    StartDate DATETIME NULL,
-    EndDate DATETIME NULL,
-    StudentCanEdit BIT NOT NULL DEFAULT 0,
-    CONSTRAINT FK_Projects_Groups FOREIGN KEY (GroupID) REFERENCES Groups(GroupID)
+
+    AssignmentID INT NOT NULL,
+
+    ProjectName NVARCHAR(200),
+    Description NVARCHAR(MAX),
+
+    ApprovalStatus INT DEFAULT 0,
+    RejectReason NVARCHAR(MAX),
+
+    StudentCanEdit BIT DEFAULT 0,
+
+    SourceCodeUrl NVARCHAR(500),
+    DocumentUrl NVARCHAR(500),
+    SubmissionDate DATETIME,
+
+    CreatedAt DATETIME DEFAULT GETDATE(),
+
+    CONSTRAINT FK_Project_Assignment 
+        FOREIGN KEY (AssignmentID) REFERENCES ProjectAssignments(AssignmentID)
 );
-GO
+
+CREATE TABLE ProjectAssignmentLogs (
+    LogID INT PRIMARY KEY IDENTITY(1,1),
+
+    AssignmentID INT,
+    Action NVARCHAR(50),
+
+    PerformedByStaffID INT,
+    PerformedAt DATETIME DEFAULT GETDATE(),
+
+    Note NVARCHAR(MAX)
+);
 
 CREATE TABLE Project_Edit_Requests (
     RequestID INT PRIMARY KEY IDENTITY(1,1),
@@ -318,7 +370,8 @@ DECLARE @ClassA INT = (SELECT TOP 1 ClassID FROM Classes WHERE ClassName = 'SE17
 DECLARE @SemesterSpring INT = (SELECT TOP 1 SemesterID FROM Semesters WHERE SemesterName = N'Spring 2026');
 
 INSERT INTO Staff (StaffCode, FullName, SchoolEmail, PhoneNumber, AccountID)
-VALUES ('STF001', N'Nhan Vien 1', 'duc47xuan@gmail.com', '0812559433', NULL);
+VALUES ('STF001', N'Nhan Vien 1', 'duc47xuan@gmail.com', '0812559433', NULL),
+       ('STF002', N'Nhan Vien 2', 'mcboon25@gmail.com', '0123456789', NULL);
 
 INSERT INTO Lecturers (LecturerCode, FullName, SchoolEmail, PhoneNumber, AccountID)
 VALUES ('LEC001', N'Giang Vien 1', 'dxuan191205@gmail.com', '0812559433', NULL);
@@ -332,7 +385,8 @@ INSERT INTO Accounts (Username, PasswordHash, Role, IsActive, AuthProvider)
 VALUES ('duc47xuan@gmail.com', NULL, 'Staff', 0, 'LOCAL'),
        ('dxuan191205@gmail.com', NULL, 'Lecturer', 0, 'LOCAL'),
        ('dic47xuan@gmail.com', NULL, 'Student', 0, 'LOCAL'),
-       ('cunhocit05@gmail.com', NULL, 'Student', 0, 'LOCAL');
+       ('cunhocit05@gmail.com', NULL, 'Student', 0, 'LOCAL'),
+       ('mcboon25@gmail.com', NULL, 'Staff', 0, 'LOCAL');
 GO
 
 UPDATE st
@@ -364,7 +418,7 @@ GO
 
 DECLARE @i INT = 1;
 DECLARE @ClassA INT = (SELECT TOP 1 ClassID FROM Classes WHERE ClassName = 'SE1701');
-DECLARE @PasswordHash NVARCHAR(100) = 'tuthemmahoa';
+DECLARE @PasswordHash NVARCHAR(100) = '$2a$10$wWmjLRQveGYMzNu6KC54ZOJADuYgJnehxrMMr2cz3t47xyeOV5J56';
 
 WHILE @i <= 50
 BEGIN
@@ -385,4 +439,82 @@ BEGIN
     SET @i = @i + 1;
 END
 
+
+ALTER TABLE Sprints
+DROP CONSTRAINT FK_Sprints_Projects;
+
+ALTER TABLE Sprints
+ADD CONSTRAINT FK_Sprints_Projects
+FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID);
+
+-- =========================
+-- 1. ADD MISSING FOREIGN KEYS
+-- =========================
+
+-- ProjectTemplates → Staff
+ALTER TABLE ProjectTemplates
+ADD CONSTRAINT FK_ProjectTemplates_Staff
+FOREIGN KEY (CreatedByStaffID) REFERENCES Staff(StaffID);
+
+-- ProjectAssignments → Staff
+ALTER TABLE ProjectAssignments
+ADD CONSTRAINT FK_Assignment_Staff
+FOREIGN KEY (AssignedByStaffID) REFERENCES Staff(StaffID);
+
+-- ProjectAssignmentLogs → Staff
+ALTER TABLE ProjectAssignmentLogs
+ADD CONSTRAINT FK_ProjectLogs_Staff
+FOREIGN KEY (PerformedByStaffID) REFERENCES Staff(StaffID);
+
+-- ProjectAssignmentLogs → Assignment
+ALTER TABLE ProjectAssignmentLogs
+ADD CONSTRAINT FK_ProjectLogs_Assignment
+FOREIGN KEY (AssignmentID) REFERENCES ProjectAssignments(AssignmentID);
+
+
+-- =========================
+-- 2. ADD PERFORMANCE INDEXES
+-- =========================
+
+-- Assignments
+CREATE INDEX IX_Assignment_Group
+ON ProjectAssignments(GroupID);
+
+CREATE INDEX IX_Assignment_Template
+ON ProjectAssignments(TemplateID);
+
+-- Sprints
+CREATE INDEX IX_Sprints_Project
+ON Sprints(ProjectID);
+
+-- Tasks
+CREATE INDEX IX_Tasks_Sprint
+ON Tasks(SprintID);
+
+CREATE INDEX IX_Tasks_Assignee
+ON Tasks(AssigneeID);
+
+
+-- =========================
+-- 3. (OPTIONAL) ADD PROJECTID TO TASKS FOR FAST QUERY
+-- =========================
+
+ALTER TABLE Tasks ADD ProjectID INT NULL;
+
+ALTER TABLE Tasks
+ADD CONSTRAINT FK_Tasks_Project
+FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID);
+
+
+-- =========================
+-- 4. (OPTIONAL) STANDARD CREATED TIME
+-- =========================
+
+-- nếu thiếu thì thêm
+-- ALTER TABLE <table> ADD CreatedAt DATETIME DEFAULT GETDATE();
+
+
+-- =========================
+-- DONE
+-- =========================
 GO
