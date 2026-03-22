@@ -60,65 +60,108 @@
                 </section>
 
                 <section class="page-section panel">
-                    <h2 class="panel-title">Create project for group</h2>
+                    <h2 class="panel-title">Project templates and batch assignment</h2>
                     <p class="meta">
-                        Sources <strong>India</strong> or <strong>Lecturer</strong> will be created as approved.
-                        Source <strong>Student</strong> will wait for student updates before lecturer approval.
+                        Create a reusable template first, then assign it to one or more groups that do not yet have a project.
                     </p>
-                    <form method="post" action="/staff/projects/create">
-                        <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+
+                    <form method="post" action="/staff/projects/templates/create" enctype="multipart/form-data" class="panel" style="margin-top:12px;padding:16px;">
+                        <h3 class="panel-title" style="margin-top:0;">Create template</h3>
                         <div class="form-grid form-grid-3">
                             <div>
-                                <label for="classId">Class</label>
-                                <select id="classId" name="classId" required>
-                                    <option value="">-- Select class --</option>
-                                    <option th:each="entry : ${classOptions}"
-                                        th:value="${entry.key}"
-                                        th:text="${entry.value}">
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="full">
-                                <label for="groupId">Groups without a project</label>
-                                <select id="groupId" name="groupId" required disabled>
-                                    <option value="">-- Select group --</option>
-                                    <option th:each="item : ${projectOverview}"
-                                        th:if="${item.projectId == 0}"
-                                        th:value="${item.groupId}"
-                                        th:attr="data-class-id=${item.classId}"
-                                        th:text="${item.groupName + ' | ' + (item.className ?: '') + ' | Leader: ' + (item.leaderName ?: 'None')}">
-                                    </option>
-                                </select>
+                                <label for="templateName">Template name</label>
+                                <input id="templateName" name="name" type="text" placeholder="Template name" required />
                             </div>
                             <div>
-                                <label for="topicSource">Project source</label>
-                                <select id="topicSource" name="topicSource" required>
+                                <label for="templateSource">Source</label>
+                                <select id="templateSource" name="source" required>
                                     <option value="INDIA">India</option>
                                     <option value="LECTURER">Lecturer</option>
-                                    <option value="STUDENT">Student proposal</option>
+                                    <option value="STUDENT">Student</option>
                                 </select>
                             </div>
                             <div>
-                                <label for="projectName">Project name</label>
-                                <input id="projectName" name="projectName" type="text"
-                                    placeholder="Required for India/Lecturer source" />
+                                <label for="templateYear">Year</label>
+                                <input id="templateYear" name="year" type="number" min="2000" max="2100" th:value="${T(java.time.Year).now().value}" required />
+                            </div>
+                            <div>
+                                <label for="templateSemesterId">Semester</label>
+                                <select id="templateSemesterId" name="semesterId" required>
+                                    <option th:each="sem : ${semesters}"
+                                        th:value="${sem.semesterId}"
+                                        th:text="${sem.semesterName}"
+                                        th:selected="${selectedSemesterId == sem.semesterId}">
+                                    </option>
+                                </select>
                             </div>
                             <div class="full">
-                                <label for="description">Project requirements</label>
-                                <textarea id="description" name="description"
-                                    placeholder="Enter scope, requirements, and main goals"></textarea>
+                                <label for="templateDescription">Description</label>
+                                <textarea id="templateDescription" name="description" placeholder="Template description"></textarea>
                             </div>
-                            <div>
-                                <label for="startDate">Start time</label>
-                                <input id="startDate" name="startDate" type="datetime-local" />
-                            </div>
-                            <div>
-                                <label for="endDate">End time</label>
-                                <input id="endDate" name="endDate" type="datetime-local" />
+                            <div class="full">
+                                <label for="templateImageFile">Image</label>
+                                <input id="templateImageFile" name="imageFile" type="file" accept="image/*" />
+                                <div class="muted">Optional. PNG, JPG, JPEG, GIF, WEBP. Max 5MB.</div>
                             </div>
                         </div>
                         <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Create project</button>
+                            <button type="submit" class="btn btn-primary">Create template</button>
+                        </div>
+                    </form>
+
+                    <form method="post" action="/staff/projects/assign" style="margin-top:18px;">
+                        <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:18px;align-items:start;">
+                            <div class="panel" style="padding:16px;">
+                                <h3 class="panel-title" style="margin-top:0;">Templates</h3>
+                                <div th:if="${projectTemplates == null or #lists.isEmpty(projectTemplates)}" class="empty-state">
+                                    No templates yet.
+                                </div>
+                                <div th:if="${projectTemplates != null and !#lists.isEmpty(projectTemplates)}" style="display:grid;gap:10px;max-height:420px;overflow:auto;">
+                                    <label th:each="template : ${projectTemplates}" style="border:1px solid var(--bo-border);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
+                                        <input type="radio" name="templateId" th:value="${template.templateId}" style="margin-top:4px;" required />
+                                        <div>
+                                            <img th:if="${template.imageUrl != null and !#strings.isEmpty(template.imageUrl)}"
+                                                th:src="${template.imageUrl}"
+                                                alt="Template image"
+                                                style="width:72px;height:48px;object-fit:cover;border-radius:8px;display:block;margin-bottom:8px;border:1px solid var(--bo-border);" />
+                                            <div style="font-weight:700;" th:text="${template.name}">Template</div>
+                                            <div class="meta" th:text="${template.source + ' • Semester ' + (template.semesterName != null ? template.semesterName : 'All') + ' • Year ' + (template.year != null ? template.year : '-')}" ></div>
+                                            <div class="muted" th:if="${template.description != null and !#strings.isEmpty(template.description)}" th:text="${template.description}"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="panel" style="padding:16px;">
+                                <h3 class="panel-title" style="margin-top:0;">Available groups</h3>
+                                <div class="form-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+                                    <div>
+                                        <label for="assignStartDate">Start time</label>
+                                        <input id="assignStartDate" name="startDate" type="datetime-local" />
+                                    </div>
+                                    <div>
+                                        <label for="assignEndDate">End time</label>
+                                        <input id="assignEndDate" name="endDate" type="datetime-local" />
+                                    </div>
+                                </div>
+                                <div th:if="${availableGroups == null or #lists.isEmpty(availableGroups)}" class="empty-state" style="margin-top:12px;">
+                                    No groups without project in this semester.
+                                </div>
+                                <div th:if="${availableGroups != null and !#lists.isEmpty(availableGroups)}" style="display:grid;gap:10px;max-height:420px;overflow:auto;margin-top:12px;">
+                                    <label th:each="group : ${availableGroups}" style="border:1px solid var(--bo-border);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
+                                        <input type="checkbox" name="groupIds" th:value="${group.groupId}" style="margin-top:4px;" />
+                                        <div>
+                                            <div style="font-weight:700;" th:text="${group.groupName}">Group</div>
+                                            <div class="meta" th:text="${(group.className != null ? group.className : ('Class ' + group.classId)) + ' • Members ' + group.memberCount}"></div>
+                                            <div class="muted" th:text="${group.leaderName != null ? ('Leader: ' + group.leaderName) : 'Leader: None'}"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="form-actions" style="justify-content:flex-start;margin-top:16px;">
+                                    <button type="submit" class="btn btn-primary">Assign template</button>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </section>
@@ -133,6 +176,7 @@
                                     <th>Class</th>
                                     <th>Leader</th>
                                     <th>Project</th>
+                                    <th>Image</th>
                                     <th>Nguồn</th>
                                     <th>Status</th>
                                     <th>Timeline</th>
@@ -141,7 +185,7 @@
                             </thead>
                             <tbody>
                                 <tr th:if="${projectOverview == null or #lists.isEmpty(projectOverview)}">
-                                    <td colspan="8">No group data for this semester.</td>
+                                    <td colspan="9">No group data for this semester.</td>
                                 </tr>
                                 <tr th:each="p : ${projectOverview}">
                                     <td th:text="${p.groupName}">Group</td>
@@ -151,6 +195,13 @@
                                         <div th:text="${p.projectId > 0 ? (p.projectName ?: 'Untitled') : 'Not created'}">Project</div>
                                         <div class="muted" th:if="${p.projectId > 0 and p.description != null and !#strings.isEmpty(p.description)}"
                                             th:text="${p.description}"></div>
+                                    </td>
+                                    <td>
+                                        <img th:if="${p.projectId > 0 and p.templateImageUrl != null and !#strings.isEmpty(p.templateImageUrl)}"
+                                            th:src="${p.templateImageUrl}"
+                                            alt="Project image"
+                                            style="width:72px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--bo-border);" />
+                                        <span th:if="${p.projectId <= 0 or p.templateImageUrl == null or #strings.isEmpty(p.templateImageUrl)}" class="muted">-</span>
                                     </td>
                                     <td th:text="${p.projectId > 0 ? p.topicSource : '-'}">Nguồn</td>
                                     <td>

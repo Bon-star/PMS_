@@ -21,6 +21,7 @@ public class Project {
     private String projectName;
     private String description;
     private String topicSource;
+    private String templateImageUrl;
     private int approvalStatus;
     private String rejectReason;
     private String sourceCodeUrl;
@@ -124,6 +125,14 @@ public class Project {
 
     public void setTopicSource(String topicSource) {
         this.topicSource = topicSource;
+    }
+
+    public String getTemplateImageUrl() {
+        return templateImageUrl;
+    }
+
+    public void setTemplateImageUrl(String templateImageUrl) {
+        this.templateImageUrl = templateImageUrl;
     }
 
     public int getApprovalStatus() {

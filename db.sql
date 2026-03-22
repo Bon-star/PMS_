@@ -162,6 +162,7 @@ CREATE TABLE ProjectTemplates (
     Name NVARCHAR(200) NOT NULL,
     Description NVARCHAR(MAX),
     Source NVARCHAR(50) NOT NULL, -- India / Lecturer
+    ImageUrl NVARCHAR(500) NULL,
 
     Version INT NOT NULL DEFAULT 1,
     IsActive BIT NOT NULL DEFAULT 1,

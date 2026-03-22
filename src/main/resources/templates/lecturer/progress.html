@@ -43,6 +43,10 @@
                     <div class="button-row" style="justify-content: space-between; align-items: flex-start;">
                         <div>
                             <h2 class="panel-title">Project overview</h2>
+                            <img th:if="${project.templateImageUrl != null and !#strings.isEmpty(project.templateImageUrl)}"
+                                th:src="${project.templateImageUrl}"
+                                alt="Project image"
+                                style="width:160px;height:96px;object-fit:cover;border-radius:14px;border:1px solid var(--bo-border);margin-bottom:12px;display:block;" />
                             <div class="meta">
                                 Group <strong th:text="${project.groupName}">Group</strong>
                                 • Class <strong th:text="${project.className} ?: 'No class yet'">Class</strong>

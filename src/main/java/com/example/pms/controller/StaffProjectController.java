@@ -1,11 +1,14 @@
 package com.example.pms.controller;
 
+import com.example.pms.dto.AssignProjectDTO;
+import com.example.pms.dto.CreateTemplateDTO;
 import com.example.pms.model.Account;
 import com.example.pms.model.Project;
 import com.example.pms.model.ProjectChangeRequest;
 import com.example.pms.model.ProjectEditRequest;
 import com.example.pms.model.Semester;
 import com.example.pms.model.Staff;
+import com.example.pms.repository.GroupRepository;
 import com.example.pms.repository.ProjectChangeRequestRepository;
 import com.example.pms.repository.ProjectEditRequestRepository;
 import com.example.pms.repository.ProjectRepository;
@@ -14,15 +17,26 @@ import com.example.pms.repository.SemesterRepository;
 import com.example.pms.repository.SprintRepository;
 import com.example.pms.repository.StaffRepository;
 import com.example.pms.service.MailService;
+import com.example.pms.service.ProjectTemplateService;
 import com.example.pms.service.StudentNotificationService;
 import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,10 +45,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 @RequestMapping("/staff/projects")
 public class StaffProjectController {
+
+    private static final long MAX_TEMPLATE_IMAGE_BYTES = 5L * 1024L * 1024L;
+    private static final String TEMPLATE_IMAGE_DIR = "uploads/project-templates";
+    private static final Set<String> ALLOWED_TEMPLATE_IMAGE_EXTENSIONS = Set.of("png", "jpg", "jpeg", "gif", "webp");
 
     @Autowired
     private SemesterRepository semesterRepository;
@@ -44,6 +63,9 @@ public class StaffProjectController {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private ProjectTemplateService projectTemplateService;
 
     @Autowired
     private ProjectEditRequestRepository projectEditRequestRepository;
@@ -84,6 +106,51 @@ public class StaffProjectController {
         return LocalDateTime.parse(normalized);
     }
 
+    private String normalizeFileName(String fileName) {
+        if (fileName == null || fileName.trim().isEmpty()) {
+            return "image";
+        }
+        return fileName.trim().replaceAll("[\\\\/]+", "_").replaceAll("[^a-zA-Z0-9._-]", "_");
+    }
+
+    private String extractExtension(String fileName) {
+        if (fileName == null) {
+            return "";
+        }
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex < 0 || dotIndex == fileName.length() - 1) {
+            return "";
+        }
+        return fileName.substring(dotIndex + 1).toLowerCase();
+    }
+
+    private boolean isAllowedTemplateImage(String fileName) {
+        return ALLOWED_TEMPLATE_IMAGE_EXTENSIONS.contains(extractExtension(fileName));
+    }
+
+    private Path resolveTemplateImageDir() throws IOException {
+        Path dir = Paths.get(TEMPLATE_IMAGE_DIR);
+        Files.createDirectories(dir);
+        return dir;
+    }
+
+    private String storeTemplateImage(MultipartFile imageFile) throws IOException {
+        if (imageFile == null || imageFile.isEmpty()) {
+            return null;
+        }
+        String originalName = imageFile.getOriginalFilename();
+        if (!isAllowedTemplateImage(originalName)) {
+            throw new IOException("Unsupported image format.");
+        }
+        if (imageFile.getSize() > MAX_TEMPLATE_IMAGE_BYTES) {
+            throw new IOException("Image is too large.");
+        }
+        String storedName = UUID.randomUUID().toString().replace("-", "") + "_" + normalizeFileName(originalName);
+        Path target = resolveTemplateImageDir().resolve(storedName);
+        Files.copy(imageFile.getInputStream(), target);
+        return "/staff/projects/templates/images/" + storedName;
+    }
+
     private int resolveSemesterId(Integer semesterId) {
         if (semesterId != null && semesterId > 0) {
             return semesterId;
@@ -103,6 +170,8 @@ public class StaffProjectController {
         model.addAttribute("displayRole", RoleDisplayUtil.toDisplayRole("Staff"));
         model.addAttribute("selectedSemesterId", semesterId);
         model.addAttribute("semesters", semesterRepository.findAll());
+        model.addAttribute("projectTemplates", projectTemplateService.findTemplates(semesterId));
+        model.addAttribute("availableGroups", projectTemplateService.findAvailableGroups(semesterId));
         java.util.List<Project> overview = projectRepository.findProjectOverviewBySemester(semesterId);
         model.addAttribute("projectOverview", overview);
         Map<Integer, String> classOptions = new LinkedHashMap<>();
@@ -131,6 +200,111 @@ public class StaffProjectController {
         int resolvedSemesterId = resolveSemesterId(semesterId);
         bindCommon(model, session, resolvedSemesterId);
         return "staff/projects";
+    }
+
+    @PostMapping("/templates/create")
+        public String createTemplate(CreateTemplateDTO dto,
+            @RequestParam(name = "imageFile", required = false) MultipartFile imageFile,
+            @RequestParam(name = "semesterId", required = false) Integer semesterId,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isStaff(session)) {
+            return "redirect:/acc/log";
+        }
+
+        int resolvedSemesterId = resolveSemesterId(semesterId != null ? semesterId : dto.getSemesterId());
+        String normalizedName = normalize(dto.getName());
+        String normalizedSource = normalize(dto.getSource()).toUpperCase();
+        String normalizedDescription = normalize(dto.getDescription());
+        if (normalizedName.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Please enter a template name.");
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+        if (!"INDIA".equals(normalizedSource)
+                && !"LECTURER".equals(normalizedSource)
+                && !"STUDENT".equals(normalizedSource)) {
+            redirectAttributes.addFlashAttribute("error", "Invalid template source.");
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+
+        Account account = getSessionAccount(session);
+        Staff staff = account != null ? staffRepository.findByAccountId(account.getId()) : null;
+        dto.setName(normalizedName);
+        dto.setDescription(normalizedDescription);
+        dto.setSource(normalizedSource);
+        dto.setSemesterId(resolvedSemesterId);
+        dto.setStaffId(staff != null ? staff.getStaffId() : 0);
+
+        try {
+            dto.setImageUrl(storeTemplateImage(imageFile));
+        } catch (IOException ex) {
+            redirectAttributes.addFlashAttribute("error", "Unable to save template image: " + ex.getMessage());
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+
+        int templateId = projectTemplateService.createTemplate(dto);
+        if (templateId <= 0) {
+            redirectAttributes.addFlashAttribute("error", "Unable to create project template.");
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+
+        redirectAttributes.addFlashAttribute("success", "Project template created successfully.");
+        return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+    }
+
+    @GetMapping("/templates/images/{fileName:.+}")
+    public ResponseEntity<Resource> serveTemplateImage(@PathVariable("fileName") String fileName) {
+        try {
+            Path filePath = Paths.get(TEMPLATE_IMAGE_DIR).resolve(fileName).normalize();
+            Path basePath = Paths.get(TEMPLATE_IMAGE_DIR).toAbsolutePath().normalize();
+            if (!filePath.toAbsolutePath().normalize().startsWith(basePath) || !Files.exists(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+            Resource resource = new UrlResource(filePath.toUri());
+            if (!resource.exists() || !resource.isReadable()) {
+                return ResponseEntity.notFound().build();
+            }
+            String contentType = Files.probeContentType(filePath);
+            MediaType mediaType = contentType != null ? MediaType.parseMediaType(contentType) : MediaType.APPLICATION_OCTET_STREAM;
+            return ResponseEntity.ok().contentType(mediaType).body(resource);
+        } catch (Exception ex) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/assign")
+    public String assignProjects(AssignProjectDTO dto,
+            @RequestParam(name = "semesterId", required = false) Integer semesterId,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isStaff(session)) {
+            return "redirect:/acc/log";
+        }
+
+        int resolvedSemesterId = resolveSemesterId(semesterId != null ? semesterId : dto.getSemesterId());
+        dto.setSemesterId(resolvedSemesterId);
+        if (dto.getGroupIds() == null || dto.getGroupIds().isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Please select at least one group.");
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+
+        List<Integer> createdProjectIds = projectTemplateService.assignProjects(dto);
+        if (createdProjectIds.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "No new project was created. The selected groups may already have a project or a pending assignment.");
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
+
+        int notified = 0;
+        for (Integer projectId : createdProjectIds) {
+            Project createdProject = projectRepository.findById(projectId);
+            if (createdProject != null) {
+                studentNotificationService.notifyProjectAssigned(createdProject);
+                notified++;
+            }
+        }
+
+        redirectAttributes.addFlashAttribute("success", "Assigned template to " + createdProjectIds.size() + " group(s). Notifications sent: " + notified + ".");
+        return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
     }
 
     @PostMapping("/create")

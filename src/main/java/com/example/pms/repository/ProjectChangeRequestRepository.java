@@ -109,7 +109,8 @@ public class ProjectChangeRequestRepository {
                 "s.FullName AS RequestedByName, s.StudentCode AS RequestedByCode " +
                 "FROM Project_Change_Requests r " +
                 "INNER JOIN Projects p ON p.ProjectID = r.ProjectID " +
-                "INNER JOIN Groups g ON g.GroupID = p.GroupID " +
+                "INNER JOIN ProjectAssignments pa ON pa.AssignmentID = p.AssignmentID " +
+                "INNER JOIN Groups g ON g.GroupID = pa.GroupID " +
                 "INNER JOIN Classes c ON c.ClassID = g.ClassID " +
                 "INNER JOIN Students s ON s.StudentID = r.RequestedByStudentID ";
     }

@@ -6,6 +6,7 @@ public class Group {
     private int groupId;
     private String groupName;
     private int classId;
+    private String className;
     private int semesterId;
     private Integer leaderId;
     private String leaderName;
@@ -21,6 +22,9 @@ public class Group {
 
     public int getClassId() { return classId; }
     public void setClassId(int classId) { this.classId = classId; }
+
+    public String getClassName() { return className; }
+    public void setClassName(String className) { this.className = className; }
 
     public int getSemesterId() { return semesterId; }
     public void setSemesterId(int semesterId) { this.semesterId = semesterId; }

@@ -103,7 +103,8 @@ public class ProjectEditRequestRepository {
             String sql = "SELECT TOP 1 r.*, g.GroupID, g.GroupName, s.FullName AS RequestedByName, s.StudentCode AS RequestedByCode " +
                     "FROM Project_Edit_Requests r " +
                     "INNER JOIN Projects p ON p.ProjectID = r.ProjectID " +
-                    "INNER JOIN Groups g ON g.GroupID = p.GroupID " +
+                    "INNER JOIN ProjectAssignments pa ON pa.AssignmentID = p.AssignmentID " +
+                    "INNER JOIN Groups g ON g.GroupID = pa.GroupID " +
                     "INNER JOIN Students s ON s.StudentID = r.RequestedByStudentID " +
                     "WHERE r.ProjectID = ? " +
                     "ORDER BY r.RequestedDate DESC";
@@ -118,7 +119,8 @@ public class ProjectEditRequestRepository {
         String sql = "SELECT r.*, g.GroupID, g.GroupName, s.FullName AS RequestedByName, s.StudentCode AS RequestedByCode " +
                 "FROM Project_Edit_Requests r " +
                 "INNER JOIN Projects p ON p.ProjectID = r.ProjectID " +
-                "INNER JOIN Groups g ON g.GroupID = p.GroupID " +
+            "INNER JOIN ProjectAssignments pa ON pa.AssignmentID = p.AssignmentID " +
+            "INNER JOIN Groups g ON g.GroupID = pa.GroupID " +
                 "INNER JOIN Students s ON s.StudentID = r.RequestedByStudentID " +
                 "WHERE r.Status = 'PENDING' " +
                 "ORDER BY r.RequestedDate DESC";
@@ -131,7 +133,8 @@ public class ProjectEditRequestRepository {
             String sql = "SELECT r.*, g.GroupID, g.GroupName, s.FullName AS RequestedByName, s.StudentCode AS RequestedByCode " +
                     "FROM Project_Edit_Requests r " +
                     "INNER JOIN Projects p ON p.ProjectID = r.ProjectID " +
-                    "INNER JOIN Groups g ON g.GroupID = p.GroupID " +
+                    "INNER JOIN ProjectAssignments pa ON pa.AssignmentID = p.AssignmentID " +
+                    "INNER JOIN Groups g ON g.GroupID = pa.GroupID " +
                     "INNER JOIN Students s ON s.StudentID = r.RequestedByStudentID " +
                     "WHERE r.RequestID = ?";
             return db.queryForObject(sql, (rs, rn) -> mapRequest(rs), requestId);
