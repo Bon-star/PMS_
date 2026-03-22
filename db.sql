@@ -174,6 +174,18 @@ CREATE TABLE ProjectTemplates (
     CreatedAt DATETIME DEFAULT GETDATE()
 );
 
+CREATE TABLE ProjectTemplateAttachments (
+    AttachmentID INT PRIMARY KEY IDENTITY(1,1),
+    TemplateID INT NOT NULL,
+    FileName NVARCHAR(255) NOT NULL,
+    StoredName NVARCHAR(255) NOT NULL,
+    FileUrl NVARCHAR(500) NOT NULL,
+    ContentType NVARCHAR(100) NULL,
+    FileSize BIGINT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_ProjectTemplateAttachments_Template FOREIGN KEY (TemplateID) REFERENCES ProjectTemplates(TemplateID)
+);
+
 CREATE TABLE ProjectAssignments (
     AssignmentID INT PRIMARY KEY IDENTITY(1,1),
 
@@ -190,6 +202,18 @@ CREATE TABLE ProjectAssignments (
 
     CONSTRAINT FK_Assignment_Template FOREIGN KEY (TemplateID) REFERENCES ProjectTemplates(TemplateID),
     CONSTRAINT FK_Assignment_Group FOREIGN KEY (GroupID) REFERENCES Groups(GroupID)
+);
+
+CREATE TABLE ProjectAttachments (
+    AttachmentID INT PRIMARY KEY IDENTITY(1,1),
+    ProjectID INT NOT NULL,
+    FileName NVARCHAR(255) NOT NULL,
+    StoredName NVARCHAR(255) NOT NULL,
+    FileUrl NVARCHAR(500) NOT NULL,
+    ContentType NVARCHAR(100) NULL,
+    FileSize BIGINT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_ProjectAttachments_Project FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID)
 );
 
 
