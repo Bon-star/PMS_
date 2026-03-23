@@ -57,6 +57,7 @@ public class ProjectRepository {
         int leaderId = rs.getInt("LeaderID");
         p.setLeaderId(rs.wasNull() ? null : leaderId);
         p.setLeaderName(rs.getString("LeaderName"));
+        p.setTemplateId(rs.getInt("TemplateID"));
 
         p.setProjectName(rs.getString("ProjectName"));
         p.setDescription(rs.getString("Description"));
@@ -96,7 +97,7 @@ public class ProjectRepository {
                 "g.ClassID, c.ClassName, " +
                 "g.SemesterID, sem.SemesterName, " +
                 "g.LeaderID, leader.FullName AS LeaderName, " +
-                "proj.ProjectName, proj.Description, proj.TopicSource, proj.ApprovalStatus, proj.RejectReason, " +
+                "proj.TemplateID, proj.ProjectName, proj.Description, proj.TopicSource, proj.ApprovalStatus, proj.RejectReason, " +
                 "proj.TemplateImageUrl, proj.SourceCodeUrl, proj.DocumentUrl, proj.SubmissionDate, proj.StartDate, proj.EndDate, " +
                 "ISNULL(proj.StudentCanEdit, 0) AS StudentCanEdit " +
                 "FROM Groups g " +
@@ -104,7 +105,7 @@ public class ProjectRepository {
                 "LEFT JOIN Semesters sem ON sem.SemesterID = g.SemesterID " +
                 "LEFT JOIN Students leader ON leader.StudentID = g.LeaderID " +
                 "OUTER APPLY ( " +
-                "   SELECT TOP 1 p.ProjectID, p.ProjectName, p.Description, pt.Source AS TopicSource, pt.ImageUrl AS TemplateImageUrl, " +
+                "   SELECT TOP 1 p.ProjectID, pt.TemplateID, p.ProjectName, p.Description, pt.Source AS TopicSource, pt.ImageUrl AS TemplateImageUrl, " +
                 "          p.ApprovalStatus, p.RejectReason, p.SourceCodeUrl, p.DocumentUrl, p.SubmissionDate, " +
                 "          pa.StartDate, pa.EndDate, p.StudentCanEdit " +
                 "   FROM ProjectAssignments pa " +
@@ -121,7 +122,7 @@ public class ProjectRepository {
                 "g.ClassID, c.ClassName, " +
                 "g.SemesterID, sem.SemesterName, " +
                 "g.LeaderID, leader.FullName AS LeaderName, " +
-                "p.ProjectName, p.Description, pt.Source AS TopicSource, p.ApprovalStatus, p.RejectReason, " +
+                "pt.TemplateID, p.ProjectName, p.Description, pt.Source AS TopicSource, p.ApprovalStatus, p.RejectReason, " +
                 "pt.ImageUrl AS TemplateImageUrl, p.SourceCodeUrl, p.DocumentUrl, p.SubmissionDate, pa.StartDate, pa.EndDate, " +
                 "ISNULL(p.StudentCanEdit, 0) AS StudentCanEdit " +
                 "FROM Projects p " +

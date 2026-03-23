@@ -1,5 +1,7 @@
 package com.example.pms.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDateTime;
 
 public class ProjectTemplate {
@@ -16,6 +18,7 @@ public class ProjectTemplate {
     private Integer createdByStaffId;
     private String createdByName;
     private LocalDateTime createdAt;
+    private List<ProjectTemplateAttachment> attachments = new ArrayList<>();
 
     public int getTemplateId() {
         return templateId;
@@ -119,5 +122,13 @@ public class ProjectTemplate {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public List<ProjectTemplateAttachment> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<ProjectTemplateAttachment> attachments) {
+        this.attachments = attachments;
     }
 }

@@ -44,7 +44,7 @@ import jakarta.servlet.http.HttpSession;
 @Controller
 @RequestMapping("/student/group")
 public class GroupController {
-    private static final int MAX_GROUP_MEMBERS = 4;
+    private static final int MAX_GROUP_MEMBERS = 6;
     private static final int INVITE_PAGE_SIZE = 5;
 
     @Autowired
@@ -164,6 +164,10 @@ public class GroupController {
 
         int groupId = groupRepository.create(normalizedGroupName, student.getClassId(), semesterId, student.getStudentId());
         if (groupId <= 0) {
+            if (groupId == -2) {
+                redirectAttributes.addFlashAttribute("error", "A group with this name already exists in your class this semester.");
+                return "redirect:/student/group/create";
+            }
             redirectAttributes.addFlashAttribute("error", "Failed to create group.");
             return "redirect:/student/group/create";
         }
@@ -338,7 +342,7 @@ public class GroupController {
             return redirectToGroupDetail(groupId, invitePage);
         }
         if (groupMemberRepository.countMembers(groupId) >= MAX_GROUP_MEMBERS) {
-            redirectAttributes.addFlashAttribute("error", "This group already has 4 members, so you cannot send more invites.");
+            redirectAttributes.addFlashAttribute("error", "This group already has 6 members, so you cannot send more invites.");
             return redirectToGroupDetail(groupId, invitePage);
         }
 
@@ -448,7 +452,7 @@ public class GroupController {
             return redirectAfterJoinRequest(groupId, source);
         }
         if (groupMemberRepository.countMembers(groupId) >= MAX_GROUP_MEMBERS) {
-            redirectAttributes.addFlashAttribute("error", "This group already has 4 members, so you cannot send a join request.");
+            redirectAttributes.addFlashAttribute("error", "This group already has 6 members, so you cannot send a join request.");
             return redirectAfterJoinRequest(groupId, source);
         }
 
@@ -528,7 +532,7 @@ public class GroupController {
             }
             if (groupMemberRepository.countMembers(groupId) >= MAX_GROUP_MEMBERS) {
                 groupInvitationRepository.updateStatus(invitationId, "REJECTED");
-                redirectAttributes.addFlashAttribute("error", "The group already has 4 members. The request was rejected.");
+                redirectAttributes.addFlashAttribute("error", "The group already has 6 members. The request was rejected.");
                 return redirectAfterGroupNotificationAction(groupId, source, page);
             }
 
@@ -605,7 +609,7 @@ public class GroupController {
             }
             if (groupMemberRepository.countMembers(groupId) >= MAX_GROUP_MEMBERS) {
                 groupInvitationRepository.updateStatus(invitationId, "REJECTED");
-                redirectAttributes.addFlashAttribute("error", "This group already has 4 members and cannot accept more.");
+                redirectAttributes.addFlashAttribute("error", "This group already has 6 members and cannot accept more.");
                 return "redirect:/student/group/notifications";
             }
 

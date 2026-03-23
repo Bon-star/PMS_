@@ -11,6 +11,8 @@ import com.example.pms.repository.ProjectChangeRequestRepository;
 import com.example.pms.repository.ProjectRepository;
 import com.example.pms.repository.ProjectTaskRepository;
 import com.example.pms.repository.SprintRepository;
+import com.example.pms.service.ProjectAttachmentService;
+import com.example.pms.service.ProjectTemplateService;
 import com.example.pms.service.StudentNotificationService;
 import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
@@ -53,6 +55,12 @@ public class LecturerProjectController {
 
     @Autowired
     private StudentNotificationService studentNotificationService;
+
+    @Autowired
+    private ProjectAttachmentService projectAttachmentService;
+
+    @Autowired
+    private ProjectTemplateService projectTemplateService;
 
     private String normalize(String value) {
         return value == null ? "" : value.trim();
@@ -136,6 +144,9 @@ public class LecturerProjectController {
         List<ProjectComment> comments = projectCommentRepository.findByProject(project.getProjectId());
 
         model.addAttribute("project", project);
+        model.addAttribute("projectAttachments",
+            project.getTemplateId() > 0 ? projectTemplateService.findAttachments(project.getTemplateId()) : java.util.List.of());
+        model.addAttribute("projectFiles", projectAttachmentService.findByProjectId(project.getProjectId()));
         model.addAttribute("sprints", sprintRepository.findByProject(project.getProjectId()));
         model.addAttribute("taskHistory", projectTaskRepository.findByProject(project.getProjectId()));
         model.addAttribute("overallPerformance",

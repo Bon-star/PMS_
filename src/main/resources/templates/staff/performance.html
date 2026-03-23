@@ -60,6 +60,45 @@
                 </section>
 
                 <section class="page-section panel">
+                    <h2 class="panel-title">Reassign project</h2>
+                    <p class="meta">Change the template or timeline for this project. Reassignment is blocked once task work has started.</p>
+                    <div th:if="${projectTemplates == null or #lists.isEmpty(projectTemplates)}" class="empty-state">
+                        No templates available for this semester.
+                    </div>
+                    <form th:if="${projectTemplates != null and !#lists.isEmpty(projectTemplates)}"
+                        method="post"
+                        th:action="@{/staff/projects/{id}/reassign(id=${project.projectId})}"
+                        style="margin-top:12px;">
+                        <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                        <div class="form-grid form-grid-3">
+                            <div>
+                                <label for="reassignTemplateId">Template</label>
+                                <select id="reassignTemplateId" name="templateId" required>
+                                    <option th:each="template : ${projectTemplates}"
+                                        th:value="${template.templateId}"
+                                        th:selected="${template.templateId == project.templateId}"
+                                        th:text="${template.name + ' • ' + (template.source ?: '-') + ' • Year ' + (template.year != null ? template.year : '-')}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="reassignStartDate">Start time</label>
+                                <input id="reassignStartDate" type="datetime-local" name="startDate"
+                                    th:value="${project.startDate != null ? #temporals.format(project.startDate, 'yyyy-MM-dd''T''HH:mm') : ''}" />
+                            </div>
+                            <div>
+                                <label for="reassignEndDate">End time</label>
+                                <input id="reassignEndDate" type="datetime-local" name="endDate"
+                                    th:value="${project.endDate != null ? #temporals.format(project.endDate, 'yyyy-MM-dd''T''HH:mm') : ''}" />
+                            </div>
+                        </div>
+                        <div class="form-actions" style="justify-content:flex-start;">
+                            <button type="submit" class="btn btn-primary">Reassign project</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="page-section panel">
                     <h2 class="panel-title">Sprint schedule</h2>
                     <div th:if="${sprints == null or #lists.isEmpty(sprints)}" class="empty-state">This project has no sprints yet.</div>
                     <div th:if="${sprints != null and !#lists.isEmpty(sprints)}" class="table-wrap">

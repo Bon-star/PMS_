@@ -61,6 +61,18 @@
                             <div class="meta" style="margin-top:8px; white-space: pre-wrap;"
                                 th:if="${project.description != null and !#strings.isEmpty(project.description)}"
                                 th:text="${project.description}">Description</div>
+                            <div class="meta" style="margin-top:10px;" th:if="${projectAttachments != null and !#lists.isEmpty(projectAttachments)}">
+                                Supporting files:
+                                <div style="display:grid;gap:6px;margin-top:6px;">
+                                    <a th:each="file : ${projectAttachments}" th:href="${file.fileUrl}" target="_blank" th:text="${file.fileName}"></a>
+                                </div>
+                            </div>
+                            <div class="meta" style="margin-top:10px;" th:if="${projectFiles != null and !#lists.isEmpty(projectFiles)}">
+                                Project attachments:
+                                <div style="display:grid;gap:6px;margin-top:6px;">
+                                    <a th:each="file : ${projectFiles}" th:href="${file.fileUrl}" target="_blank" th:text="${file.fileName}"></a>
+                                </div>
+                            </div>
                         </div>
                         <a class="btn" href="/lecturer/projects">Back to project list</a>
                     </div>

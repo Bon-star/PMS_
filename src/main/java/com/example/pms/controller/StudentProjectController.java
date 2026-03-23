@@ -22,6 +22,8 @@ import com.example.pms.repository.ProjectTaskRepository;
 import com.example.pms.repository.SemesterRepository;
 import com.example.pms.repository.SprintRepository;
 import com.example.pms.service.MailService;
+import com.example.pms.service.ProjectAttachmentService;
+import com.example.pms.service.ProjectTemplateService;
 import com.example.pms.service.StudentNotificationService;
 import com.example.pms.util.RoleDisplayUtil;
 import jakarta.servlet.http.HttpSession;
@@ -101,6 +103,12 @@ public class StudentProjectController {
 
     @Autowired
     private MailService mailService;
+
+    @Autowired
+    private ProjectAttachmentService projectAttachmentService;
+
+    @Autowired
+    private ProjectTemplateService projectTemplateService;
 
     @Autowired
     private StudentNotificationService studentNotificationService;
@@ -669,8 +677,14 @@ public class StudentProjectController {
 
         if (project == null) {
             model.addAttribute("noProject", true);
+            model.addAttribute("projectAttachments", java.util.List.of());
+            model.addAttribute("projectFiles", java.util.List.of());
             return "student/project/home";
         }
+
+        model.addAttribute("projectAttachments",
+                project.getTemplateId() > 0 ? projectTemplateService.findAttachments(project.getTemplateId()) : java.util.List.of());
+        model.addAttribute("projectFiles", projectAttachmentService.findByProjectId(project.getProjectId()));
 
         refreshSprintState(project);
         ProjectEditRequest latestRequest = projectEditRequestRepository.findLatestByProject(project.getProjectId());
@@ -909,6 +923,7 @@ public class StudentProjectController {
             @RequestParam(name = "description", required = false) String description,
             @RequestParam(name = "sourceCodeUrl", required = false) String sourceCodeUrl,
             @RequestParam(name = "documentUrl", required = false) String documentUrl,
+            @RequestParam(name = "projectAttachmentFiles", required = false) MultipartFile[] projectAttachmentFiles,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         Student student = getSessionStudent(session);
@@ -959,6 +974,16 @@ public class StudentProjectController {
             redirectAttributes.addFlashAttribute("error", "Unable to update project content.");
             return "redirect:/student/project";
         }
+
+        try {
+            if (projectAttachmentFiles != null && projectAttachmentFiles.length > 0) {
+                projectAttachmentService.saveAttachments(project.getProjectId(), projectAttachmentFiles);
+            }
+        } catch (IOException ex) {
+            redirectAttributes.addFlashAttribute("error", "Project content updated, but attachments could not be saved: " + ex.getMessage());
+            return "redirect:/student/project";
+        }
+
         redirectAttributes.addFlashAttribute("success", "Project content updated.");
         return "redirect:/student/project";
     }

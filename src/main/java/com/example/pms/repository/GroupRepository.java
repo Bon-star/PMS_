@@ -13,7 +13,17 @@ public class GroupRepository {
     @Autowired
     private JdbcTemplate db;
 
-    private static final int MAX_GROUP_MEMBERS = 4;
+    private static final int MAX_GROUP_MEMBERS = 6;
+
+    private boolean existsByNameInClassAndSemester(String groupName, int classId, int semesterId) {
+        try {
+            String sql = "SELECT COUNT(*) FROM Groups WHERE ClassID = ? AND SemesterID = ? AND LOWER(LTRIM(RTRIM(GroupName))) = LOWER(LTRIM(RTRIM(?)))";
+            Integer count = db.queryForObject(sql, Integer.class, classId, semesterId, groupName);
+            return count != null && count > 0;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
 
     public List<Group> findByStudentAndSemester(int studentId, int semesterId) {
         try {
@@ -79,9 +89,16 @@ public class GroupRepository {
 
     public int create(String groupName, int classId, int semesterId, int leaderId) {
         try {
+            String normalizedGroupName = groupName == null ? "" : groupName.trim();
+            if (normalizedGroupName.isEmpty()) {
+                return -2;
+            }
+            if (existsByNameInClassAndSemester(normalizedGroupName, classId, semesterId)) {
+                return -2;
+            }
             String sql = "INSERT INTO Groups (GroupName, ClassID, SemesterID, LeaderID, CreatedDate, IsLocked) " +
                     "OUTPUT INSERTED.GroupID VALUES (?, ?, ?, ?, GETDATE(), 0)";
-            Integer groupId = db.queryForObject(sql, Integer.class, groupName, classId, semesterId, leaderId);
+            Integer groupId = db.queryForObject(sql, Integer.class, normalizedGroupName, classId, semesterId, leaderId);
             return groupId != null ? groupId : -1;
         } catch (Exception ex) {
             ex.printStackTrace();

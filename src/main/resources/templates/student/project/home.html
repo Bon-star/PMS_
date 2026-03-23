@@ -560,6 +560,18 @@
                                 <a th:if="${!#strings.isEmpty(project.documentUrl)}" th:href="${project.documentUrl}" target="_blank">Open link</a>
                                 <span th:if="${#strings.isEmpty(project.documentUrl)}">Not available</span>
                             </div>
+                            <div class="muted" style="margin-top:10px;" th:if="${projectAttachments != null and !#lists.isEmpty(projectAttachments)}">
+                                Supporting files:
+                                <div style="display:grid;gap:6px;margin-top:6px;">
+                                    <a th:each="file : ${projectAttachments}" th:href="${file.fileUrl}" target="_blank" th:text="${file.fileName}"></a>
+                                </div>
+                            </div>
+                            <div class="muted" style="margin-top:10px;" th:if="${projectFiles != null and !#lists.isEmpty(projectFiles)}">
+                                Project attachments:
+                                <div style="display:grid;gap:6px;margin-top:6px;">
+                                    <a th:each="file : ${projectFiles}" th:href="${file.fileUrl}" target="_blank" th:text="${file.fileName}"></a>
+                                </div>
+                            </div>
                             <div class="alert alert-error" style="margin-top:10px;"
                                 th:if="${project.approvalStatus == 3 and !#strings.isEmpty(project.rejectReason)}"
                                 th:text="${'Lecturer rejection reason: ' + project.rejectReason}">
@@ -646,7 +658,7 @@
                             <details class="action-tile" th:if="${canEditContent}">
                                 <summary>Update project content</summary>
                                 <span class="muted">Update name, description, source code link, and documents before submitting for lecturer approval.</span>
-                                <form method="post" action="/student/project/update-content">
+                                <form method="post" action="/student/project/update-content" enctype="multipart/form-data">
                                     <div class="form-grid">
                                         <div class="full">
                                             <label for="projectName">Project name</label>
@@ -664,6 +676,11 @@
                                         <div>
                                             <label for="documentUrl">Document link</label>
                                             <input id="documentUrl" name="documentUrl" type="text" th:value="${project.documentUrl}" />
+                                        </div>
+                                        <div class="full">
+                                            <label for="projectAttachmentFiles">Supporting files</label>
+                                            <input id="projectAttachmentFiles" name="projectAttachmentFiles" type="file" multiple />
+                                            <div class="muted">Optional. Upload source support, notes, or reference images for this project.</div>
                                         </div>
                                     </div>
                                     <div class="row-actions">

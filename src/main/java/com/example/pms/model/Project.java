@@ -17,6 +17,7 @@ public class Project {
     private String semesterName;
     private Integer leaderId;
     private String leaderName;
+    private int templateId;
 
     private String projectName;
     private String description;
@@ -101,6 +102,14 @@ public class Project {
 
     public void setLeaderName(String leaderName) {
         this.leaderName = leaderName;
+    }
+
+    public int getTemplateId() {
+        return templateId;
+    }
+
+    public void setTemplateId(int templateId) {
+        this.templateId = templateId;
     }
 
     public String getProjectName() {

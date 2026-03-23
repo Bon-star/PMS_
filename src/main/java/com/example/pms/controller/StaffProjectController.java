@@ -6,6 +6,8 @@ import com.example.pms.model.Account;
 import com.example.pms.model.Project;
 import com.example.pms.model.ProjectChangeRequest;
 import com.example.pms.model.ProjectEditRequest;
+import com.example.pms.model.ProjectTemplate;
+import com.example.pms.model.ProjectTemplateAttachment;
 import com.example.pms.model.Semester;
 import com.example.pms.model.Staff;
 import com.example.pms.repository.GroupRepository;
@@ -98,6 +100,26 @@ public class StaffProjectController {
         return value == null ? "" : value.trim();
     }
 
+    private String templatesManagerRedirect(int semesterId, String keyword, Integer year, String active, Integer page) {
+        StringBuilder redirect = new StringBuilder("redirect:/staff/projects/templates-manager?semesterId=")
+                .append(semesterId);
+        String normalizedKeyword = normalize(keyword);
+        if (!normalizedKeyword.isEmpty()) {
+            redirect.append("&q=").append(java.net.URLEncoder.encode(normalizedKeyword, java.nio.charset.StandardCharsets.UTF_8));
+        }
+        if (year != null) {
+            redirect.append("&year=").append(year);
+        }
+        String normalizedActive = normalize(active);
+        if (!normalizedActive.isEmpty() && !"all".equalsIgnoreCase(normalizedActive)) {
+            redirect.append("&active=").append(java.net.URLEncoder.encode(normalizedActive, java.nio.charset.StandardCharsets.UTF_8));
+        }
+        if (page != null && page > 1) {
+            redirect.append("&page=").append(page);
+        }
+        return redirect.toString();
+    }
+
     private LocalDateTime parseDateTimeInput(String value) {
         String normalized = normalize(value);
         if (normalized.isEmpty()) {
@@ -174,6 +196,14 @@ public class StaffProjectController {
         model.addAttribute("availableGroups", projectTemplateService.findAvailableGroups(semesterId));
         java.util.List<Project> overview = projectRepository.findProjectOverviewBySemester(semesterId);
         model.addAttribute("projectOverview", overview);
+        Map<Integer, List<ProjectTemplateAttachment>> projectAttachmentsByTemplateId = new LinkedHashMap<>();
+        for (Project item : overview) {
+            if (item == null || item.getTemplateId() <= 0 || projectAttachmentsByTemplateId.containsKey(item.getTemplateId())) {
+                continue;
+            }
+            projectAttachmentsByTemplateId.put(item.getTemplateId(), projectTemplateService.findAttachments(item.getTemplateId()));
+        }
+        model.addAttribute("projectAttachmentsByTemplateId", projectAttachmentsByTemplateId);
         Map<Integer, String> classOptions = new LinkedHashMap<>();
         for (Project item : overview) {
             if (item == null || item.getProjectId() > 0) {
@@ -202,9 +232,70 @@ public class StaffProjectController {
         return "staff/projects";
     }
 
+    @GetMapping("/templates-manager")
+    public String templatesManager(@RequestParam(name = "semesterId", required = false) Integer semesterId,
+            @RequestParam(name = "q", required = false) String keyword,
+            @RequestParam(name = "year", required = false) Integer year,
+            @RequestParam(name = "active", required = false) String active,
+            @RequestParam(name = "page", required = false, defaultValue = "1") Integer page,
+            Model model,
+            HttpSession session) {
+        if (!isStaff(session)) {
+            return "redirect:/acc/log";
+        }
+        int resolvedSemesterId = resolveSemesterId(semesterId);
+        Semester selectedSemester = semesterRepository.findById(resolvedSemesterId);
+        model.addAttribute("selectedSemesterName", selectedSemester != null ? selectedSemester.getSemesterName() : String.valueOf(resolvedSemesterId));
+        Integer safeYear = year != null && year > 0 ? year : null;
+        String normalizedKeyword = normalize(keyword);
+        Boolean activeFilter = null;
+        if (active != null && !active.isBlank() && !"all".equalsIgnoreCase(active)) {
+            activeFilter = "active".equalsIgnoreCase(active) || "true".equalsIgnoreCase(active) || "1".equals(active);
+        }
+        int pageSize = 8;
+        int totalItems = projectTemplateService.countTemplatesForManagement(resolvedSemesterId, normalizedKeyword, safeYear, activeFilter);
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / pageSize));
+        int currentPage = Math.min(Math.max(page != null ? page : 1, 1), totalPages);
+
+        bindCommon(model, session, resolvedSemesterId);
+        model.addAttribute("projectTemplates", projectTemplateService.findTemplatesForManagement(
+                resolvedSemesterId,
+                normalizedKeyword,
+                safeYear,
+                activeFilter,
+                currentPage,
+                pageSize));
+        model.addAttribute("searchKeyword", normalizedKeyword);
+        model.addAttribute("filterYear", safeYear);
+        model.addAttribute("filterActive", active == null || active.isBlank() ? "all" : active.toLowerCase());
+        model.addAttribute("currentPage", currentPage);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("totalItems", totalItems);
+        model.addAttribute("startItem", totalItems == 0 ? 0 : ((currentPage - 1) * pageSize) + 1);
+        model.addAttribute("endItem", totalItems == 0 ? 0 : Math.min(currentPage * pageSize, totalItems));
+        model.addAttribute("hasPrev", currentPage > 1);
+        model.addAttribute("hasNext", currentPage < totalPages);
+        model.addAttribute("prevPage", currentPage - 1);
+        model.addAttribute("nextPage", currentPage + 1);
+        model.addAttribute("pageSize", pageSize);
+        return "staff/Templates_Manager";
+    }
+
+    @GetMapping("/requests")
+    public String requestsPage(@RequestParam(name = "semesterId", required = false) Integer semesterId,
+            Model model,
+            HttpSession session) {
+        if (!isStaff(session)) {
+            return "redirect:/acc/log";
+        }
+        int resolvedSemesterId = resolveSemesterId(semesterId);
+        bindCommon(model, session, resolvedSemesterId);
+        return "staff/requests";
+    }
+
     @PostMapping("/templates/create")
-        public String createTemplate(CreateTemplateDTO dto,
-            @RequestParam(name = "imageFile", required = false) MultipartFile imageFile,
+    public String createTemplate(CreateTemplateDTO dto,
+            @RequestParam(name = "attachmentFiles", required = false) MultipartFile[] attachmentFiles,
             @RequestParam(name = "semesterId", required = false) Integer semesterId,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
@@ -218,13 +309,74 @@ public class StaffProjectController {
         String normalizedDescription = normalize(dto.getDescription());
         if (normalizedName.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "Please enter a template name.");
-            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+            return "redirect:/staff/projects/templates-manager?semesterId=" + resolvedSemesterId;
         }
         if (!"INDIA".equals(normalizedSource)
                 && !"LECTURER".equals(normalizedSource)
                 && !"STUDENT".equals(normalizedSource)) {
             redirectAttributes.addFlashAttribute("error", "Invalid template source.");
-            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+            return "redirect:/staff/projects/templates-manager?semesterId=" + resolvedSemesterId;
+        }
+
+        Integer templateSemesterId = dto.getSemesterId();
+
+        Account account = getSessionAccount(session);
+        Staff staff = account != null ? staffRepository.findByAccountId(account.getId()) : null;
+        dto.setName(normalizedName);
+        dto.setDescription(normalizedDescription);
+        dto.setSource(normalizedSource);
+        dto.setSemesterId(templateSemesterId);
+        dto.setStaffId(staff != null ? staff.getStaffId() : 0);
+
+        int templateId = projectTemplateService.createTemplate(dto);
+        if (templateId <= 0) {
+            redirectAttributes.addFlashAttribute("error", "Unable to create project template.");
+            return "redirect:/staff/projects/templates-manager?semesterId=" + resolvedSemesterId;
+        }
+
+        try {
+            int savedAttachments = projectTemplateService.saveAttachments(templateId, attachmentFiles);
+            if (savedAttachments > 0) {
+                redirectAttributes.addFlashAttribute("success", "Project template created successfully with " + savedAttachments + " attachment(s).");
+                return "redirect:/staff/projects/templates-manager?semesterId=" + resolvedSemesterId;
+            }
+        } catch (IOException ex) {
+            redirectAttributes.addFlashAttribute("error", "Template created, but attachments could not be saved: " + ex.getMessage());
+            return "redirect:/staff/projects/templates-manager?semesterId=" + resolvedSemesterId;
+        }
+
+        redirectAttributes.addFlashAttribute("success", "Project template created successfully.");
+        return "redirect:/staff/projects/templates-manager?semesterId=" + resolvedSemesterId;
+    }
+
+    @PostMapping("/templates/{templateId}/update")
+    public String updateTemplate(@PathVariable("templateId") int templateId,
+            CreateTemplateDTO dto,
+            @RequestParam(name = "attachmentFiles", required = false) MultipartFile[] attachmentFiles,
+            @RequestParam(name = "semesterId", required = false) Integer semesterId,
+            @RequestParam(name = "q", required = false) String keyword,
+            @RequestParam(name = "year", required = false) Integer year,
+            @RequestParam(name = "active", required = false) String active,
+            @RequestParam(name = "page", required = false) Integer page,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isStaff(session)) {
+            return "redirect:/acc/log";
+        }
+
+        int resolvedSemesterId = resolveSemesterId(semesterId != null ? semesterId : dto.getSemesterId());
+        String normalizedName = normalize(dto.getName());
+        String normalizedSource = normalize(dto.getSource()).toUpperCase();
+        String normalizedDescription = normalize(dto.getDescription());
+        if (normalizedName.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Please enter a template name.");
+            return templatesManagerRedirect(resolvedSemesterId, keyword, year, active, page);
+        }
+        if (!"INDIA".equals(normalizedSource)
+                && !"LECTURER".equals(normalizedSource)
+                && !"STUDENT".equals(normalizedSource)) {
+            redirectAttributes.addFlashAttribute("error", "Invalid template source.");
+            return templatesManagerRedirect(resolvedSemesterId, keyword, year, active, page);
         }
 
         Account account = getSessionAccount(session);
@@ -235,21 +387,68 @@ public class StaffProjectController {
         dto.setSemesterId(resolvedSemesterId);
         dto.setStaffId(staff != null ? staff.getStaffId() : 0);
 
+        int updated = projectTemplateService.updateTemplate(templateId, dto);
+        if (updated <= 0) {
+            redirectAttributes.addFlashAttribute("error", "Unable to update project template.");
+            return templatesManagerRedirect(resolvedSemesterId, keyword, year, active, page);
+        }
+
         try {
-            dto.setImageUrl(storeTemplateImage(imageFile));
+            if (attachmentFiles != null && attachmentFiles.length > 0) {
+                projectTemplateService.saveAttachments(templateId, attachmentFiles);
+            }
         } catch (IOException ex) {
-            redirectAttributes.addFlashAttribute("error", "Unable to save template image: " + ex.getMessage());
-            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+            redirectAttributes.addFlashAttribute("error", "Template updated, but supporting files could not be saved: " + ex.getMessage());
+            return templatesManagerRedirect(resolvedSemesterId, keyword, year, active, page);
         }
 
-        int templateId = projectTemplateService.createTemplate(dto);
-        if (templateId <= 0) {
-            redirectAttributes.addFlashAttribute("error", "Unable to create project template.");
-            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        redirectAttributes.addFlashAttribute("success", "Project template updated successfully.");
+        return templatesManagerRedirect(resolvedSemesterId, keyword, year, active, page);
+    }
+
+    @PostMapping("/templates/{templateId}/delete")
+    public String deleteTemplate(@PathVariable("templateId") int templateId,
+            @RequestParam(name = "semesterId", required = false) Integer semesterId,
+            @RequestParam(name = "q", required = false) String keyword,
+            @RequestParam(name = "year", required = false) Integer year,
+            @RequestParam(name = "active", required = false) String active,
+            @RequestParam(name = "page", required = false) Integer page,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isStaff(session)) {
+            return "redirect:/acc/log";
         }
 
-        redirectAttributes.addFlashAttribute("success", "Project template created successfully.");
-        return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        int resolvedSemesterId = resolveSemesterId(semesterId);
+        int deleted = projectTemplateService.deactivateTemplate(templateId);
+        if (deleted <= 0) {
+            redirectAttributes.addFlashAttribute("error", "Unable to delete project template.");
+        } else {
+            redirectAttributes.addFlashAttribute("success", "Project template deleted successfully.");
+        }
+        return templatesManagerRedirect(resolvedSemesterId, keyword, year, active, page);
+    }
+
+    @PostMapping("/templates/attachments/{attachmentId}/delete")
+    public String deleteTemplateAttachment(@PathVariable("attachmentId") int attachmentId,
+            @RequestParam(name = "semesterId", required = false) Integer semesterId,
+            @RequestParam(name = "q", required = false) String keyword,
+            @RequestParam(name = "year", required = false) Integer year,
+            @RequestParam(name = "active", required = false) String active,
+            @RequestParam(name = "page", required = false) Integer page,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isStaff(session)) {
+            return "redirect:/acc/log";
+        }
+        int resolvedSemesterId = resolveSemesterId(semesterId);
+        int deleted = projectTemplateService.deleteAttachment(attachmentId);
+        if (deleted <= 0) {
+            redirectAttributes.addFlashAttribute("error", "Attachment could not be deleted.");
+        } else {
+            redirectAttributes.addFlashAttribute("success", "Attachment deleted.");
+        }
+        return templatesManagerRedirect(resolvedSemesterId, keyword, year, active, page);
     }
 
     @GetMapping("/templates/images/{fileName:.+}")
@@ -288,7 +487,13 @@ public class StaffProjectController {
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
         }
 
-        List<Integer> createdProjectIds = projectTemplateService.assignProjects(dto);
+        List<Integer> createdProjectIds;
+        try {
+            createdProjectIds = projectTemplateService.assignProjects(dto);
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        }
         if (createdProjectIds.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "No new project was created. The selected groups may already have a project or a pending assignment.");
             return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
@@ -361,8 +566,14 @@ public class StaffProjectController {
                 redirectAttributes.addFlashAttribute("error", "Please enter a project name.");
                 return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
             }
-            if (normalizedStartDate == null || normalizedEndDate == null) {
-                redirectAttributes.addFlashAttribute("error", "Approved projects must have start and end dates.");
+            if (normalizedStartDate == null) {
+                normalizedStartDate = LocalDateTime.now();
+            }
+            if (normalizedEndDate == null) {
+                normalizedEndDate = normalizedStartDate.plusDays(7);
+            }
+            if (normalizedStartDate.isBefore(LocalDateTime.now())) {
+                redirectAttributes.addFlashAttribute("error", "Start time cannot be in the past.");
                 return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
             }
             if (!normalizedEndDate.isAfter(normalizedStartDate)) {
@@ -391,6 +602,58 @@ public class StaffProjectController {
         }
         redirectAttributes.addFlashAttribute("success", "Project created successfully for the group.");
         return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+    }
+
+    @PostMapping("/projects/{projectId}/reassign")
+    public String reassignProject(@PathVariable("projectId") int projectId,
+            @RequestParam("templateId") int templateId,
+            @RequestParam(name = "startDate", required = false) String startDate,
+            @RequestParam(name = "endDate", required = false) String endDate,
+            @RequestParam(name = "semesterId", required = false) Integer semesterId,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isStaff(session)) {
+            return "redirect:/acc/log";
+        }
+
+        int resolvedSemesterId = resolveSemesterId(semesterId);
+        Project project = projectRepository.findById(projectId);
+        if (project == null) {
+            redirectAttributes.addFlashAttribute("error", "Project does not exist.");
+            return "redirect:/staff/projects/templates-manager?semesterId=" + resolvedSemesterId;
+        }
+        if (!projectTaskRepository.findByProject(projectId).isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "This project already has tasks, so it cannot be reassigned safely.");
+            return "redirect:/staff/projects/" + projectId + "/performance?semesterId=" + resolvedSemesterId;
+        }
+
+        LocalDateTime resolvedStart = parseDateTimeInput(startDate);
+        LocalDateTime resolvedEnd = parseDateTimeInput(endDate);
+        LocalDateTime now = LocalDateTime.now();
+        if (resolvedStart == null) {
+            resolvedStart = project.getStartDate() != null && !project.getStartDate().isBefore(now) ? project.getStartDate() : now;
+        }
+        if (resolvedEnd == null) {
+            resolvedEnd = project.getEndDate() != null && project.getEndDate().isAfter(resolvedStart)
+                    ? project.getEndDate()
+                    : resolvedStart.plusDays(7);
+        }
+        if (resolvedStart.isBefore(now)) {
+            redirectAttributes.addFlashAttribute("error", "Start time cannot be in the past.");
+            return "redirect:/staff/projects/" + projectId + "/performance?semesterId=" + resolvedSemesterId;
+        }
+        if (!resolvedEnd.isAfter(resolvedStart)) {
+            redirectAttributes.addFlashAttribute("error", "End time must be after start time.");
+            return "redirect:/staff/projects/" + projectId + "/performance?semesterId=" + resolvedSemesterId;
+        }
+
+        int updated = projectTemplateService.reassignProject(projectId, templateId, resolvedStart, resolvedEnd);
+        if (updated <= 0) {
+            redirectAttributes.addFlashAttribute("error", "Unable to reassign the project.");
+        } else {
+            redirectAttributes.addFlashAttribute("success", "Project reassigned successfully.");
+        }
+        return "redirect:/staff/projects/" + projectId + "/performance?semesterId=" + resolvedSemesterId;
     }
 
     @PostMapping("/requests/{requestId}/approve")
@@ -425,7 +688,7 @@ public class StaffProjectController {
             studentNotificationService.notifyEditAccessGranted(project);
         }
         redirectAttributes.addFlashAttribute("success", "Edit access granted to students for project content.");
-        return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        return "redirect:/staff/projects/requests?semesterId=" + resolvedSemesterId;
     }
 
     @PostMapping("/requests/{requestId}/reject")
@@ -467,7 +730,7 @@ public class StaffProjectController {
             studentNotificationService.notifyEditAccessRejected(project, normalizedReason);
         }
         redirectAttributes.addFlashAttribute("success", "Edit access request rejected.");
-        return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        return "redirect:/staff/projects/requests?semesterId=" + resolvedSemesterId;
     }
 
     @PostMapping("/change-requests/{requestId}/approve")
@@ -535,7 +798,7 @@ public class StaffProjectController {
                     "Project change request forwarded for lecturer approval. Emails sent: " + sent + "/" + uniqueEmails.size() + ".");
         }
         studentNotificationService.notifyProjectChangeForwarded(project);
-        return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        return "redirect:/staff/projects/requests?semesterId=" + resolvedSemesterId;
     }
 
     @PostMapping("/change-requests/{requestId}/reject")
@@ -576,7 +839,7 @@ public class StaffProjectController {
             studentNotificationService.notifyProjectChangeRejected(project, normalizedReason);
         }
         redirectAttributes.addFlashAttribute("success", "Project change request rejected.");
-        return "redirect:/staff/projects?semesterId=" + resolvedSemesterId;
+        return "redirect:/staff/projects/requests?semesterId=" + resolvedSemesterId;
     }
 
     @GetMapping("/{projectId}/performance")
@@ -604,6 +867,7 @@ public class StaffProjectController {
         model.addAttribute("displayRole", RoleDisplayUtil.toDisplayRole("Staff"));
         model.addAttribute("selectedSemesterId", resolvedSemesterId);
         model.addAttribute("project", project);
+        model.addAttribute("projectTemplates", projectTemplateService.findTemplates(resolvedSemesterId));
 
         sprintRepository.closeExpiredSprintsAndFailTasks(project.getProjectId());
         model.addAttribute("sprints", sprintRepository.findByProject(project.getProjectId()));

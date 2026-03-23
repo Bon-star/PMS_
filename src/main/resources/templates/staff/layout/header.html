@@ -19,10 +19,23 @@
                 <span class="sidebar-icon">👥</span>
                 <span class="sidebar-text">Quản lý học viên</span>
             </a>
-            <a class="sidebar-link" th:classappend="${activeMenu == 'projects'} ? ' active'" href="/staff/projects">
-                <span class="sidebar-icon">🗂️</span>
-                <span class="sidebar-text">Quản lý project</span>
-            </a>
+            <details class="sidebar-group" th:open="${activeMenu == 'projects' or activeMenu == 'templates-manager' or activeMenu == 'requests'}">
+                <summary class="sidebar-link sidebar-group-summary" th:classappend="${activeMenu == 'projects' or activeMenu == 'templates-manager' or activeMenu == 'requests'} ? ' active'">
+                    <span class="sidebar-icon">🗂️</span>
+                    <span class="sidebar-text">Quản lý project</span>
+                </summary>
+                <div class="sidebar-submenu">
+                    <a class="sidebar-sublink" th:classappend="${activeMenu == 'projects'} ? ' active'" href="/staff/projects">
+                        <span>Projects in this semester</span>
+                    </a>
+                    <a class="sidebar-sublink" th:classappend="${activeMenu == 'templates-manager'} ? ' active'" href="/staff/projects/templates-manager">
+                        <span>Templates List</span>
+                    </a>
+                    <a class="sidebar-sublink" th:classappend="${activeMenu == 'requests'} ? ' active'" href="/staff/projects/requests">
+                        <span>requests.html</span>
+                    </a>
+                </div>
+            </details>
             <a class="sidebar-link" th:classappend="${activeMenu == 'classrooms'} ? ' active'" href="/staff/classrooms">
                 <span class="sidebar-icon">🚪</span>
                 <span class="sidebar-text">Classroom</span>

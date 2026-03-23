@@ -13,7 +13,7 @@ import java.util.List;
 public class GroupMemberRepository {
     @Autowired
     private JdbcTemplate db;
-    private static final int MAX_GROUP_MEMBERS = 4;
+    private static final int MAX_GROUP_MEMBERS = 6;
 
     public int addMember(int groupId, int studentId) {
         try {

@@ -34,8 +34,10 @@
                     </div>
                     <div class="summary-card">
                         <div class="summary-label">Quick links</div>
-                        <div class="button-row" style="margin-top:10px;">
+                        <div class="button-row" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
                             <a class="btn btn-secondary btn-small" href="/staff/students">Manage students</a>
+                            <a class="btn btn-secondary btn-small" th:href="@{/staff/projects/templates-manager(semesterId=${selectedSemesterId})}">Templates List</a>
+                            <a class="btn btn-secondary btn-small" th:href="@{/staff/projects/requests(semesterId=${selectedSemesterId})}">requests.html</a>
                         </div>
                     </div>
                 </section>
@@ -62,54 +64,10 @@
                 <section class="page-section panel">
                     <h2 class="panel-title">Project templates and batch assignment</h2>
                     <p class="meta">
-                        Create a reusable template first, then assign it to one or more groups that do not yet have a project.
+                        Use Templates List for CRUD. This page only selects an existing template and assigns it to eligible groups.
                     </p>
 
-                    <form method="post" action="/staff/projects/templates/create" enctype="multipart/form-data" class="panel" style="margin-top:12px;padding:16px;">
-                        <h3 class="panel-title" style="margin-top:0;">Create template</h3>
-                        <div class="form-grid form-grid-3">
-                            <div>
-                                <label for="templateName">Template name</label>
-                                <input id="templateName" name="name" type="text" placeholder="Template name" required />
-                            </div>
-                            <div>
-                                <label for="templateSource">Source</label>
-                                <select id="templateSource" name="source" required>
-                                    <option value="INDIA">India</option>
-                                    <option value="LECTURER">Lecturer</option>
-                                    <option value="STUDENT">Student</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="templateYear">Year</label>
-                                <input id="templateYear" name="year" type="number" min="2000" max="2100" th:value="${T(java.time.Year).now().value}" required />
-                            </div>
-                            <div>
-                                <label for="templateSemesterId">Semester</label>
-                                <select id="templateSemesterId" name="semesterId" required>
-                                    <option th:each="sem : ${semesters}"
-                                        th:value="${sem.semesterId}"
-                                        th:text="${sem.semesterName}"
-                                        th:selected="${selectedSemesterId == sem.semesterId}">
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="full">
-                                <label for="templateDescription">Description</label>
-                                <textarea id="templateDescription" name="description" placeholder="Template description"></textarea>
-                            </div>
-                            <div class="full">
-                                <label for="templateImageFile">Image</label>
-                                <input id="templateImageFile" name="imageFile" type="file" accept="image/*" />
-                                <div class="muted">Optional. PNG, JPG, JPEG, GIF, WEBP. Max 5MB.</div>
-                            </div>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Create template</button>
-                        </div>
-                    </form>
-
-                    <form method="post" action="/staff/projects/assign" style="margin-top:18px;">
+                    <form id="assignProjectsForm" method="post" action="/staff/projects/assign" enctype="multipart/form-data" style="margin-top:18px;">
                         <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
                         <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:18px;align-items:start;">
                             <div class="panel" style="padding:16px;">
@@ -121,13 +79,17 @@
                                     <label th:each="template : ${projectTemplates}" style="border:1px solid var(--bo-border);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
                                         <input type="radio" name="templateId" th:value="${template.templateId}" style="margin-top:4px;" required />
                                         <div>
-                                            <img th:if="${template.imageUrl != null and !#strings.isEmpty(template.imageUrl)}"
-                                                th:src="${template.imageUrl}"
-                                                alt="Template image"
-                                                style="width:72px;height:48px;object-fit:cover;border-radius:8px;display:block;margin-bottom:8px;border:1px solid var(--bo-border);" />
                                             <div style="font-weight:700;" th:text="${template.name}">Template</div>
                                             <div class="meta" th:text="${template.source + ' • Semester ' + (template.semesterName != null ? template.semesterName : 'All') + ' • Year ' + (template.year != null ? template.year : '-')}" ></div>
                                             <div class="muted" th:if="${template.description != null and !#strings.isEmpty(template.description)}" th:text="${template.description}"></div>
+                                            <div th:if="${template.attachments != null and !#lists.isEmpty(template.attachments)}" style="margin-top:8px;">
+                                                <div class="meta" style="margin-bottom:6px;">Supporting files:</div>
+                                                <div style="display:grid;gap:6px;">
+                                                    <div th:each="file : ${template.attachments}" style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
+                                                        <a th:href="${file.fileUrl}" target="_blank" class="muted" th:text="${file.fileName}"></a>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </label>
                                 </div>
@@ -146,7 +108,12 @@
                                     </div>
                                 </div>
                                 <div th:if="${availableGroups == null or #lists.isEmpty(availableGroups)}" class="empty-state" style="margin-top:12px;">
-                                    No groups without project in this semester.
+                                    No eligible groups with 4-6 members and no project in this semester.
+                                </div>
+                                <div class="full" style="margin-top:12px;">
+                                    <label for="assignAttachmentFiles">Supporting files for selected template</label>
+                                    <input id="assignAttachmentFiles" name="attachmentFiles" type="file" multiple />
+                                    <div class="muted">Optional. These files are attached to the selected template before assignment.</div>
                                 </div>
                                 <div th:if="${availableGroups != null and !#lists.isEmpty(availableGroups)}" style="display:grid;gap:10px;max-height:420px;overflow:auto;margin-top:12px;">
                                     <label th:each="group : ${availableGroups}" style="border:1px solid var(--bo-border);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
@@ -159,7 +126,7 @@
                                     </label>
                                 </div>
                                 <div class="form-actions" style="justify-content:flex-start;margin-top:16px;">
-                                    <button type="submit" class="btn btn-primary">Assign template</button>
+                                    <button id="assignProjectsSubmit" type="submit" class="btn btn-primary">Assign template</button>
                                 </div>
                             </div>
                         </div>
@@ -176,7 +143,7 @@
                                     <th>Class</th>
                                     <th>Leader</th>
                                     <th>Project</th>
-                                    <th>Image</th>
+                                    <th>Attachments</th>
                                     <th>Nguồn</th>
                                     <th>Status</th>
                                     <th>Timeline</th>
@@ -197,11 +164,12 @@
                                             th:text="${p.description}"></div>
                                     </td>
                                     <td>
-                                        <img th:if="${p.projectId > 0 and p.templateImageUrl != null and !#strings.isEmpty(p.templateImageUrl)}"
-                                            th:src="${p.templateImageUrl}"
-                                            alt="Project image"
-                                            style="width:72px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--bo-border);" />
-                                        <span th:if="${p.projectId <= 0 or p.templateImageUrl == null or #strings.isEmpty(p.templateImageUrl)}" class="muted">-</span>
+                                        <div th:with="files=${projectAttachmentsByTemplateId != null ? projectAttachmentsByTemplateId[p.templateId] : null}">
+                                            <div th:if="${files != null and !#lists.isEmpty(files)}" style="display:grid;gap:6px;">
+                                                <a th:each="file : ${files}" th:href="${file.fileUrl}" target="_blank" th:text="${file.fileName}"></a>
+                                            </div>
+                                            <span th:if="${files == null or #lists.isEmpty(files)}" class="muted">-</span>
+                                        </div>
                                     </td>
                                     <td th:text="${p.projectId > 0 ? p.topicSource : '-'}">Nguồn</td>
                                     <td>
@@ -227,68 +195,59 @@
                         </table>
                     </div>
                 </section>
-
-                <section class="page-section panel">
-                    <h2 class="panel-title">Project edit access requests</h2>
-                    <div th:if="${pendingEditRequests == null or #lists.isEmpty(pendingEditRequests)}" class="empty-state">
-                        No pending requests.
-                    </div>
-                    <div th:if="${pendingEditRequests != null and !#lists.isEmpty(pendingEditRequests)}" class="request-list">
-                        <article th:each="req : ${pendingEditRequests}" class="request-card">
-                            <h3 class="request-title" th:text="${'Group ' + req.groupName + ' • Project ID: ' + req.projectId}">Group</h3>
-                            <div class="request-meta"
-                                th:text="${'Student: ' + req.requestedByName + ' (' + req.requestedByCode + ') • Submitted: ' + #temporals.format(req.requestedDate, 'dd/MM/yyyy HH:mm')}">
-                            </div>
-                            <div class="request-body" th:text="${#strings.isEmpty(req.requestNote) ? 'No note.' : req.requestNote}"></div>
-                            <div class="inline-actions" style="margin-top:12px;">
-                                <form method="post" th:action="@{/staff/projects/requests/{id}/approve(id=${req.requestId})}">
-                                    <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
-                                    <button type="submit" class="btn btn-primary">Approve access</button>
-                                </form>
-                                <form method="post" th:action="@{/staff/projects/requests/{id}/reject(id=${req.requestId})}">
-                                    <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
-                                    <input class="inline-input" type="text" name="reason" placeholder="Rejection reason" required />
-                                    <button type="submit" class="btn btn-secondary">Reject</button>
-                                </form>
-                            </div>
-                        </article>
-                    </div>
-                </section>
-
-                <section class="page-section panel">
-                    <h2 class="panel-title">Project change requests (staff)</h2>
-                    <div th:if="${pendingChangeRequests == null or #lists.isEmpty(pendingChangeRequests)}" class="empty-state">
-                        No pending project change requests.
-                    </div>
-                    <div th:if="${pendingChangeRequests != null and !#lists.isEmpty(pendingChangeRequests)}" class="request-list">
-                        <article th:each="req : ${pendingChangeRequests}" class="request-card">
-                            <h3 class="request-title" th:text="${req.groupName + ' • ' + (req.className ?: 'No class')}">Group</h3>
-                            <div class="request-meta"
-                                th:text="${'Sender: ' + req.requestedByName + ' (' + req.requestedByCode + ') • Submitted: ' + #temporals.format(req.requestedDate, 'dd/MM/yyyy HH:mm')}">
-                            </div>
-                            <div class="request-body" th:text="${'Current topic: ' + (req.currentProjectName ?: 'Untitled')}"></div>
-                            <div class="request-body" th:text="${'Proposed topic: ' + req.proposedProjectName}"></div>
-                            <div class="request-body" th:if="${!#strings.isEmpty(req.proposedDescription)}" th:text="${'Proposed description: ' + req.proposedDescription}"></div>
-                            <div class="request-body" th:text="${'Change reason: ' + req.changeReason}"></div>
-                            <div class="inline-actions" style="margin-top:12px;">
-                                <form method="post" th:action="@{/staff/projects/change-requests/{id}/approve(id=${req.requestId})}">
-                                    <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
-                                    <button type="submit" class="btn btn-primary">Send to lecturer</button>
-                                </form>
-                                <form method="post" th:action="@{/staff/projects/change-requests/{id}/reject(id=${req.requestId})}">
-                                    <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
-                                    <input class="inline-input" type="text" name="reason" placeholder="Rejection reason" required />
-                                    <button type="submit" class="btn btn-secondary">Reject</button>
-                                </form>
-                            </div>
-                        </article>
-                    </div>
-                </section>
             </main>
             <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
         </div>
     </div>
     <script>
+        (function () {
+            const startInput = document.getElementById('assignStartDate');
+            const endInput = document.getElementById('assignEndDate');
+            if (!startInput || !endInput) {
+                return;
+            }
+
+            const pad = value => String(value).padStart(2, '0');
+            const toLocalValue = date => {
+                const year = date.getFullYear();
+                const month = pad(date.getMonth() + 1);
+                const day = pad(date.getDate());
+                const hours = pad(date.getHours());
+                const minutes = pad(date.getMinutes());
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            };
+
+            const now = new Date();
+            const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            startInput.min = toLocalValue(now);
+            endInput.min = toLocalValue(now);
+            if (!startInput.value) {
+                startInput.value = toLocalValue(now);
+            }
+            if (!endInput.value) {
+                endInput.value = toLocalValue(nextWeek);
+            }
+
+            startInput.addEventListener('change', () => {
+                endInput.min = startInput.value || toLocalValue(now);
+                if (endInput.value && endInput.value < endInput.min) {
+                    endInput.value = toLocalValue(nextWeek);
+                }
+            });
+        })();
+
+        (function () {
+            const form = document.getElementById('assignProjectsForm');
+            const submitButton = document.getElementById('assignProjectsSubmit');
+            if (!form || !submitButton) {
+                return;
+            }
+            form.addEventListener('submit', () => {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Assigning...';
+            });
+        })();
+
         (function () {
             const classSelect = document.getElementById('classId');
             const groupSelect = document.getElementById('groupId');

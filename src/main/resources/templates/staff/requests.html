@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Staff • Requests</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body staff-projects-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{staff/layout/header :: sidebar('requests')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{staff/layout/header :: topbar('Requests')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+                <section class="page-section summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-label">Edit access requests</div>
+                        <div class="summary-value" th:text="${pendingEditRequests != null ? #lists.size(pendingEditRequests) : 0}">0</div>
+                        <div class="summary-note">Requests to unlock project content editing.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Project change requests</div>
+                        <div class="summary-value" th:text="${pendingChangeRequests != null ? #lists.size(pendingChangeRequests) : 0}">0</div>
+                        <div class="summary-note">Requests that need staff review before lecturer approval.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Quick links</div>
+                        <div class="button-row" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
+                            <a class="btn btn-secondary btn-small" th:href="@{/staff/projects(semesterId=${selectedSemesterId})}">Projects</a>
+                            <a class="btn btn-secondary btn-small" th:href="@{/staff/projects/templates-manager(semesterId=${selectedSemesterId})}">Templates List</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Semester filter</h2>
+                    <form method="get" action="/staff/projects/requests" class="form-grid form-grid-3">
+                        <div>
+                            <label for="semesterId">Semester</label>
+                            <select id="semesterId" name="semesterId">
+                                <option th:each="sem : ${semesters}"
+                                    th:value="${sem.semesterId}"
+                                    th:text="${sem.semesterName}"
+                                    th:selected="${selectedSemesterId == sem.semesterId}">
+                                </option>
+                            </select>
+                        </div>
+                        <div class="full form-actions" style="justify-content:flex-start;">
+                            <button type="submit" class="btn btn-primary">View list</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Project edit access requests</h2>
+                    <div th:if="${pendingEditRequests == null or #lists.isEmpty(pendingEditRequests)}" class="empty-state">
+                        No pending requests.
+                    </div>
+                    <div th:if="${pendingEditRequests != null and !#lists.isEmpty(pendingEditRequests)}" class="request-list">
+                        <article th:each="req : ${pendingEditRequests}" class="request-card">
+                            <h3 class="request-title" th:text="${'Group ' + req.groupName + ' • Project ID: ' + req.projectId}">Group</h3>
+                            <div class="request-meta"
+                                th:text="${'Student: ' + req.requestedByName + ' (' + req.requestedByCode + ') • Submitted: ' + #temporals.format(req.requestedDate, 'dd/MM/yyyy HH:mm')}">
+                            </div>
+                            <div class="request-body" th:text="${#strings.isEmpty(req.requestNote) ? 'No note.' : req.requestNote}"></div>
+                            <div class="inline-actions" style="margin-top:12px;">
+                                <form method="post" th:action="@{/staff/projects/requests/{id}/approve(id=${req.requestId})}">
+                                    <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                                    <button type="submit" class="btn btn-primary">Approve access</button>
+                                </form>
+                                <form method="post" th:action="@{/staff/projects/requests/{id}/reject(id=${req.requestId})}">
+                                    <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                                    <input class="inline-input" type="text" name="reason" placeholder="Rejection reason" required />
+                                    <button type="submit" class="btn btn-secondary">Reject</button>
+                                </form>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Project change requests (staff)</h2>
+                    <div th:if="${pendingChangeRequests == null or #lists.isEmpty(pendingChangeRequests)}" class="empty-state">
+                        No pending project change requests.
+                    </div>
+                    <div th:if="${pendingChangeRequests != null and !#lists.isEmpty(pendingChangeRequests)}" class="request-list">
+                        <article th:each="req : ${pendingChangeRequests}" class="request-card">
+                            <h3 class="request-title" th:text="${req.groupName + ' • ' + (req.className ?: 'No class')}">Group</h3>
+                            <div class="request-meta"
+                                th:text="${'Sender: ' + req.requestedByName + ' (' + req.requestedByCode + ') • Submitted: ' + #temporals.format(req.requestedDate, 'dd/MM/yyyy HH:mm')}">
+                            </div>
+                            <div class="request-body" th:text="${'Current topic: ' + (req.currentProjectName ?: 'Untitled')}"></div>
+                            <div class="request-body" th:text="${'Proposed topic: ' + req.proposedProjectName}"></div>
+                            <div class="request-body" th:if="${!#strings.isEmpty(req.proposedDescription)}" th:text="${'Proposed description: ' + req.proposedDescription}"></div>
+                            <div class="request-body" th:text="${'Change reason: ' + req.changeReason}"></div>
+                            <div class="inline-actions" style="margin-top:12px;">
+                                <form method="post" th:action="@{/staff/projects/change-requests/{id}/approve(id=${req.requestId})}">
+                                    <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                                    <button type="submit" class="btn btn-primary">Send to lecturer</button>
+                                </form>
+                                <form method="post" th:action="@{/staff/projects/change-requests/{id}/reject(id=${req.requestId})}">
+                                    <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                                    <input class="inline-input" type="text" name="reason" placeholder="Rejection reason" required />
+                                    <button type="submit" class="btn btn-secondary">Reject</button>
+                                </form>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>
