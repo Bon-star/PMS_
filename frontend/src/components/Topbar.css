@@ -1,0 +1,202 @@
+.topbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 12px 24px;
+  background-color: var(--bg-card);
+  height: 64px;
+  border-bottom: 2px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--gray-100);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.topbar-icon-btn:hover {
+  background-color: var(--gray-200);
+  color: var(--primary-600);
+}
+
+.topbar-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background-color: var(--danger);
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 5px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--bg-card);
+}
+
+.topbar-profile-container {
+  position: relative;
+}
+
+.topbar-profile-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  position: relative;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.topbar-profile-btn:hover {
+  transform: scale(1.05);
+}
+
+.topbar-avatar {
+  background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.topbar-avatar-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background-color: var(--gray-200);
+  color: var(--text-primary);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px var(--bg-card);
+  pointer-events: none;
+}
+
+/* Dropdown */
+.topbar-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 300px;
+  background-color: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  padding: 12px;
+  z-index: 1000;
+  border: 1px solid var(--border-light);
+  animation: scaleIn 0.2s ease-out;
+}
+
+.dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--gray-50);
+  border-radius: var(--radius-md);
+  transition: background-color 0.2s;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.dropdown-header:hover {
+  background-color: var(--gray-100);
+}
+
+.dropdown-header .avatar-lg {
+  width: 48px;
+  height: 48px;
+  font-size: 18px;
+}
+
+.dropdown-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdown-user-info strong {
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.dropdown-user-info span {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--border-light);
+  margin: 12px 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background-color: var(--gray-100);
+  color: var(--primary-600);
+}
+
+.dropdown-icon {
+  font-size: 20px;
+  color: var(--text-secondary);
+  background-color: var(--gray-100);
+  padding: 6px;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  transition: all 0.2s;
+}
+
+.dropdown-item:hover .dropdown-icon {
+  background-color: var(--primary-100);
+  color: var(--primary-600);
+}
+
+
