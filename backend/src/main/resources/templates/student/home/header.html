@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<body>
+    <div th:fragment="sidebar(activeMenu)" class="sidebar">
+        <div class="sidebar-logo" th:text="${className} ?: 'PMS'">PMS</div>
+        <div class="sidebar-controls">
+            <button type="button" class="sidebar-toggle" onclick="toggleStudentSidebar()"
+                aria-label="Collapse or expand sidebar">
+                <span class="toggle-icon">☰</span>
+                <span class="toggle-text">Collapse</span>
+            </button>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="/student/home" title="Home" class="nav-link" th:classappend="${activeMenu == 'home'} ? ' active'">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Home</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/student/group/list" title="My group" class="nav-link" th:classappend="${activeMenu == 'group'} ? ' active'">
+                    <span class="nav-icon">📚</span>
+                    <span class="nav-text">My group</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/student/project" title="Group project" class="nav-link" th:classappend="${activeMenu == 'project'} ? ' active'">
+                    <span class="nav-icon">🗂️</span>
+                    <span class="nav-text">Group project</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/student/group/notifications" title="Notifications" class="nav-link" th:classappend="${activeMenu == 'notifications'} ? ' active'">
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-text">Notifications</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div th:fragment="topbar(pageTitle)" class="header">
+        <script src="/js/student-notifications.js" defer></script>
+        <div class="header-left" th:text="${pageTitle}">Page</div>
+        <div class="header-actions">
+            <a class="notify-btn js-student-notification-link"
+                href="/student/group/notifications"
+                data-notification-count-url="/student/group/notifications/count">
+                <span>Notifications</span>
+                <span class="js-student-notification-count"
+                    th:style="${notificationCount != null and notificationCount > 0} ? '' : 'display:none;'"
+                    th:text="${notificationCount}">0</span>
+            </a>
+            <div class="user-info">
+                <div class="user-avatar"><img src="/img/user.png" alt="Avatar" /></div>
+                <div class="user-text">
+                    <div class="user-name" th:text="${studentName} ?: 'Student'">Student</div>
+                    <div class="user-role" th:text="${userRole} ?: 'Student'">Student</div>
+                </div>
+            </div>
+            <form action="/acc/logout" method="get"><button type="submit" class="logout-btn">Log out</button></form>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Project history detail</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+    <style>
+        .student-project-history-detail-page .panel {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+        }
+
+        .student-project-history-detail-page .panel-title {
+            margin: 0 0 12px;
+            font-size: 22px;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .student-project-history-detail-page .muted {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .student-project-history-detail-page .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .student-project-history-detail-page .summary-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .student-project-history-detail-page .summary-label {
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .student-project-history-detail-page .summary-value {
+            margin-top: 8px;
+            font-size: 28px;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .student-project-history-detail-page .summary-note {
+            margin-top: 6px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .student-project-history-detail-page .button-row,
+        .student-project-history-detail-page .resource-list,
+        .student-project-history-detail-page .member-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .student-project-history-detail-page .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #111827;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .student-project-history-detail-page .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+
+        .student-project-history-detail-page .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .student-project-history-detail-page .status-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .student-project-history-detail-page .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .student-project-history-detail-page .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .student-project-history-detail-page .status-waiting {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .student-project-history-detail-page .status-todo {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .student-project-history-detail-page .status-progress {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .student-project-history-detail-page .status-submitted {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .student-project-history-detail-page .status-done {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .student-project-history-detail-page .status-returned {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .student-project-history-detail-page .status-failed {
+            background: #fecaca;
+            color: #7f1d1d;
+        }
+
+        .student-project-history-detail-page .status-cancelled {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+
+        .student-project-history-detail-page .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px 14px;
+        }
+
+        .student-project-history-detail-page .meta-block {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 14px;
+            background: #f8fafc;
+        }
+
+        .student-project-history-detail-page .meta-label {
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .student-project-history-detail-page .meta-value {
+            margin-top: 6px;
+            color: #111827;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .student-project-history-detail-page .resource-item,
+        .student-project-history-detail-page .member-chip,
+        .student-project-history-detail-page .comment-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: #fff;
+        }
+
+        .student-project-history-detail-page .resource-item {
+            min-width: 220px;
+        }
+
+        .student-project-history-detail-page .resource-name {
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .student-project-history-detail-page .resource-meta {
+            margin-top: 4px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .student-project-history-detail-page table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .student-project-history-detail-page th,
+        .student-project-history-detail-page td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .student-project-history-detail-page th {
+            background: #f8fafc;
+            color: #374151;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .student-project-history-detail-page .table-wrap {
+            overflow-x: auto;
+        }
+
+        .student-project-history-detail-page .task-resource-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .student-project-history-detail-page .task-resource-link {
+            color: #1d4ed8;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .student-project-history-detail-page .empty-state {
+            padding: 20px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 14px;
+            color: #64748b;
+            background: #fff;
+        }
+
+        @media (max-width: 980px) {
+            .student-project-history-detail-page .summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .student-project-history-detail-page .meta-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .student-project-history-detail-page .summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="backoffice-body student-project-history-detail-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('project-history')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Project history detail')}"></div>
+            <main class="backoffice-content">
+                <section class="page-section">
+                    <div class="button-row" style="margin-bottom: 16px;">
+                        <a class="btn" href="/student/project/history">Back to history</a>
+                        <a class="btn btn-primary" th:if="${historyCurrentSemester}" href="/student/project">Open current workspace</a>
+                    </div>
+
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="summary-label">Project</div>
+                            <div class="summary-value" th:text="${historyProject.projectName} ?: 'Untitled'">Untitled</div>
+                            <div class="summary-note" th:text="${historyProject.semesterName} ?: 'Unknown semester'">Semester</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Sprints</div>
+                            <div class="summary-value" th:text="${historySprintCount}">0</div>
+                            <div class="summary-note">Sprint cycles recorded for this project.</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Completed tasks</div>
+                            <div class="summary-value" th:text="${historyDoneTaskCount}">0</div>
+                            <div class="summary-note" th:text="${historyFailedTaskCount + ' failed in sprint history'}">0 failed</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Your score</div>
+                            <div class="summary-value"
+                                th:text="${historyScore != null and historyScore.published and historyScore.finalScore != null ? #numbers.formatDecimal(historyScore.finalScore, 1, 1) : '-'}">-</div>
+                            <div class="summary-note"
+                                th:text="${historyScore != null and historyScore.published ? 'Published' : 'Not published yet'}">Not published</div>
+                        </div>
+                    </div>
+
+                    <section class="panel">
+                        <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+                            <div>
+                                <h2 class="panel-title" th:text="${historyProject.projectName} ?: 'Untitled project'">Project</h2>
+                                <div class="muted">
+                                    Group <strong th:text="${historyProject.groupName}">Group</strong>
+                                    • Class <strong th:text="${historyProject.className} ?: 'No class'">Class</strong>
+                                    • Leader <strong th:text="${historyProject.leaderName} ?: 'Not assigned'">Leader</strong>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <span class="badge status-approved" th:if="${historyProject.approvalStatus == 1}">Approved</span>
+                                <span class="badge status-pending" th:if="${historyProject.approvalStatus == 2}">Awaiting lecturer review</span>
+                                <span class="badge status-rejected" th:if="${historyProject.approvalStatus == 3}">Rejected</span>
+                                <span class="badge status-waiting" th:if="${historyProject.approvalStatus == 4}">Waiting for student content</span>
+                            </div>
+                        </div>
+
+                        <div class="meta-grid" style="margin-top: 16px;">
+                            <div class="meta-block">
+                                <div class="meta-label">Timeline</div>
+                                <div class="meta-value"
+                                    th:text="${(historyProject.startDate != null ? #temporals.format(historyProject.startDate, 'dd/MM/yyyy HH:mm') : '-') + ' to ' + (historyProject.endDate != null ? #temporals.format(historyProject.endDate, 'dd/MM/yyyy HH:mm') : '-')}">Timeline</div>
+                            </div>
+                            <div class="meta-block">
+                                <div class="meta-label">Topic source</div>
+                                <div class="meta-value" th:text="${historyProject.topicSource} ?: '-'">Source</div>
+                            </div>
+                            <div class="meta-block">
+                                <div class="meta-label">Source code link</div>
+                                <div class="meta-value">
+                                    <a th:if="${historyProject.sourceCodeUrl != null and !#strings.isEmpty(historyProject.sourceCodeUrl)}"
+                                        th:href="${historyProject.sourceCodeUrl}" target="_blank" rel="noopener">Open source code</a>
+                                    <span th:if="${historyProject.sourceCodeUrl == null or #strings.isEmpty(historyProject.sourceCodeUrl)}">Not submitted</span>
+                                </div>
+                            </div>
+                            <div class="meta-block">
+                                <div class="meta-label">Document link</div>
+                                <div class="meta-value">
+                                    <a th:if="${historyProject.documentUrl != null and !#strings.isEmpty(historyProject.documentUrl)}"
+                                        th:href="${historyProject.documentUrl}" target="_blank" rel="noopener">Open document</a>
+                                    <span th:if="${historyProject.documentUrl == null or #strings.isEmpty(historyProject.documentUrl)}">Not submitted</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="muted" style="margin-top: 16px; white-space: pre-wrap;"
+                            th:if="${historyProject.description != null and !#strings.isEmpty(historyProject.description)}"
+                            th:text="${historyProject.description}">Description</div>
+                    </section>
+
+                    <section class="panel">
+                        <h2 class="panel-title">Members in group</h2>
+                        <div class="member-list" th:if="${historyMembers != null and !#lists.isEmpty(historyMembers)}">
+                            <div class="member-chip" th:each="member : ${historyMembers}">
+                                <div class="resource-name" th:text="${member.fullName}">Name</div>
+                                <div class="resource-meta" th:text="${member.studentCode}">Code</div>
+                            </div>
+                        </div>
+                        <div class="empty-state" th:if="${historyMembers == null or #lists.isEmpty(historyMembers)}">
+                            No member data found for this project.
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <h2 class="panel-title">Shared resources</h2>
+                        <div class="resource-list" th:if="${(historyProjectAttachments != null and !#lists.isEmpty(historyProjectAttachments)) or (historyProjectFiles != null and !#lists.isEmpty(historyProjectFiles))}">
+                            <div class="resource-item" th:each="file : ${historyProjectAttachments}">
+                                <div class="resource-name" th:text="${file.fileName}">File</div>
+                                <div class="resource-meta">Template attachment</div>
+                                <a class="task-resource-link" th:href="${file.fileUrl}" target="_blank" rel="noopener">Open file</a>
+                            </div>
+                            <div class="resource-item" th:each="file : ${historyProjectFiles}">
+                                <div class="resource-name" th:text="${file.fileName}">File</div>
+                                <div class="resource-meta">Project upload</div>
+                                <a class="task-resource-link" th:href="${file.fileUrl}" target="_blank" rel="noopener">Open file</a>
+                            </div>
+                        </div>
+                        <div class="empty-state" th:if="${(historyProjectAttachments == null or #lists.isEmpty(historyProjectAttachments)) and (historyProjectFiles == null or #lists.isEmpty(historyProjectFiles))}">
+                            No attachments were stored for this project.
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <h2 class="panel-title">Lecturer comments</h2>
+                        <div th:if="${historyLecturerComments != null and !#lists.isEmpty(historyLecturerComments)}">
+                            <div class="comment-item" th:each="comment : ${historyLecturerComments}" style="margin-bottom: 10px;">
+                                <div class="resource-name" th:text="${comment.lecturerName} ?: 'Lecturer'">Lecturer</div>
+                                <div class="resource-meta"
+                                    th:text="${comment.createdAt != null ? #temporals.format(comment.createdAt, 'dd/MM/yyyy HH:mm') : '-'}">Time</div>
+                                <div style="margin-top: 8px; white-space: pre-wrap;" th:text="${comment.commentContent}">Comment</div>
+                            </div>
+                        </div>
+                        <div class="empty-state" th:if="${historyLecturerComments == null or #lists.isEmpty(historyLecturerComments)}">
+                            No lecturer comments were recorded for this project.
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <h2 class="panel-title">Score and publication</h2>
+                        <div class="meta-grid" th:if="${historyScore != null}">
+                            <div class="meta-block">
+                                <div class="meta-label">Publication</div>
+                                <div class="meta-value" th:text="${historyScore.published ? 'Published' : 'Not published'}">Status</div>
+                            </div>
+                            <div class="meta-block">
+                                <div class="meta-label">Final score</div>
+                                <div class="meta-value" th:text="${historyScore.finalScore != null ? #numbers.formatDecimal(historyScore.finalScore, 1, 1) : '-'}">-</div>
+                            </div>
+                            <div class="meta-block">
+                                <div class="meta-label">Lecturer comment</div>
+                                <div class="meta-value" th:text="${historyScore.lecturerComment != null and !#strings.isEmpty(historyScore.lecturerComment) ? historyScore.lecturerComment : '-'}">-</div>
+                            </div>
+                            <div class="meta-block">
+                                <div class="meta-label">Staff note</div>
+                                <div class="meta-value" th:text="${historyScore.staffNote != null and !#strings.isEmpty(historyScore.staffNote) ? historyScore.staffNote : '-'}">-</div>
+                            </div>
+                        </div>
+                        <div class="empty-state" th:if="${historyScore == null}">
+                            No score record has been stored for your account in this project yet.
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <h2 class="panel-title">Sprint schedule</h2>
+                        <div class="table-wrap" th:if="${historySprints != null and !#lists.isEmpty(historySprints)}">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Sprint</th>
+                                        <th>Start</th>
+                                        <th>End</th>
+                                        <th>Status</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="sp : ${historySprints}">
+                                        <td th:text="${sp.sprintName} ?: 'Sprint #' + sp.sprintId">Sprint</td>
+                                        <td th:text="${sp.startDate != null ? #temporals.format(sp.startDate, 'dd/MM/yyyy') : '-'}">-</td>
+                                        <td th:text="${sp.endDate != null ? #temporals.format(sp.endDate, 'dd/MM/yyyy') : '-'}">-</td>
+                                        <td>
+                                            <span class="badge status-cancelled" th:if="${sp.cancelled}">Cancelled</span>
+                                            <span class="badge status-submitted" th:if="${!sp.cancelled and sp.closed}">Closed</span>
+                                            <span class="badge status-progress" th:if="${!sp.cancelled and !sp.closed}">Open</span>
+                                        </td>
+                                        <td class="muted">
+                                            <div th:if="${sp.cancelled and sp.cancelReason != null and !#strings.isEmpty(sp.cancelReason)}"
+                                                th:text="${sp.cancelReason}">Reason</div>
+                                            <div th:if="${sp.cancelledAt != null}"
+                                                th:text="${'Cancelled at: ' + #temporals.format(sp.cancelledAt, 'dd/MM/yyyy HH:mm')}">Cancelled at</div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="empty-state" th:if="${historySprints == null or #lists.isEmpty(historySprints)}">
+                            No sprint history was found for this project.
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <h2 class="panel-title">Overall member performance</h2>
+                        <div class="table-wrap" th:if="${historyPerformance != null and !#lists.isEmpty(historyPerformance)}">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Member</th>
+                                        <th>Total</th>
+                                        <th>Completed</th>
+                                        <th>Failed</th>
+                                        <th>In progress</th>
+                                        <th>Submitted</th>
+                                        <th>To do</th>
+                                        <th>Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="item : ${historyPerformance}">
+                                        <td th:text="${item.studentName + ' (' + item.studentCode + ')'}">Member</td>
+                                        <td th:text="${item.totalTasks}">0</td>
+                                        <td th:text="${item.doneTasks}">0</td>
+                                        <td th:text="${item.failedTasks}">0</td>
+                                        <td th:text="${item.inProgressTasks}">0</td>
+                                        <td th:text="${item.submittedTasks}">0</td>
+                                        <td th:text="${item.todoTasks}">0</td>
+                                        <td th:text="${#numbers.formatDecimal(item.doneRatePercent, 1, 1) + '%'}">0%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="empty-state" th:if="${historyPerformance == null or #lists.isEmpty(historyPerformance)}">
+                            Performance data has not been generated for this project yet.
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <h2 class="panel-title">Task history</h2>
+                        <div class="table-wrap" th:if="${historyTasks != null and !#lists.isEmpty(historyTasks)}">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Task</th>
+                                        <th>Sprint</th>
+                                        <th>Assignment</th>
+                                        <th>Status</th>
+                                        <th>Submission</th>
+                                        <th>Review</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="task : ${historyTasks}">
+                                        <td>
+                                            <div class="resource-name" th:text="${task.taskName}">Task</div>
+                                            <div class="resource-meta" th:text="${task.estimatedPoints + ' pts'}">0 pts</div>
+                                            <div class="resource-meta" th:if="${task.description != null and !#strings.isEmpty(task.description)}"
+                                                th:text="${task.description}">Description</div>
+                                        </td>
+                                        <td>
+                                            <div th:text="${task.sprintName} ?: 'Sprint #' + task.sprintId">Sprint</div>
+                                            <div class="resource-meta"
+                                                th:text="${(task.sprintStartDate != null ? #temporals.format(task.sprintStartDate, 'dd/MM/yyyy') : '-') + ' to ' + (task.sprintEndDate != null ? #temporals.format(task.sprintEndDate, 'dd/MM/yyyy') : '-')}">Timeline</div>
+                                        </td>
+                                        <td>
+                                            <div th:text="${task.assigneeName + ' (' + task.assigneeCode + ')'}">Assignee</div>
+                                            <div class="resource-meta"
+                                                th:text="${task.reviewerName != null and !#strings.isEmpty(task.reviewerName) ? 'Reviewer: ' + task.reviewerName : 'Reviewer: -'}">Reviewer</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge status-todo" th:if="${task.status == 0}" th:text="${taskStatusLabels[task.status]}">Pending</span>
+                                            <span class="badge status-progress" th:if="${task.status == 1}" th:text="${taskStatusLabels[task.status]}">In progress</span>
+                                            <span class="badge status-submitted" th:if="${task.status == 2}" th:text="${taskStatusLabels[task.status]}">Awaiting review</span>
+                                            <span class="badge status-done" th:if="${task.status == 3}" th:text="${taskStatusLabels[task.status]}">Done</span>
+                                            <span class="badge status-returned" th:if="${task.status == 4}" th:text="${taskStatusLabels[task.status]}">Returned</span>
+                                            <span class="badge status-failed" th:if="${task.status == 5}" th:text="${taskStatusLabels[task.status]}">Failed</span>
+                                            <span class="badge status-cancelled" th:if="${task.status == 6}" th:text="${taskStatusLabels[task.status]}">Cancelled</span>
+                                        </td>
+                                        <td>
+                                            <div th:if="${task.submissionNote != null and !#strings.isEmpty(task.submissionNote)}" th:text="${task.submissionNote}">Submission note</div>
+                                            <div class="task-resource-list" th:if="${task.submissionUrl != null and !#strings.isEmpty(task.submissionUrl)}">
+                                                <a class="task-resource-link" th:href="${task.submissionUrl}" target="_blank" rel="noopener">Open submission link</a>
+                                            </div>
+                                            <div class="task-resource-list" th:if="${historyTaskHasCode[task.taskId]}">
+                                                <a class="task-resource-link" th:href="@{/student/project/tasks/{taskId}/code(taskId=${task.taskId})}">Open code view</a>
+                                            </div>
+                                            <div class="task-resource-list" th:if="${historyTaskFiles[task.taskId] != null and !#lists.isEmpty(historyTaskFiles[task.taskId])}">
+                                                <a class="task-resource-link"
+                                                    th:each="file : ${historyTaskFiles[task.taskId]}"
+                                                    th:href="@{/student/project/tasks/{taskId}/files/{fileId}(taskId=${task.taskId}, fileId=${file.storedName})}"
+                                                    th:text="${file.displayName}">Attachment</a>
+                                            </div>
+                                            <div class="resource-meta" th:if="${task.submittedAt != null}"
+                                                th:text="${'Submitted at: ' + #temporals.format(task.submittedAt, 'dd/MM/yyyy HH:mm')}">Submitted at</div>
+                                        </td>
+                                        <td>
+                                            <div th:if="${task.reviewComment != null and !#strings.isEmpty(task.reviewComment)}" th:text="${task.reviewComment}">Review comment</div>
+                                            <div class="resource-meta" th:if="${task.reviewedAt != null}"
+                                                th:text="${'Reviewed at: ' + #temporals.format(task.reviewedAt, 'dd/MM/yyyy HH:mm')}">Reviewed at</div>
+                                            <div class="resource-meta" th:if="${task.cancelledReason != null and !#strings.isEmpty(task.cancelledReason)}"
+                                                th:text="${'Cancelled: ' + task.cancelledReason}">Cancelled</div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="empty-state" th:if="${historyTasks == null or #lists.isEmpty(historyTasks)}">
+                            No tasks were recorded for this project.
+                        </div>
+                    </section>
+                </section>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

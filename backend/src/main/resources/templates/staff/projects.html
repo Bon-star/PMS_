@@ -1,0 +1,276 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Staff • Project management</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body staff-projects-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{staff/layout/header :: sidebar('projects')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{staff/layout/header :: topbar('Semester project management')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+                <section class="page-section summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-label">Groups this semester</div>
+                        <div class="summary-value" th:text="${projectOverview != null ? #lists.size(projectOverview) : 0}">0</div>
+                        <div class="summary-note">Groups being tracked by staff.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Edit access requests</div>
+                        <div class="summary-value" th:text="${pendingEditRequests != null ? #lists.size(pendingEditRequests) : 0}">0</div>
+                        <div class="summary-note">Student requests to unlock project editing.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Project change requests</div>
+                        <div class="summary-value" th:text="${pendingChangeRequests != null ? #lists.size(pendingChangeRequests) : 0}">0</div>
+                        <div class="summary-note">Requests awaiting staff processing.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Quick links</div>
+                        <div class="button-row" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
+                            <a class="btn btn-secondary btn-small" href="/staff/students">Manage students</a>
+                            <a class="btn btn-secondary btn-small" th:href="@{/staff/projects/templates-manager(semesterId=${selectedSemesterId})}">Templates List</a>
+                            <a class="btn btn-secondary btn-small" th:href="@{/staff/projects/requests(semesterId=${selectedSemesterId})}">requests.html</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Semester filter</h2>
+                    <form method="get" action="/staff/projects" class="form-grid form-grid-3">
+                        <div>
+                            <label for="semesterId">Semester</label>
+                            <select id="semesterId" name="semesterId">
+                                <option th:each="sem : ${semesters}"
+                                    th:value="${sem.semesterId}"
+                                    th:text="${sem.semesterName}"
+                                    th:selected="${selectedSemesterId == sem.semesterId}">
+                                </option>
+                            </select>
+                        </div>
+                        <div class="full form-actions" style="justify-content:flex-start;">
+                            <button type="submit" class="btn btn-primary">View list</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Project templates and batch assignment</h2>
+                    <p class="meta">
+                        Use Templates List for CRUD. This page only selects an existing template and assigns it to eligible groups.
+                    </p>
+
+                    <form id="assignProjectsForm" method="post" action="/staff/projects/assign" enctype="multipart/form-data" style="margin-top:18px;">
+                        <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:18px;align-items:start;">
+                            <div class="panel" style="padding:16px;">
+                                <h3 class="panel-title" style="margin-top:0;">Templates</h3>
+                                <div th:if="${projectTemplates == null or #lists.isEmpty(projectTemplates)}" class="empty-state">
+                                    No templates yet.
+                                </div>
+                                <div th:if="${projectTemplates != null and !#lists.isEmpty(projectTemplates)}" style="display:grid;gap:10px;max-height:420px;overflow:auto;">
+                                    <label th:each="template : ${projectTemplates}" style="border:1px solid var(--bo-border);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
+                                        <input type="radio" name="templateId" th:value="${template.templateId}" style="margin-top:4px;" required />
+                                        <div>
+                                            <div style="font-weight:700;" th:text="${template.name}">Template</div>
+                                            <div class="meta" th:text="${template.source + ' • Semester ' + (template.semesterName != null ? template.semesterName : 'All') + ' • Year ' + (template.year != null ? template.year : '-')}" ></div>
+                                            <div class="muted" th:if="${template.description != null and !#strings.isEmpty(template.description)}" th:text="${template.description}"></div>
+                                            <div th:if="${template.attachments != null and !#lists.isEmpty(template.attachments)}" style="margin-top:8px;">
+                                                <div class="meta" style="margin-bottom:6px;">Supporting files:</div>
+                                                <div style="display:grid;gap:6px;">
+                                                    <div th:each="file : ${template.attachments}" style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
+                                                        <a th:href="${file.fileUrl}" target="_blank" class="muted" th:text="${file.fileName}"></a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="panel" style="padding:16px;">
+                                <h3 class="panel-title" style="margin-top:0;">Available groups</h3>
+                                <div class="form-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+                                    <div>
+                                        <label for="assignStartDate">Start time</label>
+                                        <input id="assignStartDate" name="startDate" type="datetime-local" />
+                                    </div>
+                                    <div>
+                                        <label for="assignEndDate">End time</label>
+                                        <input id="assignEndDate" name="endDate" type="datetime-local" />
+                                    </div>
+                                </div>
+                                <div th:if="${availableGroups == null or #lists.isEmpty(availableGroups)}" class="empty-state" style="margin-top:12px;">
+                                    No eligible groups with 4-6 members and no project in this semester.
+                                </div>
+                                <div class="full" style="margin-top:12px;">
+                                    <label for="assignAttachmentFiles">Supporting files for selected template</label>
+                                    <input id="assignAttachmentFiles" name="attachmentFiles" type="file" multiple />
+                                    <div class="muted">Optional. These files are attached to the selected template before assignment.</div>
+                                </div>
+                                <div th:if="${availableGroups != null and !#lists.isEmpty(availableGroups)}" style="display:grid;gap:10px;max-height:420px;overflow:auto;margin-top:12px;">
+                                    <label th:each="group : ${availableGroups}" style="border:1px solid var(--bo-border);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
+                                        <input type="checkbox" name="groupIds" th:value="${group.groupId}" style="margin-top:4px;" />
+                                        <div>
+                                            <div style="font-weight:700;" th:text="${group.groupName}">Group</div>
+                                            <div class="meta" th:text="${(group.className != null ? group.className : ('Class ' + group.classId)) + ' • Members ' + group.memberCount}"></div>
+                                            <div class="muted" th:text="${group.leaderName != null ? ('Leader: ' + group.leaderName) : 'Leader: None'}"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="form-actions" style="justify-content:flex-start;margin-top:16px;">
+                                    <button id="assignProjectsSubmit" type="submit" class="btn btn-primary">Assign template</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Projects in this semester</h2>
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Group</th>
+                                    <th>Class</th>
+                                    <th>Leader</th>
+                                    <th>Project</th>
+                                    <th>Attachments</th>
+                                    <th>Nguồn</th>
+                                    <th>Status</th>
+                                    <th>Timeline</th>
+                                    <th>Performance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${projectOverview == null or #lists.isEmpty(projectOverview)}">
+                                    <td colspan="9">No group data for this semester.</td>
+                                </tr>
+                                <tr th:each="p : ${projectOverview}">
+                                    <td th:text="${p.groupName}">Group</td>
+                                    <td th:text="${p.className}">Class</td>
+                                    <td th:text="${p.leaderName ?: 'None'}">Leader</td>
+                                    <td>
+                                        <div th:text="${p.projectId > 0 ? (p.projectName ?: 'Untitled') : 'Not created'}">Project</div>
+                                        <div class="muted" th:if="${p.projectId > 0 and p.description != null and !#strings.isEmpty(p.description)}"
+                                            th:text="${p.description}"></div>
+                                    </td>
+                                    <td>
+                                        <div th:with="files=${projectAttachmentsByTemplateId != null ? projectAttachmentsByTemplateId[p.templateId] : null}">
+                                            <div th:if="${files != null and !#lists.isEmpty(files)}" style="display:grid;gap:6px;">
+                                                <a th:each="file : ${files}" th:href="${file.fileUrl}" target="_blank" th:text="${file.fileName}"></a>
+                                            </div>
+                                            <span th:if="${files == null or #lists.isEmpty(files)}" class="muted">-</span>
+                                        </div>
+                                    </td>
+                                    <td th:text="${p.projectId > 0 ? p.topicSource : '-'}">Nguồn</td>
+                                    <td>
+                                        <span th:if="${p.projectId <= 0}" class="badge badge-empty">Not created</span>
+                                        <span th:if="${p.projectId > 0 and p.approvalStatus == 1}" class="badge badge-approved">Approved</span>
+                                        <span th:if="${p.projectId > 0 and p.approvalStatus == 2}" class="badge badge-pending">Pending lecturer approval</span>
+                                        <span th:if="${p.projectId > 0 and p.approvalStatus == 3}" class="badge badge-rejected">Rejected</span>
+                                        <span th:if="${p.projectId > 0 and p.approvalStatus == 4}" class="badge badge-waiting">Waiting for student update</span>
+                                    </td>
+                                    <td>
+                                        <span th:text="${p.startDate != null ? #temporals.format(p.startDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                        <span> → </span>
+                                        <span th:text="${p.endDate != null ? #temporals.format(p.endDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                    </td>
+                                    <td>
+                                        <a th:if="${p.projectId > 0}"
+                                            th:href="@{/staff/projects/{id}/performance(id=${p.projectId}, semesterId=${selectedSemesterId})}"
+                                            class="btn btn-small">Performance</a>
+                                        <span th:if="${p.projectId <= 0}" class="muted">-</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            const startInput = document.getElementById('assignStartDate');
+            const endInput = document.getElementById('assignEndDate');
+            if (!startInput || !endInput) {
+                return;
+            }
+
+            const pad = value => String(value).padStart(2, '0');
+            const toLocalValue = date => {
+                const year = date.getFullYear();
+                const month = pad(date.getMonth() + 1);
+                const day = pad(date.getDate());
+                const hours = pad(date.getHours());
+                const minutes = pad(date.getMinutes());
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            };
+
+            const now = new Date();
+            const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            startInput.min = toLocalValue(now);
+            endInput.min = toLocalValue(now);
+            if (!startInput.value) {
+                startInput.value = toLocalValue(now);
+            }
+            if (!endInput.value) {
+                endInput.value = toLocalValue(nextWeek);
+            }
+
+            startInput.addEventListener('change', () => {
+                endInput.min = startInput.value || toLocalValue(now);
+                if (endInput.value && endInput.value < endInput.min) {
+                    endInput.value = toLocalValue(nextWeek);
+                }
+            });
+        })();
+
+        (function () {
+            const form = document.getElementById('assignProjectsForm');
+            const submitButton = document.getElementById('assignProjectsSubmit');
+            if (!form || !submitButton) {
+                return;
+            }
+            form.addEventListener('submit', () => {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Assigning...';
+            });
+        })();
+
+        (function () {
+            const classSelect = document.getElementById('classId');
+            const groupSelect = document.getElementById('groupId');
+            if (!classSelect || !groupSelect) {
+                return;
+            }
+            const options = Array.from(groupSelect.querySelectorAll('option[data-class-id]'));
+            const updateGroups = () => {
+                const classId = classSelect.value;
+                let hasAny = false;
+                options.forEach(option => {
+                    const match = option.dataset.classId === classId;
+                    option.hidden = !match;
+                    if (match) {
+                        hasAny = true;
+                    }
+                });
+                groupSelect.value = '';
+                groupSelect.disabled = !classId || !hasAny;
+            };
+            classSelect.addEventListener('change', updateGroups);
+            updateGroups();
+        })();
+    </script>
+</body>
+</html>

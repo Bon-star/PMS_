@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Group project</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+    <style>
+        .student-project-page .panel {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .student-project-page .panel-title {
+            margin: 0 0 8px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .student-project-page .muted {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .student-project-page .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px 12px;
+            margin-top: 8px;
+        }
+
+        .student-project-page .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .student-project-page .status-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .student-project-page .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .student-project-page .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .student-project-page .status-waiting {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .student-project-page .status-todo {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .student-project-page .status-progress {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .student-project-page .status-submitted {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .student-project-page .status-done {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .student-project-page .status-returned {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .student-project-page .status-failed {
+            background: #fecaca;
+            color: #7f1d1d;
+        }
+
+        .student-project-page .status-cancelled {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+
+        .student-project-page .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .student-project-page .alert-error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .student-project-page .alert-success {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .student-project-page .alert-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .student-project-page .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .student-project-page .full {
+            grid-column: 1 / -1;
+        }
+
+        .student-project-page label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .student-project-page input,
+        .student-project-page textarea,
+        .student-project-page select {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #fff;
+        }
+
+        .student-project-page textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .student-project-page .row-actions {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .student-project-page .btn {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #fff;
+            color: #111827;
+            text-decoration: none;
+        }
+
+        .student-project-page .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+
+        .student-project-page .btn-danger-soft {
+            background: #fff;
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+
+        .student-project-page table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .student-project-page th,
+        .student-project-page td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .student-project-page th {
+            background: #f9fafb;
+            color: #374151;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .student-project-page .task-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 10px;
+            background: #fafafa;
+        }
+
+        .student-project-page .task-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .student-project-page .task-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .student-project-page .task-meta {
+            margin-top: 6px;
+            color: #374151;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .student-project-page .task-body {
+            margin-top: 8px;
+            white-space: pre-wrap;
+            font-size: 13px;
+        }
+
+        .student-project-page .task-proof {
+            margin-top: 8px;
+            border-top: 1px dashed #d1d5db;
+            padding-top: 8px;
+        }
+
+        .student-project-page .file-list {
+            margin: 6px 0 0;
+            padding-left: 18px;
+        }
+
+        .student-project-page .file-list li {
+            margin-bottom: 4px;
+        }
+
+        .student-project-page .code-link {
+            margin-left: 8px;
+            font-size: 12px;
+        }
+
+        .student-project-page .summary-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .student-project-page .summary-card,
+        .student-project-page .section-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .student-project-page .summary-title {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .student-project-page .summary-subtitle {
+            margin-top: 6px;
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .student-project-page .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .student-project-page .stat-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px;
+            background: #f9fafb;
+        }
+
+        .student-project-page .stat-label {
+            color: #6b7280;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .student-project-page .stat-value {
+            color: #111827;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .student-project-page .section-nav {
+            position: sticky;
+            top: 12px;
+            z-index: 5;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(8px);
+        }
+
+        .student-project-page .nav-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 36px;
+            padding: 0 12px;
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
+            color: #111827;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .student-project-page .nav-pill:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #1d4ed8;
+        }
+
+        .student-project-page .section-anchor {
+            scroll-margin-top: 86px;
+            margin-bottom: 14px;
+        }
+
+        .student-project-page .section-card {
+            margin-bottom: 0;
+        }
+
+        .student-project-page .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .student-project-page .section-heading {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .student-project-page .section-description {
+            margin-top: 4px;
+            color: #6b7280;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .student-project-page .action-hub {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        .student-project-page .action-tile {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #f9fafb;
+            padding: 12px;
+        }
+
+        .student-project-page .action-tile summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: #111827;
+            list-style: none;
+        }
+
+        .student-project-page .action-tile summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .student-project-page .action-tile summary::after {
+            content: "Open";
+            float: right;
+            color: #2563eb;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .student-project-page .action-tile[open] summary::after {
+            content: "Collapse";
+        }
+
+        .student-project-page .action-tile .muted {
+            display: block;
+            margin-top: 6px;
+        }
+
+        .student-project-page .action-tile form {
+            margin-top: 10px;
+        }
+
+        .student-project-page .table-wrap {
+            overflow-x: auto;
+        }
+
+        .student-project-page .status-stack {
+            display: grid;
+            gap: 10px;
+        }
+
+        .student-project-page .inline-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .student-project-page .action-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .student-project-page .action-panel {
+            border: 1px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 10px;
+            background: #fff;
+        }
+
+        .student-project-page .action-panel summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .student-project-page .action-panel form {
+            margin-top: 8px;
+        }
+
+        @media (max-width: 900px) {
+            .student-project-page .summary-grid,
+            .student-project-page .summary-stats,
+            .student-project-page .action-hub,
+            .student-project-page .form-grid,
+            .student-project-page .meta-grid,
+            .student-project-page .action-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .student-project-page .section-nav {
+                top: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body class="backoffice-body student-project-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('project')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Group project')}"></div>
+            <main class="backoffice-content">
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+            <div class="panel" th:if="${noGroup}">
+                <h2 class="panel-title">You don't have a group yet</h2>
+                <p class="muted">Go to the group area to join or create a group before managing the project.</p>
+                <a href="/student/group/list" class="btn">Go to groups</a>
+            </div>
+
+            <div th:if="${!noGroup}">
+                <div class="panel">
+                    <h2 class="panel-title" th:text="${'Group: ' + group.groupName}">Group</h2>
+                    <div class="muted"
+                                th:text="${'Leader: ' + (group.leaderName ?: 'Not assigned') + ' - Members: ' + members.size()}">
+                    </div>
+                </div>
+
+                <div class="panel" th:if="${noProject}">
+                    <h2 class="panel-title">No project yet</h2>
+                    <p class="muted">The training staff hasn't created a project for your group this semester.</p>
+                </div>
+
+                <div th:if="${!noProject}">
+                    <div class="summary-grid section-anchor" id="overview">
+                        <div class="summary-card">
+                            <h2 class="summary-title" th:text="${#strings.isEmpty(project.projectName) ? 'Untitled project' : project.projectName}">
+                                Project name
+                            </h2>
+                            <div class="summary-subtitle"
+                                th:text="${'Group: ' + group.groupName + ' - Leader: ' + (group.leaderName ?: 'Not assigned')}">
+                            </div>
+                            <div class="meta-grid" style="margin-top:12px;">
+                                <div><strong>Source:</strong> <span th:text="${project.topicSource}">STUDENT</span></div>
+                                <div>
+                                    <strong>Status:</strong>
+                                    <span th:if="${project.approvalStatus == 1}" class="badge status-approved">Approved</span>
+                                    <span th:if="${project.approvalStatus == 2}" class="badge status-pending">Pending lecturer approval</span>
+                                    <span th:if="${project.approvalStatus == 3}" class="badge status-rejected">Rejected</span>
+                                    <span th:if="${project.approvalStatus == 4}" class="badge status-waiting">Waiting for student updates</span>
+                                </div>
+                                <div><strong>Start:</strong> <span th:text="${project.startDate != null ? #temporals.format(project.startDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span></div>
+                                <div><strong>End:</strong> <span th:text="${project.endDate != null ? #temporals.format(project.endDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span></div>
+                            </div>
+                            <p class="muted" style="margin-top:10px; white-space: pre-wrap;"
+                                th:if="${!#strings.isEmpty(project.description)}"
+                                th:text="${project.description}">
+                            </p>
+                            <p class="muted" style="margin-top:10px;"
+                                th:if="${#strings.isEmpty(project.description) and #strings.isEmpty(project.requirementFilePath) and (projectAttachments == null or #lists.isEmpty(projectAttachments)) and (projectFiles == null or #lists.isEmpty(projectFiles))}">
+                                No project description yet.
+                            </p>
+                            <div class="muted" style="margin-top:10px;" th:if="${!#strings.isEmpty(project.requirementFilePath)}">
+                                Requirement file:
+                                <a th:href="@{/project-files/requirements/{id}(id=${project.projectId})}">Download file</a>
+                                <span th:if="${!#strings.isEmpty(project.requirementFileName)}"
+                                    th:text="${'(' + project.requirementFileName + ')'}"></span>
+                            </div>
+                            <div class="row-actions">
+                                <span class="inline-chip" th:if="${openSprint != null}"
+                                    th:text="${'Open sprint: ' + (sprintDisplayNames[openSprint.sprintId] ?: ('Sprint #' + openSprint.sprintId))}"></span>
+                                <span class="inline-chip" th:if="${openSprint == null}">No open sprint</span>
+                            </div>
+                            <div class="muted" style="margin-top:10px;">
+                                Source code:
+                                <a th:if="${!#strings.isEmpty(project.sourceCodeUrl)}" th:href="${project.sourceCodeUrl}" target="_blank">Open link</a>
+                                <span th:if="${#strings.isEmpty(project.sourceCodeUrl)}">Not available</span>
+                                <span> | </span>
+                                Documents:
+                                <a th:if="${!#strings.isEmpty(project.documentUrl)}" th:href="${project.documentUrl}" target="_blank">Open link</a>
+                                <span th:if="${#strings.isEmpty(project.documentUrl)}">Not available</span>
+                            </div>
+                            <div class="muted" style="margin-top:10px;" th:if="${projectAttachments != null and !#lists.isEmpty(projectAttachments)}">
+                                Supporting files:
+                                <div style="display:grid;gap:6px;margin-top:6px;">
+                                    <a th:each="file : ${projectAttachments}" th:href="${file.fileUrl}" target="_blank" th:text="${file.fileName}"></a>
+                                </div>
+                            </div>
+                            <div class="muted" style="margin-top:10px;" th:if="${projectFiles != null and !#lists.isEmpty(projectFiles)}">
+                                Project attachments:
+                                <div style="display:grid;gap:6px;margin-top:6px;">
+                                    <a th:each="file : ${projectFiles}" th:href="${file.fileUrl}" target="_blank" th:text="${file.fileName}"></a>
+                                </div>
+                            </div>
+                            <div class="alert alert-error" style="margin-top:10px;"
+                                th:if="${project.approvalStatus == 3 and !#strings.isEmpty(project.rejectReason)}"
+                                th:text="${'Lecturer rejection reason: ' + project.rejectReason}">
+                            </div>
+                        </div>
+
+                        <div class="summary-card">
+                            <div class="section-head" style="margin-bottom:12px;">
+                                <div>
+                                    <h3 class="section-heading">Quick summary</h3>
+                                </div>
+                            </div>
+                            <div class="summary-stats">
+                                <div class="stat-card">
+                                    <div class="stat-label">Total sprints</div>
+                                    <div class="stat-value" th:text="${#lists.size(sprints)}">0</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Total tasks</div>
+                                    <div class="stat-value" th:text="${#lists.size(tasks)}">0</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Failed tasks</div>
+                                    <div class="stat-value" th:text="${#lists.size(failedTasks)}">0</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Group members</div>
+                                    <div class="stat-value" th:text="${members.size()}">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-nav">
+                        <a class="nav-pill" href="#overview">Overview</a>
+                        <a class="nav-pill" href="#status">Status</a>
+                        <a class="nav-pill" href="#actions">Actions</a>
+                        <a class="nav-pill" href="#requests">Latest requests</a>
+                        <a class="nav-pill" href="#feedback">Lecturer feedback</a>
+                        <a class="nav-pill" href="/student/project/tasks">Sprints &amp; tasks</a>
+                    </div>
+
+                    <div class="section-anchor" id="status">
+                        <div class="status-stack">
+                            <div class="alert alert-info" th:if="${projectNotStarted}">
+                                The project has not started yet. You can only review information and prepare the plan.
+                            </div>
+                            <div class="alert alert-error" th:if="${projectLockedForWork}">
+                                The project work period has ended. Task and sprint actions are locked.
+                            </div>
+                            <div class="alert alert-info" th:if="${projectChangeOpen}">
+                                There is an open project change request. Planning and task actions are temporarily locked.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card section-anchor" id="actions">
+                        <div class="section-head">
+                            <div>
+                                <h3 class="section-heading">Action hub</h3>
+                            </div>
+                        </div>
+                        <div class="action-hub">
+                            <div class="action-tile">
+                                <div class="section-heading" style="font-size:16px;">Sprints &amp; tasks</div>
+                                <span class="muted">Go to the dedicated page to create sprints, create tasks, and filter by status/assignee.</span>
+                                <div class="row-actions">
+                                    <a class="btn btn-primary" href="/student/project/tasks">Open task page</a>
+                                </div>
+                            </div>
+                            <details class="action-tile" th:if="${canRequestEdit}">
+                                <summary>Request edit access</summary>
+                                <span class="muted">For student-sourced projects when edits are not allowed yet.</span>
+                                <form method="post" action="/student/project/request-edit">
+                                    <label for="requestNote">Note (optional)</label>
+                                    <textarea id="requestNote" name="requestNote"
+                                        placeholder="Example: The group has prepared content and needs to update the detailed topic."></textarea>
+                                    <div class="row-actions">
+                                        <button type="submit" class="btn btn-primary">Send request</button>
+                                    </div>
+                                </form>
+                            </details>
+
+                            <details class="action-tile" th:if="${canEditContent}">
+                                <summary>Update project content</summary>
+                                <span class="muted">Update name, description, source code link, and documents before submitting for lecturer approval.</span>
+                                <form method="post" action="/student/project/update-content" enctype="multipart/form-data">
+                                    <div class="form-grid">
+                                        <div class="full">
+                                            <label for="projectName">Project name</label>
+                                            <input id="projectName" name="projectName" type="text"
+                                                th:value="${project.projectName}" required />
+                                        </div>
+                                        <div class="full">
+                                            <label for="description">Project description</label>
+                                            <textarea id="description" name="description" th:text="${project.description}"></textarea>
+                                        </div>
+                                        <div>
+                                            <label for="sourceCodeUrl">Source code link</label>
+                                            <input id="sourceCodeUrl" name="sourceCodeUrl" type="text" th:value="${project.sourceCodeUrl}" />
+                                        </div>
+                                        <div>
+                                            <label for="documentUrl">Document link</label>
+                                            <input id="documentUrl" name="documentUrl" type="text" th:value="${project.documentUrl}" />
+                                        </div>
+                                        <div class="full">
+                                            <label for="projectAttachmentFiles">Supporting files</label>
+                                            <input id="projectAttachmentFiles" name="projectAttachmentFiles" type="file" multiple />
+                                            <div class="muted">Optional. Upload source support, notes, or reference images for this project.</div>
+                                        </div>
+                                    </div>
+                                    <div class="row-actions">
+                                        <button type="submit" class="btn">Save content</button>
+                                        <button type="submit" formaction="/student/project/submit-review" class="btn btn-primary"
+                                            th:disabled="${!canSubmitReview}">
+                                            Submit to lecturer for review
+                                        </button>
+                                    </div>
+                                    <p class="muted" th:if="${!canSubmitReview}">
+                                        Project name is required before submitting.
+                                    </p>
+                                </form>
+                            </details>
+
+                            <details class="action-tile" th:if="${canRequestProjectChange}">
+                                <summary>Send project change request</summary>
+                                <span class="muted">Only the leader can submit. Projects with completed tasks cannot be changed.</span>
+                                <form method="post" action="/student/project/change-requests/create">
+                                    <div class="form-grid">
+                                        <div class="full">
+                                            <label for="proposedProjectName">New project name</label>
+                                            <input id="proposedProjectName" name="proposedProjectName" type="text" required />
+                                        </div>
+                                        <div class="full">
+                                            <label for="proposedDescription">New project description</label>
+                                            <textarea id="proposedDescription" name="proposedDescription"></textarea>
+                                        </div>
+                                        <div class="full">
+                                            <label for="changeReason">Change reason</label>
+                                            <textarea id="changeReason" name="changeReason" required
+                                                placeholder="Explain why the group wants to change the topic and the scope of changes."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="row-actions">
+                                        <button type="submit" class="btn btn-primary">Send project change request</button>
+                                    </div>
+                                </form>
+                            </details>
+
+                            <details class="action-tile" th:if="${canUpdateFinalLinks}">
+                                <summary>Submit final delivery links</summary>
+                                <span class="muted">The leader has 1 day after project end to update source and document links.</span>
+                                <form method="post" action="/student/project/finalize-links">
+                                    <div class="form-grid">
+                                        <div>
+                                            <label for="finalSource">Link source code</label>
+                                            <input id="finalSource" name="sourceCodeUrl" type="text" th:value="${project.sourceCodeUrl}" required />
+                                        </div>
+                                        <div>
+                                            <label for="finalDoc">Document link</label>
+                                            <input id="finalDoc" name="documentUrl" type="text" th:value="${project.documentUrl}" required />
+                                        </div>
+                                    </div>
+                                    <div class="row-actions">
+                                        <button class="btn btn-primary" type="submit">Update delivery links</button>
+                                    </div>
+                                </form>
+                            </details>
+
+                            <div class="action-tile" th:if="${withinFinalLinkGrace and !canUpdateFinalLinks}">
+                                <div class="section-heading" style="font-size:16px;">Final delivery</div>
+                                <span class="muted">Only the leader can update delivery links during this period.</span>
+                            </div>
+
+                            <div class="action-tile" th:if="${project.topicSource == 'STUDENT' and !canEditContent and !canRequestEdit}">
+                                <div class="section-heading" style="font-size:16px;">Content status</div>
+                                <span class="muted">Project is awaiting edit access, lecturer approval, or has a change request.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card section-anchor" id="requests">
+                        <div class="section-head">
+                            <div>
+                                <h3 class="section-heading">Latest requests & responses</h3>
+                                <div class="section-description">Quickly track edit access and change request status.</div>
+                            </div>
+                        </div>
+                        <div class="action-hub">
+                            <div class="action-tile" th:if="${latestEditRequest != null}">
+                                <div class="section-heading" style="font-size:16px;">Latest edit access request</div>
+                                <span class="muted">
+                                    Status:
+                                    <strong th:text="${latestEditRequest.status}">PENDING</strong>
+                                    <span th:if="${latestEditRequest.requestedDate != null}"
+                                        th:text="${' | Sent at: ' + #temporals.format(latestEditRequest.requestedDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                </span>
+                                <p class="muted" th:if="${!#strings.isEmpty(latestEditRequest.requestNote)}"
+                                    th:text="${'Note: ' + latestEditRequest.requestNote}">
+                                </p>
+                                <div class="alert alert-error"
+                                    th:if="${'REJECTED'.equalsIgnoreCase(latestEditRequest.status) and !#strings.isEmpty(latestEditRequest.responseReason)}"
+                                    th:text="${'Staff rejection reason: ' + latestEditRequest.responseReason}">
+                                </div>
+                            </div>
+
+                            <div class="action-tile" th:if="${latestChangeRequest != null}">
+                                <div class="section-heading" style="font-size:16px;">Latest project change request</div>
+                                <div class="row-actions" style="margin-top:8px;">
+                                    <span th:if="${'PENDING_STAFF'.equalsIgnoreCase(latestChangeRequest.status)}"
+                                        class="badge status-pending">Pending staff approval</span>
+                                    <span th:if="${'PENDING_LECTURER'.equalsIgnoreCase(latestChangeRequest.status)}"
+                                        class="badge status-waiting">Pending lecturer approval</span>
+                                    <span th:if="${'REJECTED_BY_STAFF'.equalsIgnoreCase(latestChangeRequest.status)}"
+                                        class="badge status-rejected">Rejected by staff</span>
+                                    <span th:if="${'REJECTED_BY_LECTURER'.equalsIgnoreCase(latestChangeRequest.status)}"
+                                        class="badge status-rejected">Rejected by lecturer</span>
+                                    <span th:if="${'APPROVED'.equalsIgnoreCase(latestChangeRequest.status)}"
+                                        class="badge status-approved">Change approved</span>
+                                </div>
+                                <p class="muted" th:if="${latestChangeRequest.requestedDate != null}"
+                                    th:text="${'Sent at: ' + #temporals.format(latestChangeRequest.requestedDate, 'dd/MM/yyyy HH:mm')}"></p>
+                                <p class="muted" th:text="${'Current topic: ' + (latestChangeRequest.currentProjectName ?: 'Untitled')}"></p>
+                                <p class="muted" th:text="${'Proposed topic: ' + latestChangeRequest.proposedProjectName}"></p>
+                                <p class="muted" th:if="${!#strings.isEmpty(latestChangeRequest.proposedDescription)}"
+                                    th:text="${'Proposed description: ' + latestChangeRequest.proposedDescription}"></p>
+                                <p class="muted" th:if="${!#strings.isEmpty(latestChangeRequest.changeReason)}"
+                                    th:text="${'Change reason: ' + latestChangeRequest.changeReason}"></p>
+                                <div class="alert alert-error"
+                                    th:if="${'REJECTED_BY_STAFF'.equalsIgnoreCase(latestChangeRequest.status) and !#strings.isEmpty(latestChangeRequest.staffRejectReason)}"
+                                    th:text="${'Staff rejection reason: ' + latestChangeRequest.staffRejectReason}">
+                                </div>
+                                <div class="alert alert-error"
+                                    th:if="${'REJECTED_BY_LECTURER'.equalsIgnoreCase(latestChangeRequest.status) and !#strings.isEmpty(latestChangeRequest.lecturerRejectReason)}"
+                                    th:text="${'Lecturer rejection reason: ' + latestChangeRequest.lecturerRejectReason}">
+                                </div>
+                            </div>
+
+                            <div class="action-tile" th:if="${latestEditRequest == null and latestChangeRequest == null}">
+                                <div class="section-heading" style="font-size:16px;">No recent requests</div>
+                                <span class="muted">When there is an edit or change request, the latest status will appear here.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card section-anchor" id="feedback">
+                        <div class="section-head">
+                            <div>
+                                <h3 class="section-heading">Lecturer feedback</h3>
+                                <div class="section-description">Comments on progress, quality, and requests for additional evidence.</div>
+                            </div>
+                        </div>
+                        <div class="action-hub" th:if="${lecturerComments != null and !#lists.isEmpty(lecturerComments)}">
+                            <div class="action-tile" th:each="comment : ${lecturerComments}">
+                                <div class="section-heading" style="font-size:16px;"
+                                    th:text="${comment.lecturerName + ' (' + comment.lecturerCode + ')'}">Lecturer</div>
+                                <span class="muted"
+                                    th:text="${comment.createdAt != null ? #temporals.format(comment.createdAt, 'dd/MM/yyyy HH:mm') : '-'}">Time</span>
+                                <div class="task-body" th:text="${comment.commentContent}">Comment content</div>
+                            </div>
+                        </div>
+                        <div class="muted" th:if="${lecturerComments == null or #lists.isEmpty(lecturerComments)}">
+                            No lecturer comments for this project yet.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+
+</html>

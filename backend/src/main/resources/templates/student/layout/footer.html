@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <footer th:fragment="pageFooter" class="backoffice-footer">
+        <div th:if="${aiAssistantEnabled}"
+            class="student-ai-shell js-student-ai-shell"
+            data-open="false"
+            th:attr="data-endpoint=@{/student/ai-chat/message},
+                data-storage-key=${'student-ai-chat:' + sessionStudentId},
+                data-welcome-message=${'Hello ' + (studentName != null ? studentName : 'there') + '. I am PMS AI. You can ask about your group, project, tasks, sprint, next steps, or how to use PMS.'}">
+            <section class="student-ai-panel" aria-label="AI assistant panel">
+                <div class="student-ai-header">
+                    <div>
+                        <div class="student-ai-title">PMS AI</div>
+                        <div class="student-ai-subtitle">Student workflow assistant</div>
+                    </div>
+                    <div class="student-ai-header-actions">
+                        <button type="button" class="student-ai-header-btn js-student-ai-clear">New</button>
+                        <button type="button" class="student-ai-header-btn js-student-ai-close" aria-label="Close AI chat">&times;</button>
+                    </div>
+                </div>
+
+                <div class="student-ai-feedback js-student-ai-feedback" hidden></div>
+                <div class="student-ai-feed js-student-ai-feed" aria-live="polite"></div>
+
+                <form class="student-ai-composer js-student-ai-form" novalidate>
+                    <div class="student-ai-composer-row">
+                        <input class="student-ai-input js-student-ai-input"
+                            type="text"
+                            maxlength="2000"
+                            placeholder="Ask about your group, project, tasks, or PMS workflow" />
+                    </div>
+                    <div class="meta">Press Enter to send.</div>
+                </form>
+            </section>
+
+            <button type="button"
+                class="student-ai-toggle js-student-ai-toggle"
+                aria-expanded="false"
+                aria-label="Open AI assistant"
+                title="Open AI assistant">
+                <span class="student-ai-toggle-icon" aria-hidden="true">
+                    <span class="student-ai-toggle-disc">
+                        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                            <path d="M8.4 7.6h7.2c1.44 0 2.6 1.16 2.6 2.6v4.1c0 1.44-1.16 2.6-2.6 2.6h-3.32l-2.92 2.3c-.44.35-1.08.03-1.08-.54v-1.76H8.4c-1.44 0-2.6-1.16-2.6-2.6v-4.1c0-1.44 1.16-2.6 2.6-2.6Z"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="1.8" />
+                            <circle cx="10.4" cy="12.2" r="0.8" fill="currentColor" />
+                            <circle cx="13.6" cy="12.2" r="0.8" fill="currentColor" />
+                        </svg>
+                    </span>
+                </span>
+                <span class="student-sr-only">Open AI assistant</span>
+            </button>
+        </div>
+
+        <script th:if="${aiAssistantEnabled}" src="/js/student-ai-chat.js" defer></script>
+    </footer>
+</body>
+</html>

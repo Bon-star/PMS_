@@ -1,0 +1,257 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Student - Group detail</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body student-group-detail-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('group-detail')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar(${group.groupName})}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+                <div th:unless="${invitationFeatureEnabled}" class="alert alert-error">
+                    Invites/confirmations are disabled because the database does not have the <strong>Group_Invitations</strong> table.
+                </div>
+
+                <button th:if="${isMember and !isLeader}"
+                    class="btn btn-soft-danger btn-small standalone-danger-button"
+                    type="submit"
+                    form="leave-group-form"
+                    onclick="return confirm('Are you sure you want to leave this group?');">
+                    Leave group
+                </button>
+                <button th:if="${isLeader}"
+                    class="btn btn-soft-danger btn-small standalone-danger-button"
+                    type="submit"
+                    form="delete-group-form"
+                    onclick="return confirm('Are you sure you want to delete this group?');">
+                    Delete group
+                </button>
+                <section class="page-section panel">
+                    <h2 class="panel-title">Members (<span th:text="${memberCount}"></span>)</h2>
+                    <div class="request-list">
+                        <div class="request-card member-card" th:each="m : ${members}">
+                            <div class="member-main">
+                                <div class="request-title">
+                                    <span th:text="${m.fullName}"></span>
+                                    <span class="meta">(<span th:text="${m.studentCode}"></span>)</span>
+                                    <span class="badge badge-approved"
+                                          th:if="${group.leaderId != null and group.leaderId == m.studentId}">Leader</span>
+                                </div>
+                            </div>
+                            <div class="inline-actions member-actions" th:if="${isLeader and m.studentId != studentId}">
+                                <form method="post"
+                                    th:action="@{/student/group/{id}/transfer-leader(id=${group.groupId})}">
+                                    <input type="hidden" name="newLeaderId" th:value="${m.studentId}" />
+                                    <button class="btn btn-secondary btn-small" type="submit"
+                                        th:attr="onclick=|return confirm('Transfer leadership to ${m.fullName}?');|">
+                                        Transfer leadership
+                                    </button>
+                                </form>
+                                <form method="post"
+                                    th:if="${!membershipLockedByProjectStart}"
+                                    th:action="@{/student/group/{id}/kick(id=${group.groupId})}">
+                                    <input type="hidden" name="studentId" th:value="${m.studentId}" />
+                                    <button class="btn btn-soft-danger btn-small" type="submit"
+                                        th:attr="onclick=|return confirm('Remove ${m.fullName} from the group?');|">
+                                        Remove from group
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="meta" th:if="${membershipLockedByProjectStart}">
+                        The project has started, so members cannot be removed or leave the group.
+                    </div>
+                    <div class="meta" th:if="${isLeader and memberCount > 1}" style="margin-top:10px;">
+                        You can transfer leadership to another active member at any time.
+                    </div>
+                </section>
+
+                <div th:replace="~{student/group/invite-candidates :: inviteCandidatesPanel}"></div>
+
+                <section class="page-section panel" th:if="${isMember and groupHasProject}">
+                    <h2 class="panel-title">Invite members</h2>
+                    <div class="meta">This group already has a project, so no new members can join.</div>
+                </section>
+
+                <section class="page-section panel" th:if="${!isMember}">
+                    <h2 class="panel-title">Request to join the group</h2>
+                    <div class="meta" th:if="${!invitationFeatureEnabled}">Notifications are disabled, so join requests cannot be sent.</div>
+                    <div class="meta" th:if="${invitationFeatureEnabled and groupHasProject}">This group already has a project and cannot accept new join requests.</div>
+                    <div class="meta" th:if="${invitationFeatureEnabled and hasActiveGroup}">You are already in another group, so you cannot send a request.</div>
+                    <div class="meta" th:if="${invitationFeatureEnabled and !hasActiveGroup and hasPendingJoinRequest}">You already sent a request and it is waiting for approval from the group leader.</div>
+                    <form th:if="${canRequestJoin}" method="post" th:action="@{/student/group/{id}/join-request(id=${group.groupId})}">
+                        <button class="btn btn-primary btn-small" type="submit">Send join request</button>
+                    </form>
+                </section>
+
+                <form th:if="${isMember and !isLeader}"
+                    id="leave-group-form"
+                    method="post"
+                    th:action="@{/student/group/{id}/leave(id=${group.groupId})}"
+                    hidden></form>
+                <form th:if="${isLeader}"
+                    id="delete-group-form"
+                    method="post"
+                    th:action="@{/student/group/{id}/delete(id=${group.groupId})}"
+                    hidden></form>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('click', async function (event) {
+            const link = event.target.closest('.js-invite-page-link');
+            if (!link || event.defaultPrevented) {
+                return;
+            }
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+            }
+
+            const panel = document.getElementById('invite-candidates-panel');
+            if (!panel || !panel.dataset.fragmentUrl || !window.fetch) {
+                return;
+            }
+
+            event.preventDefault();
+            if (panel.dataset.loading === '1') {
+                return;
+            }
+
+            const page = link.dataset.invitePage || '1';
+            const fragmentUrl = new URL(panel.dataset.fragmentUrl, window.location.origin);
+            fragmentUrl.searchParams.set('invitePage', page);
+
+            panel.dataset.loading = '1';
+            panel.setAttribute('aria-busy', 'true');
+            panel.style.opacity = '0.6';
+
+            try {
+                const response = await fetch(fragmentUrl.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Unable to load invite candidates.');
+                }
+
+                const html = (await response.text()).trim();
+                if (!html) {
+                    throw new Error('Empty response.');
+                }
+
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = html;
+                const nextPanel = wrapper.firstElementChild;
+                if (!nextPanel) {
+                    throw new Error('Invalid response.');
+                }
+
+                panel.replaceWith(nextPanel);
+                window.history.replaceState({}, '', link.href);
+            } catch (error) {
+                window.location.href = link.href;
+            }
+        });
+
+        (function () {
+            const titleDisplay = document.getElementById('js-topbar-title-display');
+            const titleInput = document.getElementById('js-topbar-title-input');
+            const titleEditButton = document.getElementById('js-topbar-title-edit');
+            if (!titleDisplay || !titleInput || !titleEditButton) {
+                return;
+            }
+
+            let currentValue = titleInput.value.trim();
+            let saving = false;
+
+            const openEditor = function () {
+                titleDisplay.hidden = true;
+                titleEditButton.hidden = true;
+                titleInput.hidden = false;
+                titleInput.focus();
+                titleInput.select();
+            };
+
+            const closeEditor = function () {
+                titleInput.value = currentValue;
+                titleInput.hidden = true;
+                titleDisplay.hidden = false;
+                titleEditButton.hidden = false;
+            };
+
+            titleEditButton.addEventListener('click', function () {
+                openEditor();
+            });
+
+            titleInput.addEventListener('blur', function () {
+                if (!saving) {
+                    closeEditor();
+                }
+            });
+
+            titleInput.addEventListener('keydown', async function (event) {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    closeEditor();
+                    return;
+                }
+                if (event.key !== 'Enter') {
+                    return;
+                }
+
+                event.preventDefault();
+                const trimmedValue = titleInput.value.trim();
+                if (!trimmedValue) {
+                    titleInput.focus();
+                    return;
+                }
+                if (trimmedValue === currentValue) {
+                    closeEditor();
+                    return;
+                }
+
+                saving = true;
+                titleInput.disabled = true;
+                try {
+                    const response = await fetch(titleInput.dataset.editUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: new URLSearchParams({ groupName: trimmedValue }).toString()
+                    });
+
+                    const payload = await response.json().catch(() => ({ message: 'Unable to update the group name.' }));
+                    if (!response.ok) {
+                        throw new Error(payload.message || 'Unable to update the group name.');
+                    }
+
+                    currentValue = payload.groupName || trimmedValue;
+                    titleDisplay.textContent = currentValue;
+                    titleInput.value = currentValue;
+                    closeEditor();
+                } catch (error) {
+                    alert(error.message || 'Unable to update the group name.');
+                    titleInput.focus();
+                    titleInput.select();
+                } finally {
+                    saving = false;
+                    titleInput.disabled = false;
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

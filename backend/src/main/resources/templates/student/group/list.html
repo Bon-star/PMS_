@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Student • Group list</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body student-group-page student-group-list-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('group-detail')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Group list')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+                <div th:unless="${invitationFeatureEnabled}" class="alert alert-error">
+                    Invitations are disabled because the database does not have the <strong>Group_Invitations</strong> table.
+                </div>
+
+                <section class="page-section panel">
+                    <div class="panel-title" th:text="${hasActiveGroup} ? 'Your group' : 'Available groups'">Group list</div>
+                    <div class="button-row" th:if="${canCreateGroup}">
+                        <a href="/student/group/create" class="btn btn-primary">+ Create new group</a>
+                    </div>
+                    <br/>
+                    <div class="meta" th:if="${!canCreateGroup}">
+                        You are already in a group, so you cannot create a new one.
+                    </div>
+
+                    <div class="request-list" th:if="${groups != null && groups.size() > 0}">
+                        <div th:each="group : ${groups}" class="request-card group-list-card">
+                            <div class="group-list-main">
+                                <a class="request-title group-title-link"
+                                   th:href="@{/student/group/{id}(id=${group.groupId})}"
+                                   th:text="${group.groupName}">Group name</a>
+                                <div class="request-meta">
+                                    <div><strong>Leader:</strong> <span th:text="${group.leaderName} ?: 'Not assigned'">Leader name</span></div>
+                                    <div>
+                                        <strong>Status:</strong>
+                                        <span class="badge badge-waiting">Open to join</span>
+                                        <span class="badge badge-pending"
+                                            th:if="${projectAssignedGroupIds != null and #lists.contains(projectAssignedGroupIds, group.groupId)}">
+                                            Project assigned
+                                        </span>
+                                    </div>
+                                    <div><strong>Members:</strong> <span th:text="${group.memberCount}">0</span>/6</div>
+                                    <div><strong>Created at:</strong>
+                                        <span th:text="${#temporals.format(group.createdDate, 'dd/MM/yyyy HH:mm')}">01/01/2026 00:00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="inline-actions group-list-actions">
+                                <form method="post"
+                                    th:if="${invitationFeatureEnabled and (projectAssignedGroupIds == null or !#lists.contains(projectAssignedGroupIds, group.groupId)) and (pendingJoinGroupIds == null or !#lists.contains(pendingJoinGroupIds, group.groupId))}"
+                                    th:action="@{/student/group/{id}/join-request(id=${group.groupId})}">
+                                    <input type="hidden" name="source" value="list" />
+                                    <button class="btn btn-primary btn-small" type="submit">Request to join</button>
+                                </form>
+                                <button class="btn btn-secondary btn-small" type="button" disabled
+                                    th:if="${pendingJoinGroupIds != null and #lists.contains(pendingJoinGroupIds, group.groupId)}">
+                                    Request pending
+                                </button>
+                                <button class="btn btn-secondary btn-small" type="button" disabled
+                                    th:if="${projectAssignedGroupIds != null and #lists.contains(projectAssignedGroupIds, group.groupId)}">
+                                    Project assigned
+                                </button>
+                                <a class="btn btn-secondary btn-small"
+                                    th:href="@{/student/group/{id}(id=${group.groupId})}">
+                                    View details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="empty-state" th:if="${groups == null || groups.size() == 0}">
+                        <div class="empty-state-text" th:text="${hasActiveGroup} ? 'You do not have a group yet' : 'No open groups in your class'">No data</div>
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,490 @@
+USE [master]
+GO
+/****** Object:  Database [coffee]    Script Date: 12/23/2025 11:48:42 PM ******/
+CREATE DATABASE [coffee]
+ CONTAINMENT = NONE
+ ON  PRIMARY 
+( NAME = N'coffee', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\MSSQL\DATA\coffee.mdf' , SIZE = 8192KB , MAXSIZE = UNLIMITED, FILEGROWTH = 65536KB )
+ LOG ON 
+( NAME = N'coffee_log', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\MSSQL\DATA\coffee_log.ldf' , SIZE = 8192KB , MAXSIZE = 2048GB , FILEGROWTH = 65536KB )
+ WITH CATALOG_COLLATION = DATABASE_DEFAULT, LEDGER = OFF
+GO
+ALTER DATABASE [coffee] SET COMPATIBILITY_LEVEL = 160
+GO
+IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
+begin
+EXEC [coffee].[dbo].[sp_fulltext_database] @action = 'enable'
+end
+GO
+ALTER DATABASE [coffee] SET ANSI_NULL_DEFAULT OFF 
+GO
+ALTER DATABASE [coffee] SET ANSI_NULLS OFF 
+GO
+ALTER DATABASE [coffee] SET ANSI_PADDING OFF 
+GO
+ALTER DATABASE [coffee] SET ANSI_WARNINGS OFF 
+GO
+ALTER DATABASE [coffee] SET ARITHABORT OFF 
+GO
+ALTER DATABASE [coffee] SET AUTO_CLOSE OFF 
+GO
+ALTER DATABASE [coffee] SET AUTO_SHRINK OFF 
+GO
+ALTER DATABASE [coffee] SET AUTO_UPDATE_STATISTICS ON 
+GO
+ALTER DATABASE [coffee] SET CURSOR_CLOSE_ON_COMMIT OFF 
+GO
+ALTER DATABASE [coffee] SET CURSOR_DEFAULT  GLOBAL 
+GO
+ALTER DATABASE [coffee] SET CONCAT_NULL_YIELDS_NULL OFF 
+GO
+ALTER DATABASE [coffee] SET NUMERIC_ROUNDABORT OFF 
+GO
+ALTER DATABASE [coffee] SET QUOTED_IDENTIFIER OFF 
+GO
+ALTER DATABASE [coffee] SET RECURSIVE_TRIGGERS OFF 
+GO
+ALTER DATABASE [coffee] SET  ENABLE_BROKER 
+GO
+ALTER DATABASE [coffee] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
+GO
+ALTER DATABASE [coffee] SET DATE_CORRELATION_OPTIMIZATION OFF 
+GO
+ALTER DATABASE [coffee] SET TRUSTWORTHY OFF 
+GO
+ALTER DATABASE [coffee] SET ALLOW_SNAPSHOT_ISOLATION OFF 
+GO
+ALTER DATABASE [coffee] SET PARAMETERIZATION SIMPLE 
+GO
+ALTER DATABASE [coffee] SET READ_COMMITTED_SNAPSHOT OFF 
+GO
+ALTER DATABASE [coffee] SET HONOR_BROKER_PRIORITY OFF 
+GO
+ALTER DATABASE [coffee] SET RECOVERY FULL 
+GO
+ALTER DATABASE [coffee] SET  MULTI_USER 
+GO
+ALTER DATABASE [coffee] SET PAGE_VERIFY CHECKSUM  
+GO
+ALTER DATABASE [coffee] SET DB_CHAINING OFF 
+GO
+ALTER DATABASE [coffee] SET FILESTREAM( NON_TRANSACTED_ACCESS = OFF ) 
+GO
+ALTER DATABASE [coffee] SET TARGET_RECOVERY_TIME = 60 SECONDS 
+GO
+ALTER DATABASE [coffee] SET DELAYED_DURABILITY = DISABLED 
+GO
+ALTER DATABASE [coffee] SET ACCELERATED_DATABASE_RECOVERY = OFF  
+GO
+EXEC sys.sp_db_vardecimal_storage_format N'coffee', N'ON'
+GO
+ALTER DATABASE [coffee] SET QUERY_STORE = ON
+GO
+ALTER DATABASE [coffee] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLEANUP_POLICY = (STALE_QUERY_THRESHOLD_DAYS = 30), DATA_FLUSH_INTERVAL_SECONDS = 900, INTERVAL_LENGTH_MINUTES = 60, MAX_STORAGE_SIZE_MB = 1000, QUERY_CAPTURE_MODE = AUTO, SIZE_BASED_CLEANUP_MODE = AUTO, MAX_PLANS_PER_QUERY = 200, WAIT_STATS_CAPTURE_MODE = ON)
+GO
+USE [coffee]
+GO
+/****** Object:  Table [dbo].[CH_Category]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CH_Category](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[name] [nvarchar](100) NOT NULL,
+	[root_id] [int] NOT NULL,
+	[active] [int] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[CH_PageSection]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CH_PageSection](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[page_code] [varchar](50) NULL,
+	[section_code] [varchar](50) NULL,
+	[title] [nvarchar](255) NULL,
+	[subtitle] [nvarchar](255) NULL,
+	[description] [ntext] NULL,
+	[image] [varchar](255) NULL,
+	[active] [int] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[CH_Product]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CH_Product](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[name] [nvarchar](200) NOT NULL,
+	[image] [nvarchar](200) NULL,
+	[description] [nvarchar](max) NULL,
+	[subcategory_id] [int] NOT NULL,
+	[active] [int] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[CH_Root]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CH_Root](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[name] [nvarchar](100) NOT NULL,
+	[active] [int] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[CH_SubCategory]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CH_SubCategory](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[name] [nvarchar](100) NOT NULL,
+	[category_id] [int] NOT NULL,
+	[active] [int] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[CH_Variant]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CH_Variant](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[product_id] [int] NOT NULL,
+	[name] [nvarchar](50) NOT NULL,
+	[price] [decimal](18, 0) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[CH_Category] ADD  DEFAULT ((1)) FOR [active]
+GO
+ALTER TABLE [dbo].[CH_PageSection] ADD  DEFAULT ((1)) FOR [active]
+GO
+ALTER TABLE [dbo].[CH_Product] ADD  DEFAULT ('noimage.jpg') FOR [image]
+GO
+ALTER TABLE [dbo].[CH_Product] ADD  DEFAULT ((1)) FOR [active]
+GO
+ALTER TABLE [dbo].[CH_Root] ADD  DEFAULT ((1)) FOR [active]
+GO
+ALTER TABLE [dbo].[CH_SubCategory] ADD  DEFAULT ((1)) FOR [active]
+GO
+ALTER TABLE [dbo].[CH_Variant] ADD  DEFAULT ((0)) FOR [price]
+GO
+ALTER TABLE [dbo].[CH_Category]  WITH CHECK ADD  CONSTRAINT [fk_cat_root] FOREIGN KEY([root_id])
+REFERENCES [dbo].[CH_Root] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[CH_Category] CHECK CONSTRAINT [fk_cat_root]
+GO
+ALTER TABLE [dbo].[CH_Product]  WITH CHECK ADD  CONSTRAINT [fk_prod_sub] FOREIGN KEY([subcategory_id])
+REFERENCES [dbo].[CH_SubCategory] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[CH_Product] CHECK CONSTRAINT [fk_prod_sub]
+GO
+ALTER TABLE [dbo].[CH_SubCategory]  WITH CHECK ADD  CONSTRAINT [fk_sub_cat] FOREIGN KEY([category_id])
+REFERENCES [dbo].[CH_Category] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[CH_SubCategory] CHECK CONSTRAINT [fk_sub_cat]
+GO
+ALTER TABLE [dbo].[CH_Variant]  WITH CHECK ADD  CONSTRAINT [fk_var_prod] FOREIGN KEY([product_id])
+REFERENCES [dbo].[CH_Product] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[CH_Variant] CHECK CONSTRAINT [fk_var_prod]
+GO
+/****** Object:  StoredProcedure [dbo].[count_products_paging]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- 2. Thủ tục đếm tổng số lượng (để tính số trang)
+CREATE   PROCEDURE [dbo].[count_products_paging]
+    @keyword NVARCHAR(100),
+    @subId INT
+AS
+BEGIN
+    SELECT COUNT(*) 
+    FROM CH_Product 
+    WHERE (@subId = 0 OR subcategory_id = @subId)
+      AND (@keyword = '' OR name LIKE N'%' + @keyword + '%');
+END
+GO
+/****** Object:  StoredProcedure [dbo].[create_category]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[create_category] @name NVARCHAR(100), @root_id INT, @active INT AS
+BEGIN INSERT INTO CH_Category(name, root_id, active) VALUES(@name, @root_id, @active) END
+GO
+/****** Object:  StoredProcedure [dbo].[create_product]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[create_product] @name NVARCHAR(200), @image NVARCHAR(200), @subcategory_id INT, @active INT AS
+BEGIN INSERT INTO CH_Product(name, image, subcategory_id, active) VALUES(@name, @image, @subcategory_id, @active) END
+GO
+/****** Object:  StoredProcedure [dbo].[create_root]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[create_root] @name NVARCHAR(100), @active INT AS
+BEGIN INSERT INTO CH_Root(name, active) VALUES(@name, @active) END
+GO
+/****** Object:  StoredProcedure [dbo].[create_subcategory]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[create_subcategory] @name NVARCHAR(100), @category_id INT, @active INT AS
+BEGIN INSERT INTO CH_SubCategory(name, category_id, active) VALUES(@name, @category_id, @active) END
+GO
+/****** Object:  StoredProcedure [dbo].[create_variant]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[create_variant] @product_id INT, @name NVARCHAR(50), @price DECIMAL(18,0) AS
+BEGIN INSERT INTO CH_Variant(product_id, name, price) VALUES(@product_id, @name, @price) END
+GO
+/****** Object:  StoredProcedure [dbo].[delete_category]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[delete_category] @id INT AS
+BEGIN DELETE FROM CH_Category WHERE id=@id END
+GO
+/****** Object:  StoredProcedure [dbo].[delete_product]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[delete_product] @id INT AS
+BEGIN DELETE FROM CH_Product WHERE id=@id END
+GO
+/****** Object:  StoredProcedure [dbo].[delete_root]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[delete_root] @id INT AS
+BEGIN DELETE FROM CH_Root WHERE id=@id END
+GO
+/****** Object:  StoredProcedure [dbo].[delete_subcategory]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[delete_subcategory] @id INT AS
+BEGIN DELETE FROM CH_SubCategory WHERE id=@id END
+GO
+/****** Object:  StoredProcedure [dbo].[delete_variant]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[delete_variant] @id INT AS
+BEGIN DELETE FROM CH_Variant WHERE id=@id END
+GO
+/****** Object:  StoredProcedure [dbo].[get_categories_by_root]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- --- KHU VỰC CẤP 2: CATEGORY (LỌC THEO ROOT) ---
+CREATE PROC [dbo].[get_categories_by_root] @root_id INT AS
+BEGIN SELECT * FROM CH_Category WHERE root_id = @root_id END
+GO
+/****** Object:  StoredProcedure [dbo].[get_category_by_id]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[get_category_by_id] @id INT AS
+BEGIN SELECT * FROM CH_Category WHERE id = @id END
+GO
+/****** Object:  StoredProcedure [dbo].[get_product_by_id]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[get_product_by_id] @id INT AS
+BEGIN SELECT * FROM CH_Product WHERE id = @id END
+GO
+/****** Object:  StoredProcedure [dbo].[get_products_by_sub]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- --- KHU VỰC CẤP 4: PRODUCT (LỌC THEO SUB-CATEGORY) ---
+CREATE PROC [dbo].[get_products_by_sub] @subcategory_id INT AS
+BEGIN SELECT * FROM CH_Product WHERE subcategory_id = @subcategory_id ORDER BY id DESC END
+GO
+/****** Object:  StoredProcedure [dbo].[get_products_paging]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- 1. Thủ tục lấy danh sách có Phân trang + Tìm kiếm + Lọc
+CREATE   PROCEDURE [dbo].[get_products_paging]
+    @pageIndex INT,          -- Trang hiện tại (1, 2, 3...)
+    @pageSize INT,           -- Số lượng item 1 trang (VD: 10)
+    @keyword NVARCHAR(100),  -- Từ khóa tìm kiếm (Tên)
+    @subId INT               -- ID nhóm (0 là lấy tất cả)
+AS
+BEGIN
+    SELECT p.*, s.name as subcategory_name 
+    FROM CH_Product p
+    LEFT JOIN CH_SubCategory s ON p.subcategory_id = s.id
+    WHERE (@subId = 0 OR p.subcategory_id = @subId)
+      AND (@keyword = '' OR p.name LIKE N'%' + @keyword + '%')
+    ORDER BY p.id DESC
+    OFFSET (@pageIndex - 1) * @pageSize ROWS
+    FETCH NEXT @pageSize ROWS ONLY;
+END
+GO
+/****** Object:  StoredProcedure [dbo].[get_root_by_id]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[get_root_by_id] @id INT AS
+BEGIN SELECT * FROM CH_Root WHERE id = @id END
+GO
+/****** Object:  StoredProcedure [dbo].[get_roots_admin]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+/* ==================================================
+   3. STORED PROCEDURES (THỦ TỤC QUẢN LÝ)
+   ================================================== */
+
+-- --- KHU VỰC CẤP 1: ROOT ---
+CREATE PROC [dbo].[get_roots_admin] AS
+BEGIN SELECT * FROM CH_Root END
+GO
+/****** Object:  StoredProcedure [dbo].[get_subcategories_by_cat]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- --- KHU VỰC CẤP 3: SUB-CATEGORY (LỌC THEO CATEGORY) ---
+CREATE PROC [dbo].[get_subcategories_by_cat] @category_id INT AS
+BEGIN SELECT * FROM CH_SubCategory WHERE category_id = @category_id END
+GO
+/****** Object:  StoredProcedure [dbo].[get_subcategory_by_id]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[get_subcategory_by_id] @id INT AS
+BEGIN SELECT * FROM CH_SubCategory WHERE id = @id END
+GO
+/****** Object:  StoredProcedure [dbo].[get_variants_by_prod]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- --- KHU VỰC CẤP 5: VARIANT (QUẢN LÝ GIÁ) ---
+CREATE PROC [dbo].[get_variants_by_prod] @product_id INT AS
+BEGIN SELECT * FROM CH_Variant WHERE product_id = @product_id ORDER BY price ASC END
+GO
+/****** Object:  StoredProcedure [dbo].[update_category]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[update_category] @id INT, @name NVARCHAR(100), @root_id INT, @active INT AS
+BEGIN UPDATE CH_Category SET name=@name, root_id=@root_id, active=@active WHERE id=@id END
+GO
+/****** Object:  StoredProcedure [dbo].[update_product]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[update_product] @id INT, @name NVARCHAR(200), @image NVARCHAR(200), @subcategory_id INT, @active INT AS
+BEGIN UPDATE CH_Product SET name=@name, image=@image, subcategory_id=@subcategory_id, active=@active WHERE id=@id END
+GO
+/****** Object:  StoredProcedure [dbo].[update_root]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[update_root] @id INT, @name NVARCHAR(100), @active INT AS
+BEGIN UPDATE CH_Root SET name=@name, active=@active WHERE id=@id END
+GO
+/****** Object:  StoredProcedure [dbo].[update_subcategory]    Script Date: 12/23/2025 11:48:43 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROC [dbo].[update_subcategory] @id INT, @name NVARCHAR(100), @category_id INT, @active INT AS
+BEGIN UPDATE CH_SubCategory SET name=@name, category_id=@category_id, active=@active WHERE id=@id END
+GO
+USE [master]
+GO
+ALTER DATABASE [coffee] SET  READ_WRITE 
+GO

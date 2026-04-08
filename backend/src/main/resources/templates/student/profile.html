@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Student • Profile</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+    <script src="/js/student-profile.js" defer></script>
+</head>
+<body class="backoffice-body student-profile-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Profile')}"></div>
+            <main class="backoffice-content">
+                <section class="page-section panel">
+                    <h2 class="panel-title">Account information</h2>
+                    <div class="form-grid">
+                        <div>
+                            <label>Full name</label>
+                            <input type="text" th:value="${studentProfile != null ? studentProfile.fullName : studentName}" readonly />
+                        </div>
+                        <div>
+                            <label>Student code</label>
+                            <input type="text" th:value="${studentProfile != null ? studentProfile.studentCode : ''}" readonly />
+                        </div>
+                        <div>
+                            <label>School email</label>
+                            <input type="text" th:value="${studentProfile != null ? studentProfile.schoolEmail : ''}" readonly />
+                        </div>
+                        <div>
+                            <label>Phone number</label>
+                            <input type="text" th:value="${studentProfile != null ? studentProfile.phoneNumber : ''}" readonly />
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Password support</h2>
+                    <div th:if="${error}" class="alert alert-error" th:text="${error}">Error</div>
+                    <div th:if="${success}" class="alert alert-success" th:text="${success}">Success</div>
+                    <div class="meta" th:if="${profileAuthProvider == 'LOCAL'}">
+                    </div>
+                    <form th:if="${profileAuthProvider == 'LOCAL'}" action="/student/profile/change-password" method="post">
+                        <div class="form-grid">
+                            <div class="full">
+                                <label>Current password</label>
+                                <div class="student-password-field">
+                                    <input type="password" id="currentPassword" name="currentPassword"
+                                        placeholder="Enter current password" required />
+                                    <button type="button" class="student-password-toggle" data-password-toggle
+                                        data-target="currentPassword" aria-controls="currentPassword"
+                                        aria-label="Show current password">Show</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label>New password</label>
+                                <div class="student-password-field">
+                                    <input type="password" id="newPassword" name="newPassword"
+                                        placeholder="Enter new password" required />
+                                    <button type="button" class="student-password-toggle" data-password-toggle
+                                        data-target="newPassword" aria-controls="newPassword"
+                                        aria-label="Show new password">Show</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label>Confirm new password</label>
+                                <div class="student-password-field">
+                                    <input type="password" id="confirmPassword" name="confirmPassword"
+                                        placeholder="Confirm new password" required />
+                                    <button type="button" class="student-password-toggle" data-password-toggle
+                                        data-target="confirmPassword" aria-controls="confirmPassword"
+                                        aria-label="Show confirmation password">Show</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="button-row" style="margin-top: 12px;">
+                            <button type="submit" class="btn btn-primary">Update password</button>
+                        </div>
+                    </form>
+                    <div class="meta" th:if="${profileAuthProvider != 'LOCAL'}">
+                        This account uses a social provider, so password management is handled outside PMS.
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

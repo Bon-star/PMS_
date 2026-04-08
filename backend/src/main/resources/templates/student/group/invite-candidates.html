@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <section th:fragment="inviteCandidatesPanel"
+        th:if="${isMember and invitationFeatureEnabled and !groupHasProject and !groupFull}"
+        class="page-section panel"
+        id="invite-candidates-panel"
+        th:attr="data-fragment-url=@{/student/group/{id}/invite-candidates(id=${group.groupId})}">
+        <h2 class="panel-title">Invite members</h2>
+        <form class="inline-actions" method="post" th:action="@{/student/group/{id}/invite(id=${group.groupId})}">
+            <input type="hidden" name="invitePage" th:value="${inviteCurrentPage}" />
+            <input class="inline-input" type="text" name="studentRef" placeholder="Enter student ID or code" required />
+            <button class="btn btn-primary btn-small" type="submit">Send invite</button>
+        </form>
+        <br/>
+        <div class="table-wrap" th:if="${availableStudents != null and availableStudents.size() > 0}">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Student code</th>
+                        <th>Full name</th>
+                        <th>Email</th>
+                        <th>Invite</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="s : ${availableStudents}">
+                        <td th:text="${s.studentCode}"></td>
+                        <td th:text="${s.fullName}"></td>
+                        <td th:text="${s.schoolEmail}"></td>
+                        <td>
+                            <form method="post" th:action="@{/student/group/{id}/invite(id=${group.groupId})}">
+                                <input type="hidden" name="invitePage" th:value="${inviteCurrentPage}" />
+                                <input type="hidden" name="studentRef" th:value="${s.studentCode}" />
+                                <button class="btn btn-secondary btn-small" type="submit">Invite</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination" th:if="${inviteTotalPages > 1}">
+            <a class="page-btn js-invite-page-link"
+                th:if="${inviteHasPrev}"
+                th:attr="data-invite-page=${invitePrevPage}"
+                th:href="@{/student/group/{id}(id=${group.groupId}, invitePage=${invitePrevPage})}">Previous</a>
+            <span class="page-btn disabled" th:unless="${inviteHasPrev}">Previous</span>
+            <span class="page-info">
+                Page <span th:text="${inviteCurrentPage}"></span> / <span th:text="${inviteTotalPages}"></span>
+            </span>
+            <a class="page-btn js-invite-page-link"
+                th:if="${inviteHasNext}"
+                th:attr="data-invite-page=${inviteNextPage}"
+                th:href="@{/student/group/{id}(id=${group.groupId}, invitePage=${inviteNextPage})}">Next</a>
+            <span class="page-btn disabled" th:unless="${inviteHasNext}">Next</span>
+        </div>
+        <div class="meta" th:if="${availableStudents == null || availableStudents.size() == 0}">
+            There are no more students in this class to invite.
+        </div>
+    </section>
+</body>
+</html>

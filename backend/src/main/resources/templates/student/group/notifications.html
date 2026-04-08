@@ -1,0 +1,200 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Student • Notifications</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body student-group-page student-group-notifications-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('notifications')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Notifications')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+                <div id="student-notifications-feed"
+                    th:fragment="notificationsFeed"
+                    th:attr="data-feed-url=@{/student/group/notifications/fragment},data-page=${currentPage}">
+                    <section class="page-section panel">
+                        <h2 class="panel-title">Project and task activity</h2>
+                        <div class="meta" style="margin-bottom:12px;">
+                            Opening this page marks these activity notifications as read.
+                        </div>
+                        <ul class="notice-list" th:if="${projectNotifications != null and projectNotifications.size() > 0}">
+                            <li class="notice-card" th:each="item : ${projectNotifications}">
+                                <div class="notice-main">
+                                    <div class="notice-head">
+                                        <div class="notice-badges">
+                                            <span class="badge badge-waiting" th:if="${!item.read}">New</span>
+                                            <strong class="notice-title-text" th:text="${item.title}">Notification title</strong>
+                                        </div>
+                                        <div class="notice-time">
+                                            Created at:
+                                            <span th:text="${item.createdAt != null ? #temporals.format(item.createdAt, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                        </div>
+                                    </div>
+                                    <div class="notice-text" th:text="${item.message}">
+                                        Notification message
+                                    </div>
+                                </div>
+                                <div class="notice-actions" th:if="${!#strings.isEmpty(item.targetUrl)}">
+                                    <a class="btn btn-primary btn-small" th:href="${item.targetUrl}">Open</a>
+                                </div>
+                            </li>
+                        </ul>
+                        <div class="meta" th:if="${projectNotifications == null or projectNotifications.size() == 0}">
+                            No project or task notifications yet.
+                        </div>
+                    </section>
+
+                    <section class="page-section panel">
+                        <h2 class="panel-title">Group invitations and join requests</h2>
+                        <div th:unless="${invitationFeatureEnabled}" class="alert alert-error" style="margin-bottom:12px;">
+                            The database does not have the <strong>Group_Invitations</strong> table, so group invite notifications are unavailable.
+                        </div>
+                        <ul class="notice-list" th:if="${groupActivityNotifications != null and groupActivityNotifications.size() > 0}">
+                            <li class="notice-card" th:each="item : ${groupActivityNotifications}">
+                                <div class="notice-main">
+                                    <div class="notice-head">
+                                        <div class="notice-badges">
+                                            <span class="badge badge-waiting" th:if="${!item.read}">New</span>
+                                            <span class="badge badge-pending">Group update</span>
+                                            <strong class="notice-title-text" th:text="${item.title}">Notification title</strong>
+                                        </div>
+                                        <div class="notice-time">
+                                            Created at:
+                                            <span th:text="${item.createdAt != null ? #temporals.format(item.createdAt, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                        </div>
+                                    </div>
+                                    <div class="notice-text" th:text="${item.message}">
+                                        Notification message
+                                    </div>
+                                </div>
+                                <div class="notice-actions" th:if="${!#strings.isEmpty(item.targetUrl)}">
+                                    <a class="btn btn-primary btn-small" th:href="${item.targetUrl}">Open</a>
+                                </div>
+                            </li>
+                        </ul>
+                        <ul class="notice-list" th:if="${notifications != null and notifications.size() > 0}">
+                            <li class="notice-card" th:each="item : ${notifications}">
+                                <div class="notice-main">
+                                    <div class="notice-head">
+                                        <div class="notice-badges">
+                                            <span class="badge badge-waiting" th:if="${item.notificationType == 'RECEIVED_INVITE'}">Invite received</span>
+                                            <span class="badge badge-pending" th:if="${item.notificationType == 'LEADER_REVIEW'}">Needs review</span>
+                                            <span class="badge badge-waiting" th:if="${item.notificationType == 'SENT_REQUEST'}">Sent</span>
+                                            <span class="badge badge-pending" th:if="${item.invitation.status == 'PENDING'}">Pending</span>
+                                            <span class="badge badge-approved" th:if="${item.invitation.status == 'ACCEPTED'}">Accepted</span>
+                                            <span class="badge badge-rejected" th:if="${item.invitation.status == 'REJECTED'}">Rejected</span>
+                                        </div>
+                                        <div class="notice-time">
+                                            Sent at:
+                                            <span th:text="${item.invitation.invitedDate != null ? #temporals.format(item.invitation.invitedDate, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                            <span th:if="${item.invitation.respondedDate != null}">
+                                                | Responded at:
+                                                <span th:text="${#temporals.format(item.invitation.respondedDate, 'dd/MM/yyyy HH:mm')}">-</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="notice-text">
+                                        <span th:if="${item.notificationType == 'RECEIVED_INVITE'}">
+                                            You were invited by <strong th:text="${item.invitation.invitedByName}">Inviter</strong>
+                                            (<span th:text="${item.invitation.invitedByCode}">HE000000</span>)
+                                            to join group <strong th:text="${item.invitation.groupName}">Group name</strong>.
+                                        </span>
+
+                                        <span th:if="${item.notificationType == 'LEADER_REVIEW' and item.invitation.studentId == item.invitation.invitedByStudentId}">
+                                            Join request from <strong th:text="${item.invitation.studentName}">Student</strong>
+                                            (<span th:text="${item.invitation.studentCode}">HE000000</span>)
+                                            to group <strong th:text="${item.invitation.groupName}">Group name</strong>.
+                                        </span>
+                                        <span th:if="${item.notificationType == 'LEADER_REVIEW' and item.invitation.studentId != item.invitation.invitedByStudentId}">
+                                            Invite suggestion for <strong th:text="${item.invitation.studentName}">Student</strong>
+                                            (<span th:text="${item.invitation.studentCode}">HE000000</span>)
+                                            to group <strong th:text="${item.invitation.groupName}">Group name</strong>;
+                                            sent by <strong th:text="${item.invitation.invitedByName}">Sender</strong>
+                                            (<span th:text="${item.invitation.invitedByCode}">HE000000</span>).
+                                        </span>
+
+                                        <span th:if="${item.notificationType == 'SENT_REQUEST' and item.invitation.studentId == item.invitation.invitedByStudentId}">
+                                            You sent a join request to group <strong th:text="${item.invitation.groupName}">Group name</strong>.
+                                        </span>
+                                        <span th:if="${item.notificationType == 'SENT_REQUEST' and item.invitation.studentId != item.invitation.invitedByStudentId}">
+                                            You sent an invite request for <strong th:text="${item.invitation.studentName}">Student</strong>
+                                            (<span th:text="${item.invitation.studentCode}">HE000000</span>)
+                                            to join group <strong th:text="${item.invitation.groupName}">Group name</strong>.
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="notice-actions"
+                                    th:if="${item.notificationType == 'RECEIVED_INVITE' and item.invitation.status == 'PENDING'}">
+                                    <form method="post"
+                                        th:action="@{/student/group/{id}/invite/{invId}/respond(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
+                                        <input type="hidden" name="action" value="accept" />
+                                        <input type="hidden" name="source" value="notifications" />
+                                        <input type="hidden" name="page" th:value="${currentPage}" />
+                                        <button class="btn btn-primary btn-small" type="submit">Accept</button>
+                                    </form>
+                                    <form method="post"
+                                        th:action="@{/student/group/{id}/invite/{invId}/respond(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
+                                        <input type="hidden" name="action" value="reject" />
+                                        <input type="hidden" name="source" value="notifications" />
+                                        <input type="hidden" name="page" th:value="${currentPage}" />
+                                        <button class="btn btn-soft-danger btn-small" type="submit">Reject</button>
+                                    </form>
+                                </div>
+
+                                <div class="notice-actions"
+                                    th:if="${item.notificationType == 'LEADER_REVIEW' and item.invitation.status == 'PENDING'}">
+                                    <form method="post"
+                                        th:action="@{/student/group/{id}/invite/{invId}/review(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
+                                        <input type="hidden" name="action" value="approve" />
+                                        <input type="hidden" name="source" value="notifications" />
+                                        <input type="hidden" name="page" th:value="${currentPage}" />
+                                        <button class="btn btn-primary btn-small" type="submit">Accept</button>
+                                    </form>
+                                    <form method="post"
+                                        th:action="@{/student/group/{id}/invite/{invId}/review(id=${item.invitation.groupId},invId=${item.invitation.invitationId})}">
+                                        <input type="hidden" name="action" value="reject" />
+                                        <input type="hidden" name="source" value="notifications" />
+                                        <input type="hidden" name="page" th:value="${currentPage}" />
+                                        <button class="btn btn-soft-danger btn-small" type="submit">Reject</button>
+                                    </form>
+                                </div>
+
+                                <div class="notice-actions" th:if="${item.notificationType == 'SENT_REQUEST'}">
+                                    <button class="btn btn-secondary btn-small" type="button" disabled th:if="${item.invitation.status == 'PENDING'}">Pending</button>
+                                    <button class="btn btn-secondary btn-small" type="button" disabled th:if="${item.invitation.status != 'PENDING'}">Processed</button>
+                                </div>
+
+                                <div class="notice-actions"
+                                    th:if="${(item.notificationType == 'RECEIVED_INVITE' or item.notificationType == 'LEADER_REVIEW') and item.invitation.status != 'PENDING'}">
+                                    <button class="btn btn-secondary btn-small" type="button" disabled>Processed</button>
+                                </div>
+                            </li>
+                        </ul>
+                        <div class="meta"
+                            th:if="${(groupActivityNotifications == null or groupActivityNotifications.size() == 0) and (notifications == null or notifications.size() == 0)}">
+                            No group notifications yet.
+                        </div>
+
+                        <div class="pagination" th:if="${totalPages > 1}">
+                            <a class="page-btn" th:if="${hasPrev}" th:href="@{/student/group/notifications(page=${prevPage})}">Previous</a>
+                            <span class="page-btn disabled" th:unless="${hasPrev}">Previous</span>
+                            <span class="page-info">Page <span th:text="${currentPage}">1</span> / <span th:text="${totalPages}">1</span></span>
+                            <a class="page-btn" th:if="${hasNext}" th:href="@{/student/group/notifications(page=${nextPage})}">Next</a>
+                            <span class="page-btn disabled" th:unless="${hasNext}">Next</span>
+                        </div>
+                    </section>
+                </div>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

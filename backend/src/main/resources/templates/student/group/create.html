@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Student - Create group</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+    <style>
+        .create-group-shell {
+            width: 100%;
+            max-width: none;
+        }
+
+        .create-group-owner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border: 1px solid var(--bo-border);
+            border-radius: 16px;
+            background: var(--bo-surface-muted);
+            margin-bottom: 18px;
+        }
+
+        .create-group-owner-avatar {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #fff;
+            border: 1px solid var(--bo-border);
+            flex: 0 0 auto;
+        }
+
+        .create-group-owner-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .create-group-owner-name {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--bo-text);
+        }
+
+        .create-group-owner-meta {
+            margin-top: 2px;
+            color: var(--bo-subtext);
+            font-size: 13px;
+        }
+
+        .create-group-name-field {
+            margin-bottom: 18px;
+        }
+
+        .create-group-owner,
+        .create-group-name-field,
+        .create-group-name-field input {
+            width: 100%;
+        }
+
+        .create-group-student-table-scroll {
+            max-height: 286px;
+            overflow-y: auto;
+            border: 1px solid var(--bo-border);
+            border-radius: 14px;
+        }
+
+        .create-group-student-table-scroll table {
+            margin: 0;
+        }
+
+        .create-group-student-table-scroll thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: var(--bo-surface-muted);
+        }
+
+        .create-group-student-check {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--bo-primary);
+            cursor: pointer;
+        }
+
+        .create-group-student-row {
+            cursor: pointer;
+        }
+
+        .create-group-student-row td:first-child {
+            width: 72px;
+        }
+
+        .create-group-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .create-group-submit:disabled,
+        .create-group-submit:disabled:hover {
+            background: #4b5563;
+            border-color: #4b5563;
+            color: #d1d5db;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        @media (max-width: 768px) {
+            .create-group-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .create-group-actions .btn {
+                width: 100%;
+            }
+
+            .create-group-student-table-scroll {
+                max-height: 250px;
+            }
+        }
+    </style>
+</head>
+<body class="backoffice-body student-group-page student-group-create-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('group-detail')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Create group')}"></div>
+            <main class="backoffice-content">
+                <div class="create-group-shell">
+                    <section class="page-section panel">
+                        <div class="create-group-owner">
+                            <div class="create-group-owner-avatar">
+                                <img src="/img/user.png" alt="Avatar" />
+                            </div>
+                            <div>
+                                <div class="create-group-owner-name" th:text="${studentProfile != null ? studentProfile.fullName : studentName}">Student</div>
+                                <div class="create-group-owner-meta">
+                                    Group leader
+                                    <span th:if="${studentProfile != null and studentProfile.studentCode != null}"
+                                        th:text="${' | ' + studentProfile.studentCode}"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div th:if="${error}" class="alert alert-error" th:text="${error}">Error</div>
+
+                        <form method="post" th:action="@{/student/group/create}">
+                            <div class="create-group-name-field">
+                                <input type="text"
+                                    id="groupName"
+                                    name="groupName"
+                                    th:value="${draftGroupName}"
+                                    placeholder="Enter group name"
+                                    maxlength="100"
+                                    required />
+                            </div>
+
+                            <section class="page-section panel" style="margin-top:18px;">
+                                <h3 class="panel-title" style="font-size:20px;">Invite classmates (optional)</h3>
+                                <div class="table-wrap create-group-student-table-scroll" style="margin-top:12px;">
+                                    <table class="data-table" th:if="${availableStudents != null and !#lists.isEmpty(availableStudents)}">
+                                        <thead>
+                                            <tr>
+                                                <th>Select</th>
+                                                <th>Student code</th>
+                                                <th>Full name</th>
+                                                <th>Email</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="candidate : ${availableStudents}" class="create-group-student-row">
+                                                <td>
+                                                    <input class="create-group-student-check"
+                                                        type="checkbox"
+                                                        name="selectedStudentIds"
+                                                        th:value="${candidate.studentId}"
+                                                        th:attr="disabled=${!invitationFeatureEnabled} ? 'disabled' : null"
+                                                        th:checked="${draftSelectedStudentIds != null and #lists.contains(draftSelectedStudentIds, candidate.studentId)}" />
+                                                </td>
+                                                <td th:text="${candidate.studentCode}">HE123456</td>
+                                                <td th:text="${candidate.fullName}">Student name</td>
+                                                <td th:text="${candidate.schoolEmail}">student@example.com</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <div class="empty-state" th:if="${availableStudents == null or #lists.isEmpty(availableStudents)}">
+                                        No classmates are currently available to invite.
+                                    </div>
+                                </div>
+
+                                <div th:if="${!invitationFeatureEnabled}" class="alert alert-error" style="margin-top:14px;">
+                                    Invitations are unavailable because the <strong>Group_Invitations</strong> table is missing.
+                                </div>
+                            </section>
+
+                            <div class="create-group-actions">
+                                <a href="/student/group/list" class="btn btn-secondary">Cancel</a>
+                                <button type="submit"
+                                    id="createGroupSubmit"
+                                    class="btn btn-primary create-group-submit"
+                                    th:disabled="${draftGroupName == null or #strings.isEmpty(#strings.trim(draftGroupName))}">
+                                    Create group
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+    <script>
+        const createGroupForm = document.querySelector('form[action="/student/group/create"]');
+        const groupNameInput = document.getElementById('groupName');
+        const createGroupSubmitButton = document.getElementById('createGroupSubmit');
+
+        const syncCreateGroupSubmitState = () => {
+            if (!groupNameInput || !createGroupSubmitButton) {
+                return;
+            }
+            createGroupSubmitButton.disabled = groupNameInput.value.trim().length === 0;
+        };
+
+        if (groupNameInput) {
+            groupNameInput.addEventListener('input', syncCreateGroupSubmitState);
+            syncCreateGroupSubmitState();
+        }
+
+        if (createGroupForm && groupNameInput) {
+            createGroupForm.addEventListener('submit', (event) => {
+                groupNameInput.value = groupNameInput.value.trim();
+                syncCreateGroupSubmitState();
+                if (groupNameInput.value.length === 0) {
+                    event.preventDefault();
+                }
+            });
+        }
+
+        document.querySelectorAll('.create-group-student-row').forEach((row) => {
+            row.addEventListener('click', (event) => {
+                const checkbox = row.querySelector('.create-group-student-check');
+                if (!checkbox || checkbox.disabled) {
+                    return;
+                }
+                if (event.target instanceof HTMLInputElement) {
+                    return;
+                }
+                checkbox.checked = !checkbox.checked;
+            });
+        });
+    </script>
+</body>
+</html>

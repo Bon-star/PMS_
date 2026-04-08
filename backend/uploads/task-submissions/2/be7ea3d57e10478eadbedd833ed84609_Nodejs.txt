@@ -1,0 +1,29 @@
+Nodejs
+language: javascript
+opp
+javascript->script client (run on end user, pc, laptop, mobile) -> single thread
+nodejs -> run at server -> return view (html+ css +js)
+nodejs -> script server -> multi thread
+code view: jadejs -> pugjs
+nodejs framework: inclue mutil libraries NPM
+
+install nodejs
+- download msi -> install
+- download zip -> unzip
+
+create project visual studio 2022
+create project visual studio code
+npm install -g express-generator 
+express --view=pug myapp1 (create pug project)
+npm i
+npm i bootstrap (-g->system, none->project)
+npm i jquery (jquery library)
+npm i mssql (sql library)
+__ bien mt
+babel code = chi viet chu thuong
+add static path 
+
+connect -> sql(disconnection)
+
+1 processer -> multi threads
+processer -> delta time -> processing single thread

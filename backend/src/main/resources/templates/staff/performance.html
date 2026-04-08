@@ -1,0 +1,277 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Staff • Project performance</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body staff-performance-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{staff/layout/header :: sidebar('projects')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{staff/layout/header :: topbar('Project performance')}"></div>
+            <main class="backoffice-content">
+                <section class="page-section summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-label">Current project</div>
+                        <div class="summary-value" th:text="${project.projectName} ?: 'Untitled'">Untitled</div>
+                        <div class="summary-note" th:text="${project.groupName + ' • ' + (project.className ?: 'No class')}">Group</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Sprints</div>
+                        <div class="summary-value" th:text="${sprints != null ? #lists.size(sprints) : 0}">0</div>
+                        <div class="summary-note">Number of sprints in this project.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Total tasks</div>
+                        <div class="summary-value" th:text="${taskHistory != null ? #lists.size(taskHistory) : 0}">0</div>
+                        <div class="summary-note">All tasks recorded for this project.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Members with data</div>
+                        <div class="summary-value" th:text="${overallPerformance != null ? #lists.size(overallPerformance) : 0}">0</div>
+                        <div class="summary-note">Members included in performance stats.</div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <div class="button-row" style="justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <h2 class="panel-title">Project overview</h2>
+                            <div class="meta">
+                                Group <strong th:text="${project.groupName}">Group</strong>
+                                • Class <strong th:text="${project.className} ?: 'No class yet'">Class</strong>
+                                • Leader <strong th:text="${project.leaderName} ?: 'Not assigned'">Leader</strong>
+                            </div>
+                            <div class="meta" style="margin-top:6px;">
+                                Timeline:
+                                <strong th:text="${project.startDate != null ? #temporals.format(project.startDate, 'dd/MM/yyyy HH:mm') : '-'}">-</strong>
+                                to
+                                <strong th:text="${project.endDate != null ? #temporals.format(project.endDate, 'dd/MM/yyyy HH:mm') : '-'}">-</strong>
+                            </div>
+                            <div class="meta" style="margin-top:8px; white-space: pre-wrap;"
+                                th:if="${project.description != null and !#strings.isEmpty(project.description)}"
+                                th:text="${project.description}">Description</div>
+                        </div>
+                        <a class="btn" th:href="@{/staff/projects(semesterId=${selectedSemesterId})}">Back to project list</a>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Reassign project</h2>
+                    <p class="meta">Change the template or timeline for this project. Reassignment is blocked once task work has started.</p>
+                    <div th:if="${projectTemplates == null or #lists.isEmpty(projectTemplates)}" class="empty-state">
+                        No templates available for this semester.
+                    </div>
+                    <form th:if="${projectTemplates != null and !#lists.isEmpty(projectTemplates)}"
+                        method="post"
+                        th:action="@{/staff/projects/{id}/reassign(id=${project.projectId})}"
+                        style="margin-top:12px;">
+                        <input type="hidden" name="semesterId" th:value="${selectedSemesterId}" />
+                        <div class="form-grid form-grid-3">
+                            <div>
+                                <label for="reassignTemplateId">Template</label>
+                                <select id="reassignTemplateId" name="templateId" required>
+                                    <option th:each="template : ${projectTemplates}"
+                                        th:value="${template.templateId}"
+                                        th:selected="${template.templateId == project.templateId}"
+                                        th:text="${template.name + ' • ' + (template.source ?: '-') + ' • Year ' + (template.year != null ? template.year : '-')}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="reassignStartDate">Start time</label>
+                                <input id="reassignStartDate" type="datetime-local" name="startDate"
+                                    th:value="${project.startDate != null ? #temporals.format(project.startDate, 'yyyy-MM-dd''T''HH:mm') : ''}" />
+                            </div>
+                            <div>
+                                <label for="reassignEndDate">End time</label>
+                                <input id="reassignEndDate" type="datetime-local" name="endDate"
+                                    th:value="${project.endDate != null ? #temporals.format(project.endDate, 'yyyy-MM-dd''T''HH:mm') : ''}" />
+                            </div>
+                        </div>
+                        <div class="form-actions" style="justify-content:flex-start;">
+                            <button type="submit" class="btn btn-primary">Reassign project</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Sprint schedule</h2>
+                    <div th:if="${sprints == null or #lists.isEmpty(sprints)}" class="empty-state">This project has no sprints yet.</div>
+                    <div th:if="${sprints != null and !#lists.isEmpty(sprints)}" class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Sprint</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="sp : ${sprints}">
+                                    <td th:text="${sp.sprintName ?: 'Sprint #' + sp.sprintId}">Sprint</td>
+                                    <td th:text="${sp.startDate != null ? #temporals.format(sp.startDate, 'dd/MM/yyyy') : '-'}">-</td>
+                                    <td th:text="${sp.endDate != null ? #temporals.format(sp.endDate, 'dd/MM/yyyy') : '-'}">-</td>
+                                    <td>
+                                        <span th:if="${sp.cancelled}" class="badge status-cancelled">Cancelled</span>
+                                        <span th:if="${!sp.cancelled and sp.closed}" class="badge status-submitted">Closed</span>
+                                        <span th:if="${!sp.cancelled and !sp.closed}" class="badge status-progress">Open</span>
+                                    </td>
+                                    <td>
+                                        <div class="muted" th:if="${sp.cancelled and !#strings.isEmpty(sp.cancelReason)}" th:text="${sp.cancelReason}"></div>
+                                        <div class="muted" th:if="${sp.cancelledAt != null}"
+                                            th:text="${'Cancelled at: ' + #temporals.format(sp.cancelledAt, 'dd/MM/yyyy HH:mm')}">Cancelled at</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Overall performance by member</h2>
+                    <div class="metrics-grid">
+                        <div class="table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Member</th>
+                                        <th>Total</th>
+                                        <th>Completed</th>
+                                        <th>Failed</th>
+                                        <th>In progress</th>
+                                        <th>Submitted</th>
+                                        <th>To do</th>
+                                        <th>Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${overallPerformance == null or #lists.isEmpty(overallPerformance)}">
+                                        <td colspan="8">No performance data yet.</td>
+                                    </tr>
+                                    <tr th:each="item : ${overallPerformance}">
+                                        <td th:text="${item.studentName + ' (' + item.studentCode + ')'}">Name</td>
+                                        <td th:text="${item.totalTasks}">0</td>
+                                        <td th:text="${item.doneTasks}">0</td>
+                                        <td th:text="${item.failedTasks}">0</td>
+                                        <td th:text="${item.inProgressTasks}">0</td>
+                                        <td th:text="${item.submittedTasks}">0</td>
+                                        <td th:text="${item.todoTasks}">0</td>
+                                        <td th:text="${#numbers.formatDecimal(item.doneRatePercent, 1, 1) + '%'}">0%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div>
+                            <div th:if="${overallPerformance == null or #lists.isEmpty(overallPerformance)}" class="empty-state">
+                                No data to render completion progress.
+                            </div>
+                            <div th:if="${overallPerformance != null and !#lists.isEmpty(overallPerformance)}" class="bar-list">
+                                <div class="bar-row" th:each="item : ${overallPerformance}">
+                                    <div th:text="${item.studentName + ' (' + item.studentCode + ')'}">Name</div>
+                                    <div class="bar-track">
+                                        <div class="bar-fill" th:style="${'width:' + item.doneRatePercent + '%'}"></div>
+                                    </div>
+                                    <div th:text="${#numbers.formatDecimal(item.doneRatePercent, 1, 1) + '%'}">0%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Performance by sprint</h2>
+                    <div th:if="${sprintPerformance == null or #lists.isEmpty(sprintPerformance)}" class="empty-state">No sprint-level data yet.</div>
+                    <div th:if="${sprintPerformance != null and !#lists.isEmpty(sprintPerformance)}" class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Sprint</th>
+                                    <th>Member</th>
+                                    <th>Total</th>
+                                    <th>Completed</th>
+                                    <th>Failed</th>
+                                    <th>In progress</th>
+                                    <th>Submitted</th>
+                                    <th>To do</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="item : ${sprintPerformance}">
+                                    <td th:text="${item.sprintName ?: 'Sprint #' + item.sprintId}">Sprint</td>
+                                    <td th:text="${item.studentName + ' (' + item.studentCode + ')'}">Name</td>
+                                    <td th:text="${item.totalTasks}">0</td>
+                                    <td th:text="${item.doneTasks}">0</td>
+                                    <td th:text="${item.failedTasks}">0</td>
+                                    <td th:text="${item.inProgressTasks}">0</td>
+                                    <td th:text="${item.submittedTasks}">0</td>
+                                    <td th:text="${item.todoTasks}">0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Detailed task history</h2>
+                    <div th:if="${taskHistory == null or #lists.isEmpty(taskHistory)}" class="empty-state">No tasks recorded for this project.</div>
+                    <div th:if="${taskHistory != null and !#lists.isEmpty(taskHistory)}" class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Sprint</th>
+                                    <th>Assignee</th>
+                                    <th>Reviewer</th>
+                                    <th>Points</th>
+                                    <th>Status</th>
+                                    <th>Timeline</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="task : ${taskHistory}">
+                                    <td>
+                                        <div th:text="${task.taskName}">Task</div>
+                                        <div class="muted" th:if="${task.description != null and !#strings.isEmpty(task.description)}"
+                                            th:text="${task.description}"></div>
+                                    </td>
+                                    <td th:text="${task.sprintName ?: 'Sprint #' + task.sprintId}">Sprint</td>
+                                    <td th:text="${task.assigneeName + ' (' + task.assigneeCode + ')'}">Assignee</td>
+                                    <td th:text="${task.reviewerName} ?: 'Unassigned'">Reviewer</td>
+                                    <td th:text="${task.estimatedPoints}">0</td>
+                                    <td>
+                                        <span th:if="${task.status == 0}" class="badge status-todo">To do</span>
+                                        <span th:if="${task.status == 1}" class="badge status-progress">In progress</span>
+                                        <span th:if="${task.status == 2}" class="badge status-submitted">Pending review</span>
+                                        <span th:if="${task.status == 3}" class="badge status-done">Completed</span>
+                                        <span th:if="${task.status == 4}" class="badge status-rejected">Returned</span>
+                                        <span th:if="${task.status == 5}" class="badge status-failed">Sprint failed</span>
+                                        <span th:if="${task.status == 6}" class="badge status-cancelled">Cancelled</span>
+                                    </td>
+                                    <td>
+                                        <div class="muted">
+                                            Started: <span th:text="${task.actualStartTime != null ? #temporals.format(task.actualStartTime, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                        </div>
+                                        <div class="muted">
+                                            Due: <span th:text="${task.expectedEndTime != null ? #temporals.format(task.expectedEndTime, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                        </div>
+                                        <div class="muted">
+                                            Finished: <span th:text="${task.actualEndTime != null ? #temporals.format(task.actualEndTime, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

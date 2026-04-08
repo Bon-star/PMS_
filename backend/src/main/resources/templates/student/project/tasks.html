@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sprints &amp; tasks</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+    <style>
+        .student-project-page .panel {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .student-project-page .panel-title {
+            margin: 0 0 8px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .student-project-page .muted {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .student-project-page .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .student-project-page .status-todo {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .student-project-page .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .student-project-page .status-progress {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .student-project-page .status-submitted {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .student-project-page .status-done {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .student-project-page .status-returned {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .student-project-page .status-failed {
+            background: #fecaca;
+            color: #7f1d1d;
+        }
+
+        .student-project-page .status-cancelled {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+
+        .student-project-page .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .student-project-page .alert-error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .student-project-page .alert-success {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .student-project-page .alert-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .student-project-page .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .student-project-page .full {
+            grid-column: 1 / -1;
+        }
+
+        .student-project-page label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .student-project-page input,
+        .student-project-page textarea,
+        .student-project-page select {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #fff;
+        }
+
+        .student-project-page textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .student-project-page .row-actions {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .student-project-page .btn {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #fff;
+            color: #111827;
+            text-decoration: none;
+        }
+
+        .student-project-page .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+
+        .student-project-page .btn-danger-soft {
+            background: #fff;
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+
+        .student-project-page table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .student-project-page th,
+        .student-project-page td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .student-project-page th {
+            background: #f9fafb;
+            color: #374151;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .student-project-page .task-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 10px;
+            background: #fafafa;
+        }
+
+        .student-project-page .task-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .student-project-page .task-title {
+            font-size: 16px;
+            margin: 0;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .student-project-page .task-meta {
+            margin-top: 6px;
+            font-size: 13px;
+            color: #4b5563;
+        }
+
+        .student-project-page .task-body {
+            margin-top: 6px;
+            font-size: 14px;
+            color: #111827;
+            white-space: pre-wrap;
+        }
+
+        .student-project-page .task-proof {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed #e5e7eb;
+        }
+
+        .student-project-page .action-grid {
+            margin-top: 10px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .student-project-page .action-panel {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 8px 12px;
+            background: #fff;
+        }
+
+        .student-project-page details summary {
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .student-project-page .section-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .student-project-page .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .student-project-page .section-heading {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .student-project-page .section-description {
+            color: #6b7280;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .student-project-page .action-tile {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px 14px;
+            background: #f9fafb;
+        }
+
+        .student-project-page .table-wrap {
+            overflow-x: auto;
+        }
+
+        .student-project-page .status-stack {
+            display: grid;
+            gap: 10px;
+        }
+        .student-project-page .file-list {
+            margin: 6px 0 0 0;
+            padding-left: 18px;
+        }
+        .student-project-page .file-list li {
+            margin-bottom: 4px;
+        }
+        .student-project-page .code-link {
+            margin-left: 6px;
+            font-size: 12px;
+            color: #2563eb;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body class="backoffice-body student-project-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('project')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Sprints & tasks')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+                <div class="row-actions" style="margin-bottom:12px;">
+                    <a class="btn" href="/student/project">Back to overview</a>
+                </div>
+
+                <div class="status-stack">
+                    <div class="alert alert-info" th:if="${projectNotStarted}">
+                        The project has not started yet. You can only review information and prepare the plan.
+                    </div>
+                    <div class="alert alert-error" th:if="${projectLockedForWork}">
+                        The project work period has ended. Task and sprint actions are locked.
+                    </div>
+                    <div class="alert alert-info" th:if="${projectChangeOpen}">
+                        There is an open project change request. Planning and task actions are temporarily locked.
+                    </div>
+                </div>
+
+                <section class="panel" id="task-filters-section">
+                    <h2 class="panel-title">Task filters</h2>
+                    <form method="get" action="/student/project/tasks" class="form-grid"
+                        style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+                        <div>
+                            <label for="status">Status</label>
+                            <select id="status" name="status">
+                                <option value="">-- All --</option>
+                                <option th:each="entry : ${statusOptions}"
+                                    th:value="${entry.key}"
+                                    th:text="${entry.value}"
+                                    th:selected="${selectedStatus != null and entry.key == selectedStatus}">
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="assigneeId">Assignee</label>
+                            <select id="assigneeId" name="assigneeId">
+                                <option value="">-- All --</option>
+                                <option th:each="m : ${members}" th:value="${m.studentId}"
+                                    th:text="${m.fullName + ' (' + m.studentCode + ')'}"
+                                    th:selected="${selectedAssigneeId != null and m.studentId == selectedAssigneeId}">
+                                </option>
+                            </select>
+                        </div>
+                        <div class="row-actions" style="align-items:flex-end; margin-top:0;">
+                            <button type="submit" class="btn btn-primary">Filter</button>
+                            <a class="btn" href="/student/project/tasks">Clear filters</a>
+                        </div>
+                    </form>
+                    <div class="muted"
+                        th:text="${'Showing ' + taskFilteredCount + ' / ' + taskTotalCount + ' tasks.'}">
+                        Showing 0 / 0 tasks.
+                    </div>
+                </section>
+
+                <section class="section-card" id="task-list-section">
+                    <div class="section-head">
+                        <div>
+                            <h3 class="section-heading">Sprint</h3>
+                        </div>
+                    </div>
+                    <div class="muted" th:if="${openSprint != null}"
+                        th:text="${'Open sprint: ' + (sprintDisplayNames[openSprint.sprintId] ?: ('Sprint #' + openSprint.sprintId)) + ' (' + #temporals.format(openSprint.startDate, 'dd/MM/yyyy') + ' - ' + #temporals.format(openSprint.endDate, 'dd/MM/yyyy') + ')'}">
+                    </div>
+                    <div class="muted" th:if="${openSprint == null}">
+                        No open sprint right now.
+                    </div>
+
+                    <details class="action-tile" th:if="${canCreateSprint}" style="margin-top:12px;">
+                        <summary>Create new sprint</summary>
+                        <span class="muted">The new sprint form is collapsed to keep the page compact.</span>
+                        <form method="post" action="/student/project/sprints/create">
+                            <div class="form-grid">
+                                <div>
+                                    <label for="sprintName">New sprint name (optional)</label>
+                                    <input id="sprintName" name="sprintName" type="text"
+                                        placeholder="Leave blank to auto-increment Sprint 1, 2, 3..." />
+                                </div>
+                            </div>
+                            <div class="row-actions">
+                                <button type="submit" class="btn btn-primary">Create new sprint</button>
+                            </div>
+                        </form>
+                    </details>
+
+                    <div class="table-wrap">
+                        <table th:if="${sprints != null and !#lists.isEmpty(sprints)}" style="margin-top:10px;">
+                            <thead>
+                                <tr>
+                                    <th>Sprint</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                    <th>Status</th>
+                                    <th th:if="${canManageSprint}">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="sp : ${sprints}">
+                                    <td>
+                                        <div th:text="${sprintDisplayNames[sp.sprintId] ?: ('Sprint #' + sp.sprintId)}">Sprint</div>
+                                        <div class="muted" th:if="${sp.cancelled and !#strings.isEmpty(sp.cancelReason)}"
+                                            th:text="${'Cancel reason: ' + sp.cancelReason}"></div>
+                                        <div class="muted" th:if="${sp.cancelledAt != null}"
+                                            th:text="${'Cancelled at: ' + #temporals.format(sp.cancelledAt, 'dd/MM/yyyy HH:mm')}"></div>
+                                    </td>
+                                    <td th:text="${sp.startDate != null ? #temporals.format(sp.startDate, 'dd/MM/yyyy') : '-'}">-</td>
+                                    <td th:text="${sp.endDate != null ? #temporals.format(sp.endDate, 'dd/MM/yyyy') : '-'}">-</td>
+                                    <td>
+                                        <span th:if="${sp.cancelled}" class="badge status-cancelled">Cancelled</span>
+                                        <span th:if="${!sp.cancelled and sp.closed}" class="badge status-pending">Closed</span>
+                                        <span th:if="${!sp.cancelled and !sp.closed}" class="badge status-progress">Open</span>
+                                    </td>
+                                    <td th:if="${canManageSprint}">
+                                        <div th:if="${!sp.closed and !sp.cancelled}" class="action-grid">
+                                            <details class="action-panel">
+                                                <summary>Edit name</summary>
+                                                <form method="post" th:action="@{/student/project/sprints/{id}/update(id=${sp.sprintId})}">
+                                                    <label th:for="${'sprint_name_' + sp.sprintId}">Sprint name</label>
+                                                    <input th:id="${'sprint_name_' + sp.sprintId}" type="text"
+                                                        name="sprintName" th:value="${sp.sprintName}" required />
+                                                    <div class="row-actions">
+                                                        <button type="submit" class="btn">Save</button>
+                                                    </div>
+                                                </form>
+                                            </details>
+                                            <details class="action-panel">
+                                                <summary>Delete</summary>
+                                                <form method="post" th:action="@{/student/project/sprints/{id}/delete(id=${sp.sprintId})}">
+                                                    <p class="muted">Only open sprints without tasks can be deleted.</p>
+                                                    <div class="row-actions">
+                                                        <button type="submit" class="btn btn-danger-soft">Delete sprint</button>
+                                                    </div>
+                                                </form>
+                                            </details>
+                                            <details class="action-panel">
+                                                <summary>Cancel</summary>
+                                                <form method="post" th:action="@{/student/project/sprints/{id}/cancel(id=${sp.sprintId})}">
+                                                    <label th:for="${'sprint_cancel_' + sp.sprintId}">Cancel reason</label>
+                                                    <textarea th:id="${'sprint_cancel_' + sp.sprintId}" name="cancelReason"
+                                                        placeholder="This sprint was cancelled because..." required></textarea>
+                                                    <div class="row-actions">
+                                                        <button type="submit" class="btn btn-danger-soft">Cancel sprint</button>
+                                                    </div>
+                                                </form>
+                                            </details>
+                                        </div>
+                                        <span th:if="${sp.closed or sp.cancelled}" class="muted">No actions available.</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="section-card">
+                    <div class="section-head">
+                        <div>
+                            <h3 class="section-heading">Create and assign tasks</h3>
+                            <div class="section-description">The create form is separated for easier use.</div>
+                        </div>
+                    </div>
+                    <p class="muted">1 point = 4 hours. Each task must have a different assignee and reviewer (unless the group has only one member).</p>
+
+                    <details class="action-tile" th:if="${canCreateTask}" style="margin-top:12px;">
+                        <summary>Create new task</summary>
+                        <span class="muted">The task form is collapsed so it does not cover the current task list.</span>
+                        <form method="post" action="/student/project/tasks/create">
+                            <input type="hidden" name="sprintId" th:value="${openSprint.sprintId}" />
+                            <div class="form-grid">
+                                <div class="full">
+                                    <label>Sprint for this task</label>
+                                    <input type="text"
+                                        th:value="${sprintDisplayNames[openSprint.sprintId] ?: ('Sprint #' + openSprint.sprintId)}"
+                                        readonly />
+                                </div>
+                                <div>
+                                    <label for="taskName">Task name</label>
+                                    <input id="taskName" name="taskName" type="text" required />
+                                </div>
+                                <div>
+                                    <label for="estimatedPoints">Estimated points</label>
+                                    <input id="estimatedPoints" name="estimatedPoints" type="number" min="0.1" step="0.1" required />
+                                </div>
+                                <div class="full">
+                                    <label for="taskDescription">Task description</label>
+                                    <textarea id="taskDescription" name="description"></textarea>
+                                </div>
+                                <div>
+                                    <label for="taskImage">Attachment image link (optional)</label>
+                                    <input id="taskImage" name="taskImage" type="text" />
+                                </div>
+                                <div></div>
+                                <div>
+                                    <label for="assigneeId">Assignee</label>
+                                    <select id="assigneeId" name="assigneeId" required>
+                                        <option value="">-- Select member --</option>
+                                        <option th:each="m : ${members}" th:value="${m.studentId}"
+                                            th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="reviewerId">Reviewer</label>
+                                    <select id="reviewerId" name="reviewerId" required>
+                                        <option value="">-- Select member --</option>
+                                        <option th:each="m : ${members}" th:value="${m.studentId}"
+                                            th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row-actions">
+                                <button type="submit" class="btn btn-primary">Create task</button>
+                            </div>
+                        </form>
+                    </details>
+
+                    <div class="muted" th:if="${!canCreateTask}" style="margin-top:10px;">
+                        Only the leader can create tasks, and there must be an open sprint during the project work period.
+                    </div>
+                </section>
+
+                <section class="section-card" th:if="${failedTasks != null and !#lists.isEmpty(failedTasks)}">
+                    <div class="section-head">
+                        <div>
+                            <h3 class="section-heading">Failed tasks to move into a new sprint</h3>
+                            <div class="section-description">Unfinished tasks from the previous sprint are grouped for the leader to handle.</div>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Previous sprint</th>
+                                    <th>Previous assignees</th>
+                                    <th>Reason</th>
+                                    <th>Move to sprint</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="f : ${failedTasks}">
+                                    <td>
+                                        <div th:text="${f.taskName}">Task</div>
+                                        <div class="muted" th:text="${f.estimatedPoints + ' point'}">0 point</div>
+                                    </td>
+                                    <td th:text="${sprintDisplayNames[f.sprintId] ?: ('Sprint #' + f.sprintId)}">Sprint</td>
+                                    <td th:text="${f.assigneeName + ' / ' + (f.reviewerName ?: 'No reviewer yet')}">Member</td>
+                                    <td th:text="${!#strings.isEmpty(f.reviewComment) ? f.reviewComment : 'Task was not completed before the sprint ended.'}">Reason</td>
+                                    <td>
+                                        <form th:if="${canReplanFailed and openSprint != null}"
+                                            th:action="@{/student/project/sprints/{id}/replan(id=${openSprint.sprintId})}"
+                                            method="post">
+                                            <input type="hidden" name="taskId" th:value="${f.taskId}" />
+                                            <div class="form-grid" style="grid-template-columns: 1fr; gap:6px;">
+                                                <select name="assigneeId" required>
+                                                    <option th:each="m : ${members}" th:value="${m.studentId}"
+                                                        th:selected="${m.studentId == f.assigneeId}"
+                                                        th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
+                                                </select>
+                                                <select name="reviewerId" required>
+                                                    <option th:each="m : ${members}" th:value="${m.studentId}"
+                                                        th:selected="${f.reviewerId != null and m.studentId == f.reviewerId}"
+                                                        th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
+                                                </select>
+                                            </div>
+                                            <div class="row-actions">
+                                                <button type="submit" class="btn">Move to open sprint</button>
+                                            </div>
+                                        </form>
+                                        <span class="muted" th:if="${!canReplanFailed or openSprint == null}">
+                                            Must be the leader and have an open sprint.
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="section-card">
+                    <div class="section-head">
+                        <div>
+                            <h3 class="section-heading">Task list</h3>
+                            <div class="section-description">Track status, submissions, reviews, and detailed actions.</div>
+                        </div>
+                    </div>
+                    <div class="muted" th:if="${tasks == null or #lists.isEmpty(tasks)}">No tasks match the filters.</div>
+
+                    <div th:each="t : ${tasks}" class="task-card">
+                        <div class="task-head">
+                            <h4 class="task-title" th:text="${t.taskName}">Task</h4>
+                            <div class="row-actions" style="margin-top:0;">
+                                <span th:if="${t.status == 0}" class="badge status-todo">To do</span>
+                                <span th:if="${t.status == 1}" class="badge status-progress">In progress</span>
+                                <span th:if="${t.status == 2}" class="badge status-submitted">Awaiting review</span>
+                                <span th:if="${t.status == 3}" class="badge status-done">Completed</span>
+                                <span th:if="${t.status == 4}" class="badge status-returned">Returned</span>
+                                <span th:if="${t.status == 5}" class="badge status-failed">Failed (sprint)</span>
+                                <span th:if="${t.status == 6}" class="badge status-cancelled">Cancelled</span>
+                            </div>
+                        </div>
+
+                        <div class="task-meta">
+                            Sprint: <strong th:text="${sprintDisplayNames[t.sprintId] ?: ('Sprint #' + t.sprintId)}">Sprint</strong>
+                            • Point: <strong th:text="${t.estimatedPoints}">0</strong>
+                            (≈ <span th:text="${#numbers.formatDecimal(t.estimatedHours, 1, 1)}">0</span> hours)
+                        </div>
+                        <div class="task-meta">
+                            Assignee: <strong th:text="${t.assigneeName + ' (' + t.assigneeCode + ')'}">Assignee</strong>
+                            • Reviewer: <strong th:text="${t.reviewerName ?: 'Unassigned'}">Reviewer</strong>
+                        </div>
+                        <div class="task-meta">
+                            Actual start:
+                            <span th:text="${t.actualStartTime != null ? #temporals.format(t.actualStartTime, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                            • Expected end:
+                            <span th:text="${t.expectedEndTime != null ? #temporals.format(t.expectedEndTime, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                            • Actual end:
+                            <span th:text="${t.actualEndTime != null ? #temporals.format(t.actualEndTime, 'dd/MM/yyyy HH:mm') : '-'}">-</span>
+                        </div>
+
+                        <div class="task-body" th:if="${!#strings.isEmpty(t.description)}" th:text="${t.description}"></div>
+                        <div class="task-meta" th:if="${!#strings.isEmpty(t.taskImage)}">
+                            Preview image: <a th:href="${t.taskImage}" target="_blank">Open image</a>
+                        </div>
+
+                        <div class="task-proof"
+                            th:if="${!#strings.isEmpty(t.submissionNote) or !#strings.isEmpty(t.submissionUrl) or !#strings.isEmpty(t.submissionCode)
+                                or (taskFiles[t.taskId] != null and !#lists.isEmpty(taskFiles[t.taskId]))}">
+                            <div class="task-meta"><strong>Submission:</strong></div>
+                            <div class="task-body" th:if="${!#strings.isEmpty(t.submissionNote)}" th:text="${t.submissionNote}"></div>
+                            <div class="task-meta" th:if="${!#strings.isEmpty(t.submissionUrl)}">
+                                Reference link: <a th:href="${t.submissionUrl}" target="_blank">Open link</a>
+                            </div>
+                            <div class="task-meta" th:if="${!#strings.isEmpty(t.submissionCode)}">
+                                Code: <a th:href="@{/student/project/tasks/{id}/code(id=${t.taskId})}">View code</a>
+                            </div>
+                            <div class="task-meta" th:if="${taskFiles[t.taskId] != null and !#lists.isEmpty(taskFiles[t.taskId])}">
+                                Attachments:
+                                <ul class="file-list">
+                                    <li th:each="f : ${taskFiles[t.taskId]}">
+                                        <a th:href="@{/student/project/tasks/{id}/files/{fileId}(id=${t.taskId}, fileId=${f.storedName})}"
+                                            th:text="${f.displayName}" target="_blank">file</a>
+                                        <span class="muted"
+                                            th:text="${'(' + #numbers.formatDecimal(f.size / 1024.0, 1, 1) + ' KB)'}"></span>
+                                        <a class="code-link" th:if="${f.viewable}"
+                                            th:href="@{/student/project/tasks/{id}/code(id=${t.taskId}, file=${f.storedName})}">View code</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="task-meta" th:if="${t.submittedAt != null}">
+                                Submitted at: <span th:text="${#temporals.format(t.submittedAt, 'dd/MM/yyyy HH:mm')}"></span>
+                            </div>
+                        </div>
+
+                        <div class="task-proof" th:if="${!#strings.isEmpty(t.reviewComment)}">
+                            <div class="task-meta">
+                                <strong th:text="${t.status == 4 ? 'Return reason:' : 'Reviewer comment:'}">Comment:</strong>
+                            </div>
+                            <div class="task-body" th:text="${t.reviewComment}"></div>
+                            <div class="task-meta" th:if="${t.reviewedAt != null}">
+                                Reviewed at: <span th:text="${#temporals.format(t.reviewedAt, 'dd/MM/yyyy HH:mm')}"></span>
+                            </div>
+                        </div>
+
+                        <div class="task-proof" th:if="${t.status == 6 or !#strings.isEmpty(t.cancelledReason) or t.cancelledAt != null}">
+                            <div class="task-meta"><strong>Cancellation info:</strong></div>
+                            <div class="task-body" th:if="${!#strings.isEmpty(t.cancelledReason)}" th:text="${t.cancelledReason}"></div>
+                            <div class="task-meta" th:if="${t.cancelledAt != null}">
+                                Cancelled at: <span th:text="${#temporals.format(t.cancelledAt, 'dd/MM/yyyy HH:mm')}"></span>
+                            </div>
+                        </div>
+
+                        <div class="action-grid"
+                            th:if="${canManageTaskPlan and !projectChangeOpen and t.status != 3 and t.status != 6}">
+                            <details class="action-panel" th:if="${t.status == 0 or t.status == 4}">
+                                <summary>Edit task</summary>
+                                <form method="post" th:action="@{/student/project/tasks/{id}/update(id=${t.taskId})}">
+                                    <div class="form-grid">
+                                        <div class="full">
+                                            <label th:for="${'task_name_' + t.taskId}">Task name</label>
+                                            <input th:id="${'task_name_' + t.taskId}" name="taskName" type="text"
+                                                th:value="${t.taskName}" required />
+                                        </div>
+                                        <div>
+                                            <label th:for="${'task_points_' + t.taskId}">Estimated points</label>
+                                            <input th:id="${'task_points_' + t.taskId}" name="estimatedPoints" type="number"
+                                                min="0.1" step="0.1" th:value="${t.estimatedPoints}" required />
+                                        </div>
+                                        <div>
+                                            <label th:for="${'task_image_' + t.taskId}">Attachment image link</label>
+                                            <input th:id="${'task_image_' + t.taskId}" name="taskImage" type="text"
+                                                th:value="${t.taskImage}" />
+                                        </div>
+                                        <div class="full">
+                                            <label th:for="${'task_desc_' + t.taskId}">Description</label>
+                                            <textarea th:id="${'task_desc_' + t.taskId}" name="description"
+                                                th:text="${t.description}"></textarea>
+                                        </div>
+                                        <div>
+                                            <label th:for="${'task_assignee_' + t.taskId}">Assignee</label>
+                                            <select th:id="${'task_assignee_' + t.taskId}" name="assigneeId" required>
+                                                <option th:each="m : ${members}" th:value="${m.studentId}"
+                                                    th:selected="${m.studentId == t.assigneeId}"
+                                                    th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label th:for="${'task_reviewer_' + t.taskId}">Reviewer</label>
+                                            <select th:id="${'task_reviewer_' + t.taskId}" name="reviewerId" required>
+                                                <option th:each="m : ${members}" th:value="${m.studentId}"
+                                                    th:selected="${t.reviewerId != null and m.studentId == t.reviewerId}"
+                                                    th:text="${m.fullName + ' (' + m.studentCode + ')'}"></option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row-actions">
+                                        <button type="submit" class="btn">Save changes</button>
+                                    </div>
+                                </form>
+                            </details>
+
+                            <details class="action-panel" th:if="${t.status == 0}">
+                                <summary>Delete task</summary>
+                                <form method="post" th:action="@{/student/project/tasks/{id}/delete(id=${t.taskId})}">
+                                    <p class="muted">Only tasks in the to-do state can be deleted.</p>
+                                    <div class="row-actions">
+                                        <button type="submit" class="btn btn-danger-soft">Delete task</button>
+                                    </div>
+                                </form>
+                            </details>
+
+                            <details class="action-panel">
+                                <summary>Cancel task</summary>
+                                <form method="post" th:action="@{/student/project/tasks/{id}/cancel(id=${t.taskId})}">
+                                    <label th:for="${'task_cancel_' + t.taskId}">Cancel reason</label>
+                                    <textarea th:id="${'task_cancel_' + t.taskId}" name="cancelReason"
+                                        placeholder="This task was cancelled because..." required></textarea>
+                                    <div class="row-actions">
+                                        <button type="submit" class="btn btn-danger-soft">Cancel task</button>
+                                    </div>
+                                </form>
+                            </details>
+                        </div>
+
+                        <div class="row-actions"
+                            th:if="${!projectLockedForWork and !projectChangeOpen and t.assigneeId == studentId and (t.status == 0 or t.status == 4)}">
+                            <form method="post" th:action="@{/student/project/tasks/{id}/start(id=${t.taskId})}">
+                                <button type="submit" class="btn">Start task</button>
+                            </form>
+                        </div>
+
+                        <form th:if="${!projectLockedForWork and !projectChangeOpen and t.assigneeId == studentId and t.status == 1}" method="post"
+                            enctype="multipart/form-data"
+                            th:action="@{/student/project/tasks/{id}/submit(id=${t.taskId})}">
+                            <div class="form-grid" style="margin-top:10px;">
+                                <div class="full">
+                                    <label th:for="${'submissionNote_' + t.taskId}">Submission note</label>
+                                    <textarea th:id="${'submissionNote_' + t.taskId}" name="submissionNote"
+                                        placeholder="Describe what you did and the results..." th:text="${t.submissionNote}"></textarea>
+                                </div>
+                                <div class="full">
+                                    <label th:for="${'submissionUrl_' + t.taskId}">Link (repo/PR/docs/demo)</label>
+                                    <input th:id="${'submissionUrl_' + t.taskId}" name="submissionUrl" type="text"
+                                        placeholder="https://..." th:value="${t.submissionUrl}" />
+                                </div>
+                                <div class="full">
+                                    <label th:for="${'submissionFiles_' + t.taskId}">Upload files from your computer</label>
+                                    <input th:id="${'submissionFiles_' + t.taskId}" name="submissionFiles" type="file" multiple />
+                                    <div class="muted">Supported: pdf, docx, zip, txt, code, images (max 10MB/file, 50 files per submission).</div>
+                                </div>
+                                <div class="full">
+                                    <label th:for="${'submissionFolder_' + t.taskId}">Upload a folder from your computer</label>
+                                    <input th:id="${'submissionFolder_' + t.taskId}" name="submissionFiles" type="file"
+                                        webkitdirectory directory multiple />
+                                </div>
+                                <div class="full" th:if="${taskFiles[t.taskId] != null and !#lists.isEmpty(taskFiles[t.taskId])}">
+                                    <label>
+                                        <input type="checkbox" name="clearFiles" value="1" /> Delete previously submitted files
+                                    </label>
+                                </div>
+                                <div class="full">
+                                    <label th:for="${'submissionCode_' + t.taskId}">Code snippet</label>
+                                    <textarea th:id="${'submissionCode_' + t.taskId}" name="submissionCode"></textarea>
+                                    <div class="muted" th:if="${!#strings.isEmpty(t.submissionCode)}">
+                                        There is submitted code. <a th:href="@{/student/project/tasks/{id}/code(id=${t.taskId})}">View code</a>
+                                    </div>
+                                </div>
+                                <div class="full" th:if="${!#strings.isEmpty(t.submissionCode)}">
+                                    <label>
+                                        <input type="checkbox" name="clearCode" value="1" /> Delete previously submitted code
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="row-actions">
+                                <button type="submit" class="btn btn-primary">Submit</button>
+                            </div>
+                        </form>
+
+                        <form th:if="${!projectLockedForWork and !projectChangeOpen and t.assigneeId == studentId and t.status == 2}"
+                            method="post"
+                            th:action="@{/student/project/tasks/{id}/unsubmit(id=${t.taskId})}">
+                            <div class="row-actions" style="margin-top:10px;">
+                                <button type="submit" class="btn btn-danger-soft">Cancel submission</button>
+                                <span class="muted">Move the task back to In progress to edit.</span>
+                            </div>
+                        </form>
+
+                        <form th:if="${!projectLockedForWork and !projectChangeOpen and t.status == 2 and ((isLeader or (t.reviewerId != null and t.reviewerId == studentId)) and t.assigneeId != studentId or (singleMemberGroup and t.assigneeId == studentId))}"
+                            method="post"
+                            th:action="@{/student/project/tasks/{id}/review(id=${t.taskId})}">
+                            <div class="form-grid" style="margin-top:10px;">
+                                <div class="full">
+                                    <label th:for="${'reviewComment_' + t.taskId}">Review comment</label>
+                                    <textarea th:id="${'reviewComment_' + t.taskId}" name="reviewComment"
+                                        placeholder="If returning the task, a reason is required."></textarea>
+                                </div>
+                            </div>
+                            <div class="row-actions">
+                                <button type="submit" name="action" value="approve" class="btn btn-primary">Approve completion</button>
+                                <button type="submit" name="action" value="reject" class="btn btn-danger-soft">Return task</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterSection = document.querySelector('#task-filters-section');
+            const listSection = document.querySelector('#task-list-section');
+            if (filterSection && listSection && filterSection.nextElementSibling !== listSection) {
+                filterSection.insertAdjacentElement('afterend', listSection);
+            }
+        });
+    </script>
+</body>
+</html>

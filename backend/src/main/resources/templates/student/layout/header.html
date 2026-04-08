@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="sidebar(activeMenu)" class="backoffice-sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-copy">
+                <div class="sidebar-brand-title" th:text="${className} ?: 'PMS'">PMS</div>
+                <div class="sidebar-brand-subtitle">Student area</div>
+            </div>
+            <button type="button" class="sidebar-toggle" onclick="toggleBackofficeSidebar()" aria-label="Collapse sidebar">&#9776;</button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a class="sidebar-link" th:classappend="${activeMenu == 'home'} ? ' active'" href="/student/home">
+                <span class="sidebar-icon">&#8962;</span>
+                <span class="sidebar-text">Home</span>
+            </a>
+
+            <a class="sidebar-link"
+                th:classappend="${activeMenu == 'group-detail'} ? ' active'"
+                th:href="${activeGroupDetailUrl != null ? activeGroupDetailUrl : '/student/group/list'}">
+                <span class="sidebar-icon">&#128101;</span>
+                <span class="sidebar-text">My group</span>
+            </a>
+
+            <a class="sidebar-link" th:classappend="${activeMenu == 'project'} ? ' active'" href="/student/project">
+                <span class="sidebar-icon">&#128451;</span>
+                <span class="sidebar-text">Group project</span>
+            </a>
+            <a class="sidebar-link" th:classappend="${activeMenu == 'project-history'} ? ' active'" href="/student/project/history">
+                <span class="sidebar-icon">&#128340;</span>
+                <span class="sidebar-text">Project history</span>
+            </a>
+            <a class="sidebar-link" th:classappend="${activeMenu == 'notifications'} ? ' active'" href="/student/group/notifications">
+                <span class="sidebar-icon">&#128276;</span>
+                <span class="sidebar-text">Notifications</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            Track your group, project progress, and class notifications.
+        </div>
+    </div>
+
+    <header th:fragment="topbar(pageTitle)" class="backoffice-topbar student-topbar">
+        <script src="/js/student-notifications.js" defer></script>
+        <div class="topbar-title-block">
+            <div class="topbar-title-line" th:classappend="${pageTitleEditEnabled} ? ' is-editable'">
+                <h1 class="topbar-title topbar-title-text" id="js-topbar-title-display" th:text="${pageTitle}">Page</h1>
+                <input th:if="${pageTitleEditEnabled}"
+                    type="text"
+                    id="js-topbar-title-input"
+                    class="topbar-title-input"
+                    th:value="${pageTitleEditValue != null ? pageTitleEditValue : pageTitle}"
+                    th:attr="data-edit-url=${pageTitleEditUrl}"
+                    hidden />
+                <button th:if="${pageTitleEditEnabled}"
+                    type="button"
+                    id="js-topbar-title-edit"
+                    class="topbar-title-edit-btn"
+                    aria-label="Edit page title">&#9998;</button>
+            </div>
+            <div class="topbar-subtitle">Track your group, project, and work schedule.</div>
+        </div>
+        <div class="topbar-user student-topbar-user">
+            <a class="student-topbar-icon-btn student-topbar-icon-btn-muted js-student-notification-link"
+                href="/student/group/notifications"
+                data-notification-count-url="/student/group/notifications/count"
+                aria-label="Open notifications"
+                title="Notifications">
+                <span class="student-topbar-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                        <path d="M15 17H9m6 0h4l-1.6-1.7a2 2 0 0 1-.4-1.2V11a5 5 0 1 0-10 0v3.1a2 2 0 0 1-.4 1.2L5 17h4m6 0a3 3 0 0 1-6 0"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.8" />
+                    </svg>
+                </span>
+                <span class="js-student-notification-count student-topbar-badge"
+                    th:style="${notificationCount != null and notificationCount > 0} ? '' : 'display:none;'"
+                    th:text="${notificationCount}">0</span>
+                <span class="student-sr-only">Notifications</span>
+            </a>
+            <details class="student-topbar-profile-menu">
+                <summary class="student-topbar-profile student-topbar-profile-trigger">
+                    <div class="topbar-avatar student-topbar-avatar"><img src="/img/user.png" alt="Avatar" /></div>
+                    <div class="student-topbar-profile-copy">
+                        <div class="topbar-user-name" th:text="${studentName} ?: 'Student'">Student</div>
+                        <div class="topbar-user-role" th:text="${userRole} ?: 'Student'">Student</div>
+                    </div>
+                    <span class="student-topbar-profile-chevron" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+                            <path d="M5 7.5 10 12.5l5-5"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="1.7" />
+                        </svg>
+                    </span>
+                </summary>
+                <div class="student-topbar-profile-dropdown">
+                    <a href="/student/profile" class="student-topbar-profile-item">Profile</a>
+                    <form action="/acc/logout" method="get" class="student-topbar-dropdown-form">
+                        <button type="submit" class="student-topbar-profile-item student-topbar-profile-item-danger">Log out</button>
+                    </form>
+                </div>
+            </details>
+        </div>
+    </header>
+</body>
+</html>

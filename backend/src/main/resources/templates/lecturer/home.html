@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lecturer • Home</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body lecturer-home-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{lecturer/layout/header :: sidebar('home')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{lecturer/layout/header :: topbar('Lecturer home')}"></div>
+            <main class="backoffice-content">
+                <section class="page-section summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-label">Pending projects</div>
+                        <div class="summary-value" th:text="${pendingProjectCount}">0</div>
+                        <div class="summary-note">Student topics awaiting lecturer approval.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Project change requests</div>
+                        <div class="summary-value" th:text="${pendingChangeCount}">0</div>
+                        <div class="summary-note">Change requests awaiting lecturer decision.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Tracked projects</div>
+                        <div class="summary-value" th:text="${trackedProjectCount}">0</div>
+                        <div class="summary-note">Approved projects in active execution.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Quick navigation</div>
+                        <div class="button-row" style="margin-top:10px;">
+                            <a class="btn btn-primary btn-small" href="/lecturer/projects">Open projects</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Lecturer role in PMS</h2>
+                    <div class="meta">
+                        Lecturers review student-proposed project content, approve change requests after staff review,
+                        track sprint progress, and leave feedback directly on the project.
+                    </div>
+                </section>
+
+                <section class="page-section metrics-grid">
+                    <article class="info-card">
+                        <h3 class="info-title">Review topics</h3>
+                        <div class="meta">
+                            Check the project name, description, evidence links, and confirm start/end dates.
+                            If needed, reject with a reason so students can update.
+                        </div>
+                    </article>
+                    <article class="info-card">
+                        <h3 class="info-title">Track progress</h3>
+                        <div class="meta">
+                            View sprints, task history, member performance, and real execution status per group.
+                        </div>
+                    </article>
+                </section>
+            </main>
+            <div th:replace="~{lecturer/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

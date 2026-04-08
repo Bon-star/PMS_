@@ -1,0 +1,172 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lecturer • Project management</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body lecturer-projects-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{lecturer/layout/header :: sidebar('projects')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{lecturer/layout/header :: topbar('Review projects and track progress')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+                <section class="page-section summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-label">Pending projects</div>
+                        <div class="summary-value" th:text="${pendingProjects != null ? #lists.size(pendingProjects) : 0}">0</div>
+                        <div class="summary-note">Projects submitted for lecturer approval.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Project change requests</div>
+                        <div class="summary-value" th:text="${pendingChangeRequests != null ? #lists.size(pendingChangeRequests) : 0}">0</div>
+                        <div class="summary-note">Change requests that passed the staff review.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Tracked projects</div>
+                        <div class="summary-value" th:text="${trackedProjects != null ? #lists.size(trackedProjects) : 0}">0</div>
+                        <div class="summary-note">Approved projects with detailed progress.</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Workflow</div>
+                        <div class="summary-note" style="margin-top:8px;">
+                            Review new topics, handle change requests, and comment on approved projects.
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Projects awaiting lecturer approval</h2>
+                    <div th:if="${pendingProjects == null or #lists.isEmpty(pendingProjects)}" class="empty-state">
+                        There are no projects waiting for lecturer approval.
+                    </div>
+                    <div th:if="${pendingProjects != null and !#lists.isEmpty(pendingProjects)}" class="request-list">
+                        <article th:each="project : ${pendingProjects}" class="request-card">
+                            <h3 class="request-title" th:text="${project.projectName ?: 'Untitled project'}">Project</h3>
+                            <div class="request-meta"
+                                th:text="${'Group: ' + project.groupName + ' • Class: ' + (project.className ?: 'No class yet') + ' • Leader: ' + (project.leaderName ?: 'Not assigned')}">
+                                Meta
+                            </div>
+                            <div class="request-meta"
+                                th:text="${'Source: ' + project.topicSource + ' • Submitted: ' + (project.submissionDate != null ? #temporals.format(project.submissionDate, 'dd/MM/yyyy HH:mm') : '-')}">
+                                Source
+                            </div>
+                            <div class="request-body" th:if="${project.description != null and !#strings.isEmpty(project.description)}" th:text="${project.description}"></div>
+                            <div class="inline-actions" style="margin-top:12px; align-items:flex-end;">
+                                <form method="post" th:action="@{/lecturer/projects/{id}/approve(id=${project.projectId})}" style="flex:1 1 420px;">
+                                    <div class="form-grid form-grid-3">
+                                        <div>
+                                            <label>Start date</label>
+                                            <input type="date" name="startDate" required />
+                                        </div>
+                                        <div>
+                                            <label>End date</label>
+                                            <input type="date" name="endDate" required />
+                                        </div>
+                                        <div class="form-actions" style="justify-content:flex-start; align-self:end;">
+                                            <button type="submit" class="btn btn-primary">Approve project</button>
+                                        </div>
+                                    </div>
+                                </form>
+                                <form method="post" th:action="@{/lecturer/projects/{id}/reject(id=${project.projectId})}" style="flex:1 1 320px;">
+                                    <label>Rejection reason</label>
+                                    <div class="inline-actions">
+                                        <input class="inline-input" type="text" name="reason" placeholder="Enter rejection reason" required />
+                                        <button type="submit" class="btn btn-secondary">Reject</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Project change requests awaiting lecturer decision</h2>
+                    <div th:if="${pendingChangeRequests == null or #lists.isEmpty(pendingChangeRequests)}" class="empty-state">
+                        There are no project change requests awaiting action.
+                    </div>
+                    <div th:if="${pendingChangeRequests != null and !#lists.isEmpty(pendingChangeRequests)}" class="request-list">
+                        <article th:each="req : ${pendingChangeRequests}" class="request-card">
+                            <h3 class="request-title" th:text="${req.proposedProjectName}">Proposed topic</h3>
+                            <div class="request-meta"
+                                th:text="${'Group: ' + req.groupName + ' • Class: ' + (req.className ?: 'No class yet') + ' • Requested by: ' + req.requestedByName + ' (' + req.requestedByCode + ')'}">
+                                Meta
+                            </div>
+                            <div class="request-body" th:text="${'Current topic: ' + (req.currentProjectName ?: 'Untitled')}">Current</div>
+                            <div class="request-body" th:if="${req.proposedDescription != null and !#strings.isEmpty(req.proposedDescription)}" th:text="${'Proposed description: ' + req.proposedDescription}"></div>
+                            <div class="request-body" th:text="${'Change reason: ' + req.changeReason}">Reason</div>
+                            <div class="inline-actions" style="margin-top:12px; align-items:flex-end;">
+                                <form method="post" th:action="@{/lecturer/projects/change-requests/{id}/approve(id=${req.requestId})}" style="flex:1 1 420px;">
+                                    <div class="form-grid form-grid-3">
+                                        <div>
+                                            <label>New start date</label>
+                                            <input type="date" name="startDate" required />
+                                        </div>
+                                        <div>
+                                            <label>New end date</label>
+                                            <input type="date" name="endDate" required />
+                                        </div>
+                                        <div class="form-actions" style="justify-content:flex-start; align-self:end;">
+                                            <button type="submit" class="btn btn-primary">Approve change</button>
+                                        </div>
+                                    </div>
+                                </form>
+                                <form method="post" th:action="@{/lecturer/projects/change-requests/{id}/reject(id=${req.requestId})}" style="flex:1 1 320px;">
+                                    <label>Rejection reason</label>
+                                    <div class="inline-actions">
+                                        <input class="inline-input" type="text" name="reason" placeholder="Enter rejection reason" required />
+                                        <button type="submit" class="btn btn-secondary">Reject</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Approved projects being tracked</h2>
+                    <div th:if="${trackedProjects == null or #lists.isEmpty(trackedProjects)}" class="empty-state">
+                        There are no approved projects to track yet.
+                    </div>
+                    <div th:if="${trackedProjects != null and !#lists.isEmpty(trackedProjects)}" class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Group</th>
+                                    <th>Class</th>
+                                    <th>Project</th>
+                                    <th>Timeline</th>
+                                    <th>Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="project : ${trackedProjects}">
+                                    <td th:text="${project.groupName}">Group</td>
+                                    <td th:text="${project.className} ?: 'No class yet'">Class</td>
+                                    <td>
+                                        <div th:text="${project.projectName} ?: 'Untitled'">Project</div>
+                                        <div class="muted" th:if="${project.description != null and !#strings.isEmpty(project.description)}" th:text="${project.description}"></div>
+                                    </td>
+                                    <td>
+                                        <div th:text="${project.startDate != null ? #temporals.format(project.startDate, 'dd/MM/yyyy HH:mm') : '-'}">-</div>
+                                        <div class="muted" th:text="${project.endDate != null ? #temporals.format(project.endDate, 'dd/MM/yyyy HH:mm') : '-'}">-</div>
+                                    </td>
+                                    <td>
+                                        <a class="btn btn-small" th:href="@{/lecturer/projects/{id}/progress(id=${project.projectId})}">View progress</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{lecturer/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

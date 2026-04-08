@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code viewer</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+    <style>
+        .code-view-page .code-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .code-view-page .code-title {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .code-view-page .code-lines {
+            margin: 14px 0 0;
+            padding: 14px 16px 14px 48px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: "JetBrains Mono", "Fira Code", Consolas, "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+            list-style: decimal;
+        }
+
+        .code-view-page .code-lines li {
+            padding-left: 8px;
+            white-space: pre;
+        }
+
+        .code-view-page .code-lines li::marker {
+            color: #64748b;
+        }
+    </style>
+</head>
+<body class="backoffice-body student-project-page code-view-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('project')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Task code')}"></div>
+            <main class="backoffice-content">
+                <section class="panel">
+                    <div class="code-head">
+                        <div>
+                            <h2 class="code-title" th:text="${codeTitle}">Code</h2>
+                            <div class="muted" th:text="${'Task: ' + task.taskName}">Task</div>
+                        </div>
+                        <div class="row-actions">
+                            <a class="btn" href="/student/project/tasks">Back</a>
+                            <a class="btn btn-primary" th:if="${downloadUrl != null}" th:href="${downloadUrl}">Download file</a>
+                        </div>
+                    </div>
+                    <ol class="code-lines">
+                        <li th:each="line : ${codeLines}" th:text="${line}">...</li>
+                    </ol>
+                </section>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

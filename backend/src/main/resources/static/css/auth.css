@@ -1,0 +1,217 @@
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+}
+
+.auth-wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 130px 0 60px 0;
+    z-index: 1;
+}
+
+.auth-wrapper::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: url('/img/bg-tech.jpg');
+    background-size: cover;
+    background-position: center center;
+    filter: brightness(1.1) saturate(1.2);
+    z-index: -2;
+    animation: bgShift 30s infinite alternate;
+    opacity: 1;
+}
+
+.auth-wrapper::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.3), rgba(56, 189, 248, 0.1));
+    z-index: -1;
+    pointer-events: none;
+}
+
+.login-container {
+    display: flex;
+    width: 900px;
+    max-width: 95%;
+    min-height: 550px;
+    background: rgba(15, 25, 45, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+    position: relative;
+}
+
+.login-form-side, .form-side {
+    width: 50%;
+    padding: 50px;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: #fff;
+    border-right: 1px solid rgb(255, 255, 255);
+    position: relative;
+    z-index: 2;
+}
+
+.auth-title, h2 {
+    color: #fff;
+    font-weight: 800;
+    margin-bottom: 30px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.input-group-custom {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    padding: 5px 15px;
+    transition: all 0.2s ease;
+}
+
+.input-group-custom:focus-within {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: #38bdf8;
+    box-shadow: none;
+}
+
+.form-control-custom {
+    background: transparent;
+    border: none;
+    color: #fff !important;
+    height: 45px;
+    width: 100%;
+    outline: none;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.form-control-custom::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.input-icon {
+    color: #38bdf8;
+    margin-right: 10px;
+}
+
+.toggle-password {
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-login, .btn-register {
+    background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 20px;
+    width: 100%;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-login:hover, .btn-register:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.15);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.login-banner-side, .banner-side {
+    width: 50%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 40px;
+    background: linear-gradient(135deg, rgba(0, 198, 255, 0.2), rgba(10, 20, 60, 0.6));
+    color: #fff;
+    overflow: hidden;
+}
+
+.login-banner-side::before, .banner-side::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+}
+
+.login-banner-side > *, .banner-side > * {
+    position: relative;
+    z-index: 2;
+}
+
+.banner-icon {
+    font-size: 50px;
+    margin-bottom: 20px;
+    color: #fff;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.3));
+}
+
+.btn-outline-white, .btn-outline-light-custom {
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    color: #fff;
+    padding: 10px 35px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 20px;
+    display: inline-block;
+    transition: 0.2s;
+    background: transparent;
+}
+
+.btn-outline-white:hover, .btn-outline-light-custom:hover {
+    background: #fff;
+    color: #0072ff;
+    box-shadow: none;
+    border-color: #fff;
+}
+
+.header-area {
+    background-color: rgba(0, 123, 255, 0.85) !important;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    position: fixed !important;
+    top: 0; left: 0; right: 0;
+    z-index: 9999;
+    width: 100%;
+}
+
+@keyframes bgShift {
+    from { transform: scale(1); }
+    to { transform: scale(1.05); }
+}
+
+@media (max-width: 768px) {
+    .login-container { flex-direction: column; width: 95%; height: auto; }
+    .login-form-side, .login-banner-side, .form-side, .banner-side { width: 100%; padding: 30px; }
+    .login-banner-side, .banner-side { min-height: 250px; order: -1; }
+}

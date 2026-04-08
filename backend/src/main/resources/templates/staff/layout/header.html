@@ -1,0 +1,67 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="sidebar(activeMenu)" class="backoffice-sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-copy">
+                <div class="sidebar-brand-title">PMS</div>
+                <div class="sidebar-brand-subtitle">Staff area</div>
+            </div>
+            <button type="button" class="sidebar-toggle" onclick="toggleBackofficeSidebar()" aria-label="Thu gọn thanh bên">☰</button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a class="sidebar-link" th:classappend="${activeMenu == 'home'} ? ' active'" href="/staff/home">
+                <span class="sidebar-icon">🏠</span>
+                <span class="sidebar-text">Trang chủ</span>
+            </a>
+            <a class="sidebar-link" th:classappend="${activeMenu == 'students'} ? ' active'" href="/staff/students">
+                <span class="sidebar-icon">👥</span>
+                <span class="sidebar-text">Quản lý học viên</span>
+            </a>
+            <details class="sidebar-group" th:open="${activeMenu == 'projects' or activeMenu == 'templates-manager' or activeMenu == 'requests'}">
+                <summary class="sidebar-link sidebar-group-summary" th:classappend="${activeMenu == 'projects' or activeMenu == 'templates-manager' or activeMenu == 'requests'} ? ' active'">
+                    <span class="sidebar-icon">🗂️</span>
+                    <span class="sidebar-text">Quản lý project</span>
+                </summary>
+                <div class="sidebar-submenu">
+                    <a class="sidebar-sublink" th:classappend="${activeMenu == 'projects'} ? ' active'" href="/staff/projects">
+                        <span>Projects in this semester</span>
+                    </a>
+                    <a class="sidebar-sublink" th:classappend="${activeMenu == 'templates-manager'} ? ' active'" href="/staff/projects/templates-manager">
+                        <span>Templates List</span>
+                    </a>
+                    <a class="sidebar-sublink" th:classappend="${activeMenu == 'requests'} ? ' active'" href="/staff/projects/requests">
+                        <span>requests.html</span>
+                    </a>
+                </div>
+            </details>
+            <a class="sidebar-link" th:classappend="${activeMenu == 'classrooms'} ? ' active'" href="/staff/classrooms">
+                <span class="sidebar-icon">🚪</span>
+                <span class="sidebar-text">Classroom</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            Nhân viên quản lý đào tạo tạo tài khoản học viên, tạo project theo học kỳ và theo dõi hiệu suất nhóm.
+        </div>
+    </div>
+
+    <header th:fragment="topbar(pageTitle)" class="backoffice-topbar">
+        <div>
+            <h1 class="topbar-title" th:text="${pageTitle}">Trang</h1>
+            <div class="topbar-subtitle">Quản lý học viên, project và các yêu cầu theo học kỳ.</div>
+        </div>
+        <div class="topbar-user">
+            <div class="topbar-avatar"><img src="/img/user.png" alt="Avatar" /></div>
+            <div>
+                <div class="topbar-user-name" th:text="${displayName} ?: 'Staff'">Staff</div>
+                <div class="topbar-user-role" th:text="${displayRole} ?: 'Staff'">Staff</div>
+            </div>
+            <form action="/acc/logout" method="get">
+                <button type="submit" class="btn btn-danger">Đăng xuất</button>
+            </form>
+        </div>
+    </header>
+</body>
+</html>

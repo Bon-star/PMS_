@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="sidebar(activeMenu)" class="backoffice-sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-copy">
+                <div class="sidebar-brand-title">PMS</div>
+                <div class="sidebar-brand-subtitle">Lecturer area</div>
+            </div>
+            <button type="button" class="sidebar-toggle" onclick="toggleBackofficeSidebar()" aria-label="Collapse sidebar">☰</button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a class="sidebar-link" th:classappend="${activeMenu == 'home'} ? ' active'" href="/lecturer/home">
+                <span class="sidebar-icon">🏠</span>
+                <span class="sidebar-text">Home</span>
+            </a>
+            <a class="sidebar-link" th:classappend="${activeMenu == 'projects'} ? ' active'" href="/lecturer/projects">
+                <span class="sidebar-icon">✅</span>
+                <span class="sidebar-text">Project approval</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            Approve projects, track group progress, and leave comments for students.
+        </div>
+    </div>
+
+    <header th:fragment="topbar(pageTitle)" class="backoffice-topbar">
+        <div>
+            <h1 class="topbar-title" th:text="${pageTitle}">Page</h1>
+            <div class="topbar-subtitle">Track project progress, sprints, and task quality.</div>
+        </div>
+        <div class="topbar-user">
+            <div class="topbar-avatar"><img src="/img/user.png" alt="Avatar" /></div>
+            <div>
+                <div class="topbar-user-name" th:text="${displayName} ?: 'Lecturer'">Lecturer</div>
+                <div class="topbar-user-role" th:text="${displayRole} ?: 'Lecturer'">Lecturer</div>
+            </div>
+            <form action="/acc/logout" method="get">
+                <button type="submit" class="btn btn-danger">Log out</button>
+            </form>
+        </div>
+    </header>
+</body>
+</html>

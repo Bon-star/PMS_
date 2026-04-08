@@ -1,0 +1,98 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nhan vien • Tong quan</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+</head>
+<body class="backoffice-body staff-home-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{staff/layout/header :: sidebar('home')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{staff/layout/header :: topbar('Tong quan nhan vien')}"></div>
+            <main class="backoffice-content">
+                <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+                <section class="page-section summary-grid">
+                    <div class="summary-card accent-card accent-blue">
+                        <div class="summary-label">Student profiles</div>
+                        <div class="summary-value">Manage</div>
+                        <div class="summary-note">Update email, phone number, and class.</div>
+                        <div class="button-row" style="margin-top:10px;">
+                            <a class="btn btn-primary btn-small" href="/staff/students">Open directory</a>
+                        </div>
+                    </div>
+                    <div class="summary-card accent-card accent-emerald">
+                        <div class="summary-label">Semester projects</div>
+                        <div class="summary-value">Track</div>
+                        <div class="summary-note">Create projects, handle requests, and report progress.</div>
+                        <div class="button-row" style="margin-top:10px;">
+                            <a class="btn btn-secondary btn-small" href="/staff/projects">Manage projects</a>
+                        </div>
+                    </div>
+                    <div class="summary-card accent-card accent-amber">
+                        <div class="summary-label">Pending requests</div>
+                        <div class="summary-value">Priority</div>
+                        <div class="summary-note">Track edit access and project change requests.</div>
+                    </div>
+                    <div class="summary-card accent-card accent-rose">
+                        <div class="summary-label">Quick guide</div>
+                        <div class="summary-value">3 steps</div>
+                        <div class="summary-note">Lookup → Update → Notify students.</div>
+                    </div>
+                </section>
+
+                <section class="page-section metrics-grid">
+                    <div class="card">
+                        <h2 class="card-title">Student area</h2>
+                        <p class="meta">Focus on contact updates and class changes.</p>
+                        <div class="button-row" style="margin-top:12px;">
+                            <a class="btn btn-primary" href="/staff/students">Lookup students</a>
+                            <a class="btn btn-secondary" href="/staff/students">Create accounts</a>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h2 class="card-title">Project area</h2>
+                        <p class="meta">Manage group lists, project content, and performance.</p>
+                        <div class="button-row" style="margin-top:12px;">
+                            <a class="btn btn-secondary" href="/staff/projects">Project list</a>
+                            <a class="btn btn-primary" href="/staff/projects">Create project</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Quick workflow</h2>
+                    <ul class="meta" style="padding-left:18px;">
+                        <li>Lookup students by code or email to open their profile.</li>
+                        <li>Update contact details and check for duplicates.</li>
+                        <li>Notify students if their login email changes.</li>
+                    </ul>
+                </section>
+
+                <section class="page-section panel">
+                    <h2 class="panel-title">Work organization tips</h2>
+                    <div class="form-grid form-grid-3">
+                        <div>
+                            <label>Profile updates</label>
+                            <div class="meta">Handle email/phone change requests within 24 hours.</div>
+                        </div>
+                        <div>
+                            <label>Class management</label>
+                            <div class="meta">Verify class correctness before changing groups.</div>
+                        </div>
+                        <div>
+                            <label>Projects</label>
+                            <div class="meta">Track pending edit-access requests.</div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{staff/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>

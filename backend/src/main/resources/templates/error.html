@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Error</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+        body {
+            font-family: Segoe UI, Arial, Helvetica, sans-serif;
+            background: #f7f7f7;
+            color: #333;
+            padding: 40px
+        }
+
+        .box {
+            max-width: 720px;
+            margin: 40px auto;
+            padding: 24px;
+            background: #fff;
+            border-radius: 6px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, .06)
+        }
+
+        h1 {
+            margin: 0 0 8px
+        }
+
+        p {
+            margin: .4rem 0;
+            color: #666
+        }
+    </style>
+</head>
+
+<body>
+    <div class="box">
+        <h1>An error occurred</h1>
+        <p>The server returned an error (HTTP <span th:text="${status}">?</span>).</p>
+        <p>Please try again or contact the system administrator if the issue persists.</p>
+        <hr />
+        <p><small>Path: <span th:text="${path}">/</span></small></p>
+    </div>
+</body>
+
+</html>

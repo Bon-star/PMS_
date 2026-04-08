@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Project history</title>
+    <link rel="stylesheet" href="/backoffice.css" />
+    <link rel="stylesheet" href="/student-backoffice.css" />
+    <script src="/js/backoffice-layout.js" defer></script>
+    <style>
+        .student-project-history-page .history-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .student-project-history-page .history-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+        }
+
+        .student-project-history-page .history-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+
+        .student-project-history-page .history-semester {
+            font-size: 13px;
+            font-weight: 700;
+            color: #2563eb;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .student-project-history-page .history-title {
+            margin: 6px 0 4px;
+            font-size: 24px;
+            line-height: 1.2;
+            color: #111827;
+        }
+
+        .student-project-history-page .history-meta {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .student-project-history-page .history-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .student-project-history-page .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .student-project-history-page .badge-current {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .student-project-history-page .badge-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .student-project-history-page .badge-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .student-project-history-page .badge-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .student-project-history-page .badge-waiting {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .student-project-history-page .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .student-project-history-page .metric-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 14px;
+            background: #f8fafc;
+        }
+
+        .student-project-history-page .metric-label {
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .student-project-history-page .metric-value {
+            margin-top: 6px;
+            font-size: 24px;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .student-project-history-page .history-links,
+        .student-project-history-page .history-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .student-project-history-page .history-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #1d4ed8;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .student-project-history-page .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #111827;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .student-project-history-page .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+
+        .student-project-history-page .empty-state {
+            padding: 28px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 16px;
+            background: #fff;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .student-project-history-page .alert {
+            padding: 12px 14px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .student-project-history-page .alert-error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .student-project-history-page .alert-success {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        @media (max-width: 980px) {
+            .student-project-history-page .metric-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .student-project-history-page .history-head {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .student-project-history-page .metric-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="backoffice-body student-project-history-page">
+    <div class="backoffice-shell">
+        <div th:replace="~{student/layout/header :: sidebar('project-history')}"></div>
+        <div class="backoffice-main">
+            <div th:replace="~{student/layout/header :: topbar('Project history')}"></div>
+            <main class="backoffice-content">
+                <section class="page-section">
+                    <div th:if="${error}" class="alert alert-error" th:text="${error}">Error</div>
+                    <div th:if="${success}" class="alert alert-success" th:text="${success}">Success</div>
+
+                    <div class="history-grid" th:if="${historyEntries != null and !#lists.isEmpty(historyEntries)}">
+                        <article class="history-card" th:each="entry : ${historyEntries}">
+                            <div class="history-head">
+                                <div>
+                                    <div class="history-semester" th:text="${entry.project.semesterName} ?: 'Unknown semester'">Semester</div>
+                                    <h2 class="history-title" th:text="${entry.project.projectName} ?: 'Untitled project'">Project</h2>
+                                    <div class="history-meta">
+                                        Group <strong th:text="${entry.project.groupName}">Group</strong>
+                                        • Class <strong th:text="${entry.project.className} ?: 'No class'">Class</strong>
+                                        • Leader <strong th:text="${entry.project.leaderName} ?: 'Not assigned'">Leader</strong>
+                                    </div>
+                                    <div class="history-meta" style="margin-top: 4px;">
+                                        Timeline:
+                                        <strong th:text="${entry.project.startDate != null ? #temporals.format(entry.project.startDate, 'dd/MM/yyyy HH:mm') : '-'}">-</strong>
+                                        to
+                                        <strong th:text="${entry.project.endDate != null ? #temporals.format(entry.project.endDate, 'dd/MM/yyyy HH:mm') : '-'}">-</strong>
+                                    </div>
+                                </div>
+                                <div class="history-badges">
+                                    <span class="badge badge-current" th:if="${entry.currentSemester}">Current semester</span>
+                                    <span class="badge badge-approved" th:if="${entry.project.approvalStatus == 1}">Approved</span>
+                                    <span class="badge badge-pending" th:if="${entry.project.approvalStatus == 2}">Awaiting lecturer review</span>
+                                    <span class="badge badge-rejected" th:if="${entry.project.approvalStatus == 3}">Rejected</span>
+                                    <span class="badge badge-waiting" th:if="${entry.project.approvalStatus == 4}">Waiting for student content</span>
+                                </div>
+                            </div>
+
+                            <div class="history-meta" th:if="${entry.project.description != null and !#strings.isEmpty(entry.project.description)}"
+                                th:text="${entry.project.description}">Description</div>
+
+                            <div class="metric-grid">
+                                <div class="metric-card">
+                                    <div class="metric-label">Sprints</div>
+                                    <div class="metric-value" th:text="${entry.sprintCount}">0</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Total tasks</div>
+                                    <div class="metric-value" th:text="${entry.totalTasks}">0</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Completed</div>
+                                    <div class="metric-value" th:text="${entry.doneTasks}">0</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Published score</div>
+                                    <div class="metric-value"
+                                        th:text="${entry.scorePublished and entry.finalScore != null ? #numbers.formatDecimal(entry.finalScore, 1, 1) : '-'}">-</div>
+                                </div>
+                            </div>
+
+                            <div class="history-links" th:if="${(entry.project.sourceCodeUrl != null and !#strings.isEmpty(entry.project.sourceCodeUrl)) or (entry.project.documentUrl != null and !#strings.isEmpty(entry.project.documentUrl))}">
+                                <a class="history-link" th:if="${entry.project.sourceCodeUrl != null and !#strings.isEmpty(entry.project.sourceCodeUrl)}"
+                                    th:href="${entry.project.sourceCodeUrl}" target="_blank" rel="noopener">Source code</a>
+                                <a class="history-link" th:if="${entry.project.documentUrl != null and !#strings.isEmpty(entry.project.documentUrl)}"
+                                    th:href="${entry.project.documentUrl}" target="_blank" rel="noopener">Document</a>
+                            </div>
+
+                            <div class="history-actions">
+                                <a class="btn" th:href="@{/student/project/history/{projectId}(projectId=${entry.project.projectId})}">View details</a>
+                                <a class="btn btn-primary" th:if="${entry.currentSemester}" href="/student/project">Open current project</a>
+                            </div>
+                        </article>
+                    </div>
+
+                    <div class="empty-state" th:if="${historyEntries == null or #lists.isEmpty(historyEntries)}">
+                        No project history has been recorded for your account yet.
+                    </div>
+                </section>
+            </main>
+            <div th:replace="~{student/layout/footer :: pageFooter}"></div>
+        </div>
+    </div>
+</body>
+</html>
